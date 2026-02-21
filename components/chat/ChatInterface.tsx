@@ -2,14 +2,24 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
 
 export function ChatInterface() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const { messages, sendMessage, status } = useChat();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   const isLoading = status === "streaming" || status === "submitted";
 
@@ -29,9 +39,18 @@ export function ChatInterface() {
   return (
     <div className="flex h-dvh flex-col bg-zinc-950">
       {/* Header */}
-      <header className="flex-none border-b border-zinc-800 px-4 py-3">
-        <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
-        <p className="text-xs text-zinc-500">your longevity coach</p>
+      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
+          <p className="text-xs text-zinc-500">your longevity coach</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          title="Sign out"
+        >
+          <LogOut size={16} />
+        </button>
       </header>
 
       {/* Messages */}
