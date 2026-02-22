@@ -1,21 +1,49 @@
-import { streamText, UIMessage, convertToModelMessages, stepCountIs } from 'ai';
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  stepCountIs,
+  streamText,
+  type UIMessage,
+} from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createTools } from '@/lib/ai/tools';
 import { getSystemPrompt } from '@/lib/ai/prompts';
 import { createClient } from '@/lib/supabase/server';
+import { loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
 import type { UserProfile } from '@/lib/types';
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
+  const { id: chatId, message } = await req.json();
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const userId = user?.id ?? 'dev-user';
+  if (!user) {
+    return new Response('Unauthorized', { status: 401 });
+  }
 
-  // Fetch user profile for system prompt context
+  const userId = user.id;
+
+  // Save user message to DB immediately
+  if (message?.role === 'user') {
+    await saveMessages(chatId, [
+      {
+        id: message.id,
+        role: 'user',
+        parts: message.parts,
+        attachments: [],
+      },
+    ]);
+  }
+
+  // Load previous messages from DB and append the new one
+  const dbMessages = await loadMessages(chatId);
+  const uiMessages = convertToUIMessages(dbMessages);
+
+  // Fetch user profile for system prompt
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('*')
@@ -45,13 +73,33 @@ export async function POST(req: Request) {
 
   const tools = createTools(userId);
 
-  const result = streamText({
-    model: anthropic('claude-sonnet-4-20250514'),
-    system: systemPrompt,
-    messages: await convertToModelMessages(messages),
-    tools,
-    stopWhen: stepCountIs(5),
+  const stream = createUIMessageStream({
+    execute: async ({ writer }) => {
+      const result = streamText({
+        model: anthropic('claude-sonnet-4-20250514'),
+        system: systemPrompt,
+        messages: await convertToModelMessages(uiMessages),
+        tools,
+        stopWhen: stepCountIs(5),
+      });
+
+      result.consumeStream();
+
+      writer.merge(result.toUIMessageStream());
+    },
+    onFinish: async ({ messages: finishedMessages }) => {
+      if (finishedMessages.length > 0) {
+        await saveMessages(
+          chatId,
+          finishedMessages.map((msg) => ({
+            id: msg.id,
+            role: msg.role,
+            parts: msg.parts as unknown[],
+          })),
+        );
+      }
+    },
   });
 
-  return result.toUIMessageStreamResponse();
+  return createUIMessageStreamResponse({ stream });
 }

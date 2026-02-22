@@ -1,20 +1,47 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useState, useRef, useEffect } from "react";
+import type { UIMessage } from "ai";
+import { DefaultChatTransport } from "ai";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Send, Settings, X, RotateCcw, Trash2, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+  chatId: string;
+  initialMessages: UIMessage[];
+}
+
+export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const { messages, sendMessage, status } = useChat();
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        prepareSendMessagesRequest({ messages }) {
+          return {
+            body: {
+              id: chatId,
+              message: messages[messages.length - 1],
+            },
+          };
+        },
+      }),
+    [chatId],
+  );
+
+  const { messages, sendMessage, status } = useChat({
+    id: chatId,
+    messages: initialMessages,
+    transport,
+  });
 
   const isLoading = status === "streaming" || status === "submitted";
 

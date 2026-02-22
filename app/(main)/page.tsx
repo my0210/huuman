@@ -1,7 +1,15 @@
-"use client";
+import { createClient } from '@/lib/supabase/server';
+import { getOrCreateConversation, loadMessages, convertToUIMessages } from '@/lib/chat/store';
+import { ChatInterface } from '@/components/chat/ChatInterface';
 
-import { ChatInterface } from "@/components/chat/ChatInterface";
+export default async function MainPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-export default function MainPage() {
-  return <ChatInterface />;
+  const userId = user!.id;
+  const chatId = await getOrCreateConversation(userId);
+  const dbMessages = await loadMessages(chatId);
+  const initialMessages = convertToUIMessages(dbMessages);
+
+  return <ChatInterface chatId={chatId} initialMessages={initialMessages} />;
 }

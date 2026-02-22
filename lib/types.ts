@@ -263,14 +263,13 @@ export interface Conversation {
   createdAt: string;
 }
 
-export interface ChatMessageRow {
+export interface DBMessage {
   id: string;
-  conversationId: string;
+  conversation_id: string;
   role: 'user' | 'assistant';
-  content: string;
-  toolCalls?: Record<string, unknown>[];
-  toolResults?: Record<string, unknown>[];
-  createdAt: string;
+  parts: unknown[];
+  attachments: unknown[];
+  created_at: string;
 }
 
 // =============================================================================

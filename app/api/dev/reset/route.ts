@@ -13,6 +13,26 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Delete chat messages (FK: must come before conversations)
+  const { data: convos } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('user_id', user.id);
+
+  if (convos && convos.length > 0) {
+    const convoIds = convos.map((c) => c.id);
+    await supabase
+      .from('messages')
+      .delete()
+      .in('conversation_id', convoIds);
+  }
+
+  // Delete conversations
+  await supabase
+    .from('conversations')
+    .delete()
+    .eq('user_id', user.id);
+
   // Delete all planned sessions for this user
   await supabase
     .from('planned_sessions')
