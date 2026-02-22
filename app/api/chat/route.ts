@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     ]);
   }
 
-  // Load previous messages from DB and append the new one
+  // Load all messages from DB (includes the just-saved user message)
   const dbMessages = await loadMessages(chatId);
   const uiMessages = convertToUIMessages(dbMessages);
 
@@ -73,25 +73,27 @@ export async function POST(req: Request) {
 
   const tools = createTools(userId);
 
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
-      const result = streamText({
-        model: anthropic('claude-sonnet-4-20250514'),
-        system: systemPrompt,
-        messages: await convertToModelMessages(uiMessages),
-        tools,
-        stopWhen: stepCountIs(5),
-      });
+  const result = streamText({
+    model: anthropic('claude-sonnet-4-20250514'),
+    system: systemPrompt,
+    messages: await convertToModelMessages(uiMessages),
+    tools,
+    stopWhen: stepCountIs(5),
+  });
 
-      result.consumeStream();
+  result.consumeStream();
 
-      writer.merge(result.toUIMessageStream());
-    },
+  return result.toUIMessageStreamResponse({
+    originalMessages: uiMessages,
     onFinish: async ({ messages: finishedMessages }) => {
-      if (finishedMessages.length > 0) {
+      const newMessages = finishedMessages.filter(
+        (msg) => !dbMessages.some((db) => db.id === msg.id),
+      );
+
+      if (newMessages.length > 0) {
         await saveMessages(
           chatId,
-          finishedMessages.map((msg) => ({
+          newMessages.map((msg) => ({
             id: msg.id,
             role: msg.role,
             parts: msg.parts as unknown[],
@@ -100,6 +102,4 @@ export async function POST(req: Request) {
       }
     },
   });
-
-  return createUIMessageStreamResponse({ stream });
 }
