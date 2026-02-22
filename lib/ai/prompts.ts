@@ -1,11 +1,10 @@
 import { UserProfile } from '@/lib/types';
 import { getAllPromptRules } from '@/lib/convictions';
+import { formatDomainBaselines } from '@/lib/onboarding/formatBaselines';
 
 export function getSystemPrompt(profile?: UserProfile | null): string {
   const convictionBlock = getAllPromptRules();
   const profileBlock = profile ? formatProfile(profile) : 'No user profile available yet. Start onboarding.';
-  const onboardingBlock = !profile?.onboardingCompleted ? ONBOARDING_INSTRUCTIONS : '';
-
   return `You are huuman -- an AI longevity coach that helps people build and follow a weekly health plan across 5 domains: cardio, strength, nutrition, mindfulness, and sleep.
 
 ## YOUR CORE PHILOSOPHY
@@ -47,26 +46,8 @@ Chain tools when needed -- e.g., complete_session then show_progress.
 - Keep responses to 2-4 sentences unless the user asks for detail
 - Be specific and personal, not generic
 - After calling tools, write a brief response referencing the results
-- Use the user's name if you know it
-${onboardingBlock}`;
+- Use the user's name if you know it`;
 }
-
-const ONBOARDING_INSTRUCTIONS = `
-
-## ONBOARDING MODE
-
-The user has NOT completed onboarding. Before generating their first plan, you need to collect:
-
-1. Age and weight (for HR zone calculations and nutrition targets)
-2. Fitness level (sedentary, beginner, intermediate, advanced)
-3. Schedule (work hours, preferred workout times)
-4. Equipment (gym access, home equipment, outdoor access)
-5. Limitations (injuries, medical conditions)
-6. Goals (what they want to achieve)
-
-Ask these conversationally, not as a form. Be warm and curious. You can ask 2-3 questions at a time.
-Once you have enough info, confirm with the user, then call generate_plan to create their first week.
-`;
 
 export function getPlanGenerationPrompt(
   profile: UserProfile,
@@ -124,7 +105,12 @@ function formatProfile(profile: UserProfile): string {
 
   if (profile.age) lines.push(`Age: ${profile.age}`);
   if (profile.weightKg) lines.push(`Weight: ${profile.weightKg} kg`);
-  lines.push(`Fitness Level: ${profile.fitnessLevel}`);
+
+  if (profile.domainBaselines) {
+    lines.push('');
+    lines.push('Domain Baselines:');
+    lines.push(formatDomainBaselines(profile.domainBaselines));
+  }
 
   if (profile.goals.primary.length > 0) {
     lines.push(`Goals: ${profile.goals.primary.join(', ')}`);
@@ -138,11 +124,9 @@ function formatProfile(profile: UserProfile): string {
   if (c.schedule.preferredWorkoutTimes.length > 0) {
     lines.push(`Preferred workout times: ${c.schedule.preferredWorkoutTimes.join(', ')}`);
   }
-  lines.push(`Gym access: ${c.equipment.gymAccess ? 'Yes' : 'No'}`);
   if (c.equipment.homeEquipment.length > 0) {
     lines.push(`Home equipment: ${c.equipment.homeEquipment.join(', ')}`);
   }
-  lines.push(`Outdoor access: ${c.equipment.outdoorAccess ? 'Yes' : 'No'}`);
   if (c.limitations.injuries.length > 0) {
     lines.push(`Injuries: ${c.limitations.injuries.join(', ')}`);
   }

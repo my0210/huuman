@@ -43,7 +43,7 @@ export const cardioConviction: DomainConviction = {
   ],
 
   promptRules: [
-    'CARDIO CONVICTION: Follow Peter Attia\'s cardio protocol strictly.',
+    'CARDIO CONVICTION: Follow a polarized Zone 2 / Zone 5 cardio protocol strictly.',
     'ONLY prescribe Zone 2 and Zone 5 cardio sessions. No Zone 3 or Zone 4.',
     'Zone 2 sessions MUST be at least 45 minutes. Never shorter.',
     'Approximately 80% of total weekly cardio volume must be Zone 2, 20% Zone 5.',

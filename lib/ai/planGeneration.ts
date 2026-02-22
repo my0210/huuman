@@ -115,7 +115,7 @@ export async function generateWeeklyPlan(
     email: profileRow.email,
     age: profileRow.age,
     weightKg: profileRow.weight_kg ? Number(profileRow.weight_kg) : undefined,
-    fitnessLevel: profileRow.fitness_level,
+    domainBaselines: profileRow.domain_baselines as UserProfile['domainBaselines'],
     goals: profileRow.goals as UserProfile['goals'],
     constraints: profileRow.constraints as UserProfile['constraints'],
     onboardingCompleted: profileRow.onboarding_completed,

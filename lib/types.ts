@@ -18,14 +18,48 @@ export const DOMAIN_META: Record<Domain, { label: string; icon: string; color: s
 // User
 // =============================================================================
 
-export type FitnessLevel = 'sedentary' | 'beginner' | 'intermediate' | 'advanced';
+export interface CardioBaseline {
+  activities: string[];
+  weeklyMinutes: '0' | 'under_60' | '60_120' | '120_plus';
+  canSustain45min: boolean;
+}
+
+export interface StrengthBaseline {
+  trainingType: 'none' | 'bodyweight' | 'free_weights' | 'machines';
+  daysPerWeek: number;
+  liftFamiliarity: 'none' | 'some' | 'all';
+  gymAccess: boolean;
+}
+
+export interface NutritionBaseline {
+  pattern: 'no_structure' | 'loosely_healthy' | 'track_macros';
+  restrictions: string[];
+}
+
+export interface SleepBaseline {
+  hours: 'under_6' | '6_7' | '7_8' | '8_plus';
+  bedtime: 'before_10pm' | '10_11pm' | '11pm_midnight' | 'after_midnight';
+  sleepIssues: 'no' | 'sometimes' | 'often';
+}
+
+export interface MindfulnessBaseline {
+  experience: 'never' | 'tried_few_times' | 'occasional' | 'regular';
+}
+
+export interface DomainBaselines {
+  cardio: CardioBaseline;
+  strength: StrengthBaseline;
+  nutrition: NutritionBaseline;
+  sleep: SleepBaseline;
+  mindfulness: MindfulnessBaseline;
+}
 
 export interface UserProfile {
   id: string;
   email: string;
   age?: number;
   weightKg?: number;
-  fitnessLevel: FitnessLevel;
+  domainBaselines?: DomainBaselines;
   goals: UserGoals;
   constraints: UserConstraints;
   onboardingCompleted: boolean;

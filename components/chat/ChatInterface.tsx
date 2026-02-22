@@ -57,15 +57,14 @@ export function ChatInterface() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
-            <div className="text-4xl">&#x1f44b;</div>
             <p className="text-zinc-400 text-sm max-w-xs">
-              Hey! I&apos;m huuman, your AI longevity coach. Tell me about yourself and I&apos;ll build your plan.
+              Your plan is ready. Ask me anything or pick a shortcut below.
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {[
-                "Build my weekly plan",
-                "I'm new here",
                 "What should I do today?",
+                "Show me my week",
+                "How am I doing?",
               ].map((suggestion) => (
                 <button
                   key={suggestion}

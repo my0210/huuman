@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-export default async function MainLayout({
+export default async function OnboardingLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -17,12 +17,12 @@ export default async function MainLayout({
     .eq('id', user.id)
     .maybeSingle();
 
-  if (!profile?.onboarding_completed) {
-    redirect('/onboarding');
+  if (profile?.onboarding_completed) {
+    redirect('/');
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-zinc-950">
       {children}
     </div>
   );

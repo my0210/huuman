@@ -3,6 +3,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { createTools } from '@/lib/ai/tools';
 import { getSystemPrompt } from '@/lib/ai/prompts';
 import { createClient } from '@/lib/supabase/server';
+import type { UserProfile } from '@/lib/types';
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
           email: profile.email,
           age: profile.age,
           weightKg: profile.weight_kg ? Number(profile.weight_kg) : undefined,
-          fitnessLevel: profile.fitness_level,
+          domainBaselines: profile.domain_baselines as UserProfile['domainBaselines'],
           goals: profile.goals as { primary: string[]; freeText?: string },
           constraints: profile.constraints as {
             schedule: { workHours?: string; blockedTimes: []; preferredWorkoutTimes: [] };

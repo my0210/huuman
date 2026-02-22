@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
+import { createClient } from '@/lib/supabase/server';
 
 export async function POST(req: Request) {
-  const { userId, weekStart } = await req.json();
+  const body = await req.json();
+
+  let userId = body.userId as string | undefined;
 
   if (!userId) {
-    return NextResponse.json({ error: 'userId required' }, { status: 400 });
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id;
   }
 
-  const result = await generateWeeklyPlan(userId, weekStart);
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const result = await generateWeeklyPlan(userId, body.weekStart);
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 500 });
