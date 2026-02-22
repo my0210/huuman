@@ -103,7 +103,6 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
-          <p className="text-xs text-zinc-500">your longevity coach</p>
         </div>
         <button
           onClick={() => setMenuOpen(true)}
