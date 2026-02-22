@@ -5,6 +5,8 @@ import { getSystemPrompt } from '@/lib/ai/prompts';
 import { createClient } from '@/lib/supabase/server';
 import type { UserProfile } from '@/lib/types';
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();
 
