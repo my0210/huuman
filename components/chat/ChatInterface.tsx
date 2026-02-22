@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useState, useRef, useEffect } from "react";
-import { Send, LogOut } from "lucide-react";
+import { Send, LogOut, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
@@ -21,7 +21,25 @@ export function ChatInterface() {
     router.refresh();
   };
 
+  const [resetting, setResetting] = useState(false);
+
   const isLoading = status === "streaming" || status === "submitted";
+
+  const handleReset = async () => {
+    if (!confirm("Reset account? This deletes your plan and restarts onboarding.")) return;
+    setResetting(true);
+    try {
+      const res = await fetch("/api/dev/reset", { method: "POST" });
+      if (res.ok) {
+        router.push("/onboarding");
+        router.refresh();
+      } else {
+        alert("Reset failed");
+      }
+    } finally {
+      setResetting(false);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -44,13 +62,23 @@ export function ChatInterface() {
           <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
           <p className="text-xs text-zinc-500">your longevity coach</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          title="Sign out"
-        >
-          <LogOut size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleReset}
+            disabled={resetting}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 hover:text-amber-400 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            title="Reset account (dev)"
+          >
+            <RotateCcw size={14} />
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </header>
 
       {/* Messages */}
