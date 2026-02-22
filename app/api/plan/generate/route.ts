@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 import { createClient } from '@/lib/supabase/server';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   const body = await req.json();

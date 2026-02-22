@@ -128,7 +128,7 @@ export async function generateWeeklyPlan(
 
   // Generate the plan via Claude
   const { object: plan } = await generateObject({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: anthropic('claude-3-5-sonnet-20241022'),
     schema: planSchema,
     prompt,
   });
