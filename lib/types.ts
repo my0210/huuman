@@ -26,8 +26,10 @@ export interface CardioBaseline {
 
 export type StrengthSetup = 'home' | 'gym';
 
+export type StrengthTrainingType = 'bodyweight' | 'free_weights' | 'machines';
+
 export interface StrengthBaseline {
-  trainingType: 'none' | 'bodyweight' | 'free_weights' | 'machines';
+  trainingTypes: StrengthTrainingType[];
   daysPerWeek: number;
   liftFamiliarity: 'none' | 'some' | 'all';
   setup: StrengthSetup[];

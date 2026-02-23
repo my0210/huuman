@@ -8,8 +8,7 @@ const WEEKLY_MINUTES_LABELS: Record<string, string> = {
 };
 
 const TRAINING_TYPE_LABELS: Record<string, string> = {
-  none: 'no strength training',
-  bodyweight: 'bodyweight only',
+  bodyweight: 'bodyweight',
   free_weights: 'free weights',
   machines: 'machines',
 };
@@ -72,7 +71,10 @@ export function formatDomainBaselines(baselines: DomainBaselines): string {
   const setupLabel = strength.setup.length > 0
     ? `trains at ${strength.setup.join(' + ')}`
     : 'no home or gym setup';
-  lines.push(`Strength: ${TRAINING_TYPE_LABELS[strength.trainingType] ?? strength.trainingType}, ${strengthDays}, ${LIFT_LABELS[strength.liftFamiliarity] ?? strength.liftFamiliarity}, ${setupLabel}`);
+  const trainingLabel = strength.trainingTypes.length > 0
+    ? strength.trainingTypes.map((t) => TRAINING_TYPE_LABELS[t] ?? t).join(' + ')
+    : 'no strength training';
+  lines.push(`Strength: ${trainingLabel}, ${strengthDays}, ${LIFT_LABELS[strength.liftFamiliarity] ?? strength.liftFamiliarity}, ${setupLabel}`);
 
   const { nutrition } = baselines;
   const restrictions = nutrition.restrictions.length > 0

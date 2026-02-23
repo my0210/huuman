@@ -35,7 +35,7 @@ type OnboardingData = {
 
 const INITIAL_DATA: OnboardingData = {
   cardio: { activities: [], weeklyMinutes: "0", canSustain45min: false },
-  strength: { trainingType: "none", daysPerWeek: 0, liftFamiliarity: "none", setup: [] },
+  strength: { trainingTypes: [], daysPerWeek: 0, liftFamiliarity: "none", setup: [] },
   nutrition: { pattern: "no_structure", restrictions: [] },
   sleep: { hours: "7_8", bedtime: "10_11pm", sleepIssues: "no" },
   mindfulness: { experience: "never" },
@@ -390,27 +390,32 @@ function StrengthBaselineStep({
       <h2 className="text-xl font-bold text-zinc-100">Your strength baseline</h2>
 
       <div className="space-y-3">
-        <QuestionLabel>Do you do any strength training?</QuestionLabel>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { value: "none", label: "No" },
-            { value: "bodyweight", label: "Bodyweight only" },
-            { value: "free_weights", label: "Free weights" },
-            { value: "machines", label: "Machines" },
-          ].map((opt) => (
-            <OptionButton
+        <QuestionLabel>What kind of strength training do you do?</QuestionLabel>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { value: "bodyweight" as const, label: "Bodyweight" },
+            { value: "free_weights" as const, label: "Free weights" },
+            { value: "machines" as const, label: "Machines" },
+          ]).map((opt) => (
+            <CheckboxButton
               key={opt.value}
-              selected={strength.trainingType === opt.value}
-              onClick={() =>
-                setData((d) => ({
-                  ...d,
-                  strength: { ...d.strength, trainingType: opt.value as StrengthBaseline["trainingType"] },
-                }))
-              }
+              selected={strength.trainingTypes.includes(opt.value)}
+              onClick={() => {
+                const trainingTypes = strength.trainingTypes.includes(opt.value)
+                  ? strength.trainingTypes.filter((t) => t !== opt.value)
+                  : [...strength.trainingTypes, opt.value];
+                setData((d) => ({ ...d, strength: { ...d.strength, trainingTypes } }));
+              }}
             >
               {opt.label}
-            </OptionButton>
+            </CheckboxButton>
           ))}
+          <CheckboxButton
+            selected={strength.trainingTypes.length === 0}
+            onClick={() => setData((d) => ({ ...d, strength: { ...d.strength, trainingTypes: [] } }))}
+          >
+            None
+          </CheckboxButton>
         </div>
       </div>
 
