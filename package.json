@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:schema": "tsx --tsconfig tsconfig.json scripts/test-plan-generation.ts --schema-only",
+    "test:plan": "tsx --tsconfig tsconfig.json scripts/test-plan-generation.ts",
+    "test:render": "tsx --tsconfig tsconfig.json scripts/test-session-rendering.tsx",
+    "test:all": "npm run test:schema && npm run test:plan && npm run test:render"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.46",
@@ -30,9 +34,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
+    "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "zod-to-json-schema": "^3.25.1"
   }
 }

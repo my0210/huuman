@@ -42,11 +42,17 @@ export function SessionDetailCard({ data }: { data: Record<string, unknown> }) {
 
 export function SessionDetailInline({
   domain,
-  detail,
+  detail: rawDetail,
 }: {
   domain: string;
-  detail: Record<string, unknown>;
+  detail: Record<string, unknown> | string;
 }) {
+  let detail: Record<string, unknown>;
+  if (typeof rawDetail === 'string') {
+    try { detail = JSON.parse(rawDetail); } catch { detail = {}; }
+  } else {
+    detail = rawDetail ?? {};
+  }
   switch (domain) {
     case "cardio":
       return <CardioDetail detail={detail} />;

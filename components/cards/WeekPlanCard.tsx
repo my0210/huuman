@@ -15,7 +15,6 @@ interface Session {
 
 interface WeekPlanData {
   weekStart: string;
-  plan: { intro_message?: string } | null;
   sessions: Session[];
   hasPlan: boolean;
 }
@@ -29,7 +28,7 @@ const domainDot: Record<string, string> = {
 };
 
 export function WeekPlanCard({ data }: { data: Record<string, unknown> }) {
-  const { weekStart, plan, sessions, hasPlan } = data as unknown as WeekPlanData;
+  const { sessions, hasPlan } = data as unknown as WeekPlanData;
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   if (!hasPlan || sessions.length === 0) {
@@ -60,12 +59,6 @@ export function WeekPlanCard({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-      {plan?.intro_message && (
-        <div className="px-4 py-3 border-b border-zinc-800/50">
-          <p className="text-xs text-zinc-400 leading-relaxed">{plan.intro_message}</p>
-        </div>
-      )}
-
       {/* Day strip */}
       <div className="flex border-b border-zinc-800/50">
         {days.map((dow) => {

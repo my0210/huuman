@@ -1,93 +1,13 @@
 import { generateObject } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { UserProfile, getWeekStart } from '@/lib/types';
 import { getPlanGenerationPrompt } from './prompts';
-import { ALL_CONVICTIONS } from '@/lib/convictions';
+import { planJsonSchema, validatePlan, type PlanOutput } from './planSchema';
 import { addDays, format } from 'date-fns';
 
-// =============================================================================
-// Output schema (what the AI must produce)
-// =============================================================================
-
-const sessionSchema = z.object({
-  domain: z.enum(['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep']),
-  dayOfWeek: z.number().describe('Day of week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat'),
-  title: z.string(),
-  detail: z.object({}).passthrough(),
-  sortOrder: z.number(),
-});
-
-const planSchema = z.object({
-  introMessage: z.string(),
-  sessions: z.array(sessionSchema),
-});
-
-// =============================================================================
-// Validation
-// =============================================================================
-
-interface ValidationResult {
-  valid: boolean;
-  issues: string[];
-}
-
-function validatePlan(sessions: z.infer<typeof sessionSchema>[]): ValidationResult {
-  const issues: string[] = [];
-
-  const cardioSessions = sessions.filter(s => s.domain === 'cardio');
-  const strengthSessions = sessions.filter(s => s.domain === 'strength');
-
-  // Cardio conviction checks
-  const cardioRules = ALL_CONVICTIONS.cardio;
-  for (const cs of cardioSessions) {
-    const detail = cs.detail as Record<string, unknown>;
-    const zone = detail.zone as number | undefined;
-    const targetMinutes = detail.targetMinutes as number | undefined;
-
-    if (zone === 2 && targetMinutes && targetMinutes < 45) {
-      issues.push(`Zone 2 session "${cs.title}" is ${targetMinutes} min -- minimum is 45 min.`);
-    }
-    if (zone && zone !== 2 && zone !== 5) {
-      issues.push(`Session "${cs.title}" uses Zone ${zone} -- only Zone 2 and Zone 5 allowed.`);
-    }
-  }
-
-  const z2Sessions = cardioSessions.filter(s => (s.detail as Record<string, unknown>).zone === 2);
-  const z5Sessions = cardioSessions.filter(s => (s.detail as Record<string, unknown>).zone === 5);
-
-  if (z5Sessions.length > 1) {
-    issues.push(`${z5Sessions.length} Zone 5 sessions -- maximum is 1 per week.`);
-  }
-
-  const totalCardioMin = cardioSessions.reduce((sum, s) => {
-    return sum + ((s.detail as Record<string, unknown>).targetMinutes as number ?? 0);
-  }, 0);
-  const z2Min = z2Sessions.reduce((sum, s) => {
-    return sum + ((s.detail as Record<string, unknown>).targetMinutes as number ?? 0);
-  }, 0);
-
-  if (totalCardioMin > 0) {
-    const z2Pct = (z2Min / totalCardioMin) * 100;
-    if (z2Pct < 70) {
-      issues.push(`Zone 2 is ${Math.round(z2Pct)}% of volume -- should be ~80%.`);
-    }
-  }
-
-  // Strength conviction checks
-  for (const ss of strengthSessions) {
-    const detail = ss.detail as Record<string, unknown>;
-    if (!detail.warmUp) issues.push(`Strength session "${ss.title}" missing warm-up.`);
-    if (!detail.coolDown) issues.push(`Strength session "${ss.title}" missing cool-down.`);
-  }
-
-  if (strengthSessions.length < cardioRules.sessionRules[0]?.frequencyPerWeek.min) {
-    // Not blocking, just noting
-  }
-
-  return { valid: issues.length === 0, issues };
-}
+export { planJsonSchema, planZodSchema as planSchema, validatePlan } from './planSchema';
+export type { SessionOutput, PlanOutput } from './planSchema';
 
 // =============================================================================
 // Generation
@@ -126,14 +46,22 @@ export async function generateWeeklyPlan(
   const weekStart = weekStartOverride ?? getWeekStart();
   const prompt = getPlanGenerationPrompt(profile, weekStart);
 
-  let plan: z.infer<typeof planSchema>;
+  let plan: PlanOutput;
   try {
     const result = await generateObject({
       model: anthropic('claude-sonnet-4-6'),
-      schema: planSchema,
+      schema: planJsonSchema,
       prompt,
     });
-    plan = result.object;
+    const raw = result.object as { introMessage: string; sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: string; sortOrder: number }> };
+    plan = {
+      introMessage: raw.introMessage,
+      sessions: raw.sessions.map((s) => ({
+        ...s,
+        domain: s.domain as PlanOutput['sessions'][number]['domain'],
+        detail: typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail,
+      })),
+    };
   } catch (err) {
     console.error('[PlanGen] Claude generateObject failed:', err);
     return { success: false, error: err instanceof Error ? err.message : 'AI generation failed' };
@@ -179,6 +107,11 @@ export async function generateWeeklyPlan(
     const daysFromMonday = s.dayOfWeek === 0 ? 6 : s.dayOfWeek - 1;
     const scheduledDate = format(addDays(weekStartDate, daysFromMonday), 'yyyy-MM-dd');
 
+    let detail = s.detail;
+    if (typeof detail === 'string') {
+      try { detail = JSON.parse(detail); } catch { /* keep as-is */ }
+    }
+
     return {
       plan_id: planRow.id,
       user_id: userId,
@@ -187,7 +120,7 @@ export async function generateWeeklyPlan(
       scheduled_date: scheduledDate,
       title: s.title,
       status: 'pending',
-      detail: s.detail,
+      detail,
       sort_order: s.sortOrder,
     };
   });
