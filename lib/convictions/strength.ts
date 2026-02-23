@@ -35,5 +35,6 @@ export const strengthConviction: DomainConviction = {
     'Sessions should be 40-75 minutes of actual training time.',
     'If the user reports any pain or injury, immediately modify or remove the affected movement pattern.',
     'Include rest periods in the prescription: 2-3 min for heavy compounds, 60-90s for accessories.',
+    'Respect the user\'s training setup: if they train at home only, program with bodyweight and common home equipment (dumbbells, bands, pull-up bar). If they have both home and gym, you may mix sessions across both environments.',
   ],
 };

@@ -24,11 +24,13 @@ export interface CardioBaseline {
   canSustain45min: boolean;
 }
 
+export type StrengthSetup = 'home' | 'gym';
+
 export interface StrengthBaseline {
   trainingType: 'none' | 'bodyweight' | 'free_weights' | 'machines';
   daysPerWeek: number;
   liftFamiliarity: 'none' | 'some' | 'all';
-  gymAccess: boolean;
+  setup: StrengthSetup[];
 }
 
 export interface NutritionBaseline {

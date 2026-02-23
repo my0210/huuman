@@ -2,6 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META } from '@/lib/types';
+import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
 /**
  * Creates all chat tools with the userId baked in via closure.
@@ -280,20 +281,7 @@ export function createTools(userId: string) {
     }),
     execute: async ({ weekStart }: { weekStart?: string }) => {
       const targetWeek = weekStart ?? getWeekStart();
-
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
-      const response = await fetch(`${baseUrl}/api/plan/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, weekStart: targetWeek }),
-      });
-
-      if (!response.ok) {
-        const err = await response.text();
-        return { error: `Plan generation failed: ${err}` };
-      }
-
-      return await response.json();
+      return await generateWeeklyPlan(userId, targetWeek);
     },
   });
 

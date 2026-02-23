@@ -69,8 +69,10 @@ export function formatDomainBaselines(baselines: DomainBaselines): string {
   const strengthDays = strength.daysPerWeek === 0
     ? 'not currently training'
     : `${strength.daysPerWeek} day${strength.daysPerWeek > 1 ? 's' : ''}/week`;
-  const gymLabel = strength.gymAccess ? 'has gym access' : 'no gym access';
-  lines.push(`Strength: ${TRAINING_TYPE_LABELS[strength.trainingType] ?? strength.trainingType}, ${strengthDays}, ${LIFT_LABELS[strength.liftFamiliarity] ?? strength.liftFamiliarity}, ${gymLabel}`);
+  const setupLabel = strength.setup.length > 0
+    ? `trains at ${strength.setup.join(' + ')}`
+    : 'no home or gym setup';
+  lines.push(`Strength: ${TRAINING_TYPE_LABELS[strength.trainingType] ?? strength.trainingType}, ${strengthDays}, ${LIFT_LABELS[strength.liftFamiliarity] ?? strength.liftFamiliarity}, ${setupLabel}`);
 
   const { nutrition } = baselines;
   const restrictions = nutrition.restrictions.length > 0

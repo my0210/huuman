@@ -35,7 +35,7 @@ type OnboardingData = {
 
 const INITIAL_DATA: OnboardingData = {
   cardio: { activities: [], weeklyMinutes: "0", canSustain45min: false },
-  strength: { trainingType: "none", daysPerWeek: 0, liftFamiliarity: "none", gymAccess: false },
+  strength: { trainingType: "none", daysPerWeek: 0, liftFamiliarity: "none", setup: [] },
   nutrition: { pattern: "no_structure", restrictions: [] },
   sleep: { hours: "7_8", bedtime: "10_11pm", sleepIssues: "no" },
   mindfulness: { experience: "never" },
@@ -76,7 +76,7 @@ export default function OnboardingPage() {
           constraints: {
             schedule: { blockedTimes: [], preferredWorkoutTimes: [] },
             equipment: {
-              gymAccess: data.strength.gymAccess,
+              gymAccess: data.strength.setup.includes("gym"),
               homeEquipment: [],
               outdoorAccess: true,
             },
@@ -454,20 +454,31 @@ function StrengthBaselineStep({
       </div>
 
       <div className="space-y-3">
-        <QuestionLabel>Do you have gym access?</QuestionLabel>
-        <div className="grid grid-cols-2 gap-2">
-          <OptionButton
-            selected={strength.gymAccess === true}
-            onClick={() => setData((d) => ({ ...d, strength: { ...d.strength, gymAccess: true } }))}
+        <QuestionLabel>Where do you train?</QuestionLabel>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { value: "home" as const, label: "Home" },
+            { value: "gym" as const, label: "Gym" },
+          ]).map((opt) => (
+            <CheckboxButton
+              key={opt.value}
+              selected={strength.setup.includes(opt.value)}
+              onClick={() => {
+                const setup = strength.setup.includes(opt.value)
+                  ? strength.setup.filter((s) => s !== opt.value)
+                  : [...strength.setup, opt.value];
+                setData((d) => ({ ...d, strength: { ...d.strength, setup } }));
+              }}
+            >
+              {opt.label}
+            </CheckboxButton>
+          ))}
+          <CheckboxButton
+            selected={strength.setup.length === 0}
+            onClick={() => setData((d) => ({ ...d, strength: { ...d.strength, setup: [] } }))}
           >
-            Yes
-          </OptionButton>
-          <OptionButton
-            selected={strength.gymAccess === false}
-            onClick={() => setData((d) => ({ ...d, strength: { ...d.strength, gymAccess: false } }))}
-          >
-            No
-          </OptionButton>
+            Neither yet
+          </CheckboxButton>
         </div>
       </div>
     </div>
