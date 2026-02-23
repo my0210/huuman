@@ -1,6 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
+import { isToolUIPart, getToolName } from "ai";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { SessionDetailCard } from "@/components/cards/SessionDetailCard";
@@ -22,12 +23,12 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
     );
   }
 
-  // Tool invocation parts have type "tool-{toolName}"
-  if (part.type.startsWith("tool-")) {
-    const toolName = part.type.replace("tool-", "");
+  if (isToolUIPart(part)) {
+    const toolName = getToolName(part);
     const toolPart = part as {
       type: string;
       state: string;
+      toolName?: string;
       output?: unknown;
       input?: unknown;
     };
