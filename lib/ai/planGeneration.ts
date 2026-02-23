@@ -53,14 +53,24 @@ export async function generateWeeklyPlan(
       schema: planJsonSchema,
       prompt,
     });
-    const raw = result.object as { introMessage: string; sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: string; sortOrder: number }> };
+    const raw = result.object as { introMessage: string; sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: unknown; sortOrder: number }> };
     plan = {
       introMessage: raw.introMessage,
-      sessions: raw.sessions.map((s) => ({
-        ...s,
-        domain: s.domain as PlanOutput['sessions'][number]['domain'],
-        detail: typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail,
-      })),
+      sessions: raw.sessions.map((s) => {
+        let detail: Record<string, unknown>;
+        if (typeof s.detail === 'string') {
+          try { detail = JSON.parse(s.detail); } catch { detail = {}; }
+        } else if (s.detail && typeof s.detail === 'object') {
+          detail = s.detail as Record<string, unknown>;
+        } else {
+          detail = {};
+        }
+        return {
+          ...s,
+          domain: s.domain as PlanOutput['sessions'][number]['domain'],
+          detail,
+        };
+      }),
     };
   } catch (err) {
     console.error('[PlanGen] Claude generateObject failed:', err);

@@ -96,17 +96,50 @@ ${previousWeekContext ? `## PREVIOUS WEEK CONTEXT\n${previousWeekContext}\n` : '
    - Sleep: target hours, bedtime/wake windows, wind-down routine
 5. Write an introMessage: 1-2 sentences max. Sound like an elite coach briefing their client on the week. Reference one concrete detail about their situation (schedule change, progression from last week, a specific target). No hype, no "excited to", no "let's crush it", no "I've designed". Just the brief and what matters.
 
-## OUTPUT FORMAT (JSON)
+## OUTPUT FORMAT
 
+The "detail" field is a JSON STRING (not an object). You must serialize the detail object to a JSON string.
+
+CRITICAL: Every session MUST have a non-empty detail string. A detail of "{}" is a generation failure.
+
+Example output structure:
 {
-  "introMessage": "Personal greeting referencing their situation and the week ahead",
+  "introMessage": "1-2 sentence coach brief",
   "sessions": [
     {
-      "domain": "cardio|strength|nutrition|mindfulness|sleep",
-      "dayOfWeek": 0-6 (0=Sun, 1=Mon, ..., 6=Sat),
-      "title": "Brief actionable title",
-      "detail": { ... domain-specific detail object ... },
-      "sortOrder": number
+      "domain": "cardio",
+      "dayOfWeek": 1,
+      "title": "Zone 2 Easy Run",
+      "detail": "{\"zone\":2,\"targetMinutes\":50,\"activity\":\"run\",\"targetHR\":\"125-140 bpm\",\"warmUp\":\"5 min walk then 3 min light jog\",\"coolDown\":\"5 min walk, calf stretches\",\"notes\":\"Conversational pace throughout\"}",
+      "sortOrder": 0
+    },
+    {
+      "domain": "strength",
+      "dayOfWeek": 2,
+      "title": "Upper Body Push & Pull",
+      "detail": "{\"focus\":\"upper body\",\"warmUp\":\"5 min band pull-aparts, arm circles\",\"exercises\":[{\"name\":\"Bench Press\",\"sets\":3,\"reps\":\"8-10\",\"weight\":\"60 kg\",\"rest\":\"90s\",\"cues\":\"retract scapula, feet flat\"},{\"name\":\"Barbell Row\",\"sets\":3,\"reps\":\"8-10\",\"weight\":\"50 kg\",\"rest\":\"90s\",\"cues\":\"chest to bar, squeeze lats\"}],\"coolDown\":\"5 min chest and lat stretches\"}",
+      "sortOrder": 1
+    },
+    {
+      "domain": "nutrition",
+      "dayOfWeek": 1,
+      "title": "Daily Nutrition Target",
+      "detail": "{\"calories\":2200,\"proteinGrams\":190,\"guidelines\":\"Hit protein at every meal. 40g breakfast, 50g lunch, 50g dinner, 50g snacks.\",\"mealIdeas\":[\"Greek yogurt + granola + berries\",\"Chicken stir-fry with rice\",\"Salmon with roasted veg\"]}",
+      "sortOrder": 2
+    },
+    {
+      "domain": "mindfulness",
+      "dayOfWeek": 1,
+      "title": "Box Breathing",
+      "detail": "{\"type\":\"breathwork\",\"targetMinutes\":8,\"guidelines\":\"4 counts in, 4 hold, 4 out, 4 hold. Seated, eyes closed.\"}",
+      "sortOrder": 3
+    },
+    {
+      "domain": "sleep",
+      "dayOfWeek": 1,
+      "title": "Sleep Routine",
+      "detail": "{\"targetHours\":7.5,\"bedtimeWindow\":\"10:30-11:00 PM\",\"wakeWindow\":\"6:00-6:30 AM\",\"guidelines\":\"No screens 30 min before bed. Dim lights at 10 PM.\"}",
+      "sortOrder": 4
     }
   ]
 }`;
