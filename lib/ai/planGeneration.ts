@@ -129,7 +129,7 @@ export async function generateWeeklyPlan(
   let plan: z.infer<typeof planSchema>;
   try {
     const result = await generateObject({
-      model: anthropic('claude-3-5-sonnet-20241022'),
+      model: anthropic('claude-sonnet-4-20250514'),
       schema: planSchema,
       prompt,
     });
