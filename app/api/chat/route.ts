@@ -1,4 +1,4 @@
-import { createAgentUIStreamResponse } from 'ai';
+import { createAgentUIStreamResponse, generateId } from 'ai';
 import { createCoachAgent } from '@/lib/ai/agent';
 import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
@@ -59,10 +59,18 @@ export async function POST(req: Request) {
     return createAgentUIStreamResponse({
       agent,
       uiMessages,
+      generateMessageId: generateId,
       onFinish: async ({ messages: finishedMessages }) => {
+        // #region agent log
+        console.log('[DEBUG-066419] onFinish fired, msgs:', finishedMessages.length, 'db:', dbMessages.length);
+        console.log('[DEBUG-066419] finishedMsgs:', JSON.stringify(finishedMessages.map(m => ({ id: m.id, role: m.role, partsCount: m.parts?.length }))));
+        // #endregion
         const newMessages = finishedMessages.filter(
           (msg) => !dbMessages.some((db) => db.id === msg.id),
         );
+        // #region agent log
+        console.log('[DEBUG-066419] newMessages to save:', newMessages.length, JSON.stringify(newMessages.map(m => ({ id: m.id, role: m.role }))));
+        // #endregion
         if (newMessages.length > 0) {
           await saveMessages(
             chatId,
@@ -72,6 +80,9 @@ export async function POST(req: Request) {
               parts: msg.parts as unknown[],
             })),
           );
+          // #region agent log
+          console.log('[DEBUG-066419] saveMessages completed for', newMessages.length, 'messages');
+          // #endregion
         }
       },
     });
