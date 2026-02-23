@@ -331,7 +331,7 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
           type: 'tool-invocation',
           toolName: tr.toolName,
           toolCallId: tr.toolCallId,
-          args: tr.input,
+          args: tr.input ?? {},
           state: 'output-available',
           output: tr.output,
         });

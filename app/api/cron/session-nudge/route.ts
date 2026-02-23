@@ -54,7 +54,7 @@ export async function GET(req: Request) {
         await sendMessage(chatId, `${icon} <b>${title}</b> still on the board today.`, {
           reply_markup: {
             inline_keyboard: [[
-              { text: '✓ Done', callback_data: `act:complete:${s.id}` },
+              { text: 'Done', callback_data: `act:complete:${s.id}` },
               { text: 'Skip', callback_data: `act:skip:${s.id}` },
               { text: '→ Tomorrow', callback_data: `act:tomorrow:${s.id}` },
             ]],

@@ -71,9 +71,18 @@ export function convertToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   return cleaned.map((msg) => ({
     id: msg.id,
     role: msg.role as UIMessage['role'],
-    parts: msg.parts as UIMessage['parts'],
+    parts: sanitizeParts(msg.parts as UIMessage['parts']),
     createdAt: new Date(msg.created_at),
   }));
+}
+
+function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
+  return parts.map((p) => {
+    if (p.type === 'tool-invocation' && !('args' in p && p.args != null)) {
+      return { ...p, args: {} } as typeof p;
+    }
+    return p;
+  });
 }
 
 function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {

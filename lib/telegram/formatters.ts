@@ -48,7 +48,7 @@ export function formatTodayPlan(data: Record<string, unknown>): FormattedRespons
       text,
       replyMarkup: {
         inline_keyboard: [[
-          { text: '✓ Done', callback_data: `act:complete:${s.id}` },
+          { text: 'Done', callback_data: `act:complete:${s.id}` },
           { text: 'Skip', callback_data: `act:skip:${s.id}` },
           { text: 'Details', callback_data: `act:detail:${s.id}` },
         ]],
@@ -157,7 +157,7 @@ export function formatSession(data: Record<string, unknown>): FormattedResponse 
   const keyboard: InlineKeyboard = [];
   if (session.status !== 'completed') {
     keyboard.push([
-      { text: '✓ Done', callback_data: `act:complete:${session.id}` },
+      { text: 'Done', callback_data: `act:complete:${session.id}` },
       { text: 'Skip', callback_data: `act:skip:${session.id}` },
     ]);
   }
@@ -303,7 +303,7 @@ function nextSessionCard(session: Record<string, unknown>): FormattedResponse {
     text: `Next: ${domainIcon(session.domain as string)} <b>${esc(String(session.title))}</b>${subtitle}`,
     replyMarkup: {
       inline_keyboard: [[
-        { text: '✓ Done', callback_data: `act:complete:${session.id}` },
+        { text: 'Done', callback_data: `act:complete:${session.id}` },
         { text: 'Skip', callback_data: `act:skip:${session.id}` },
         { text: 'Details', callback_data: `act:detail:${session.id}` },
       ]],
