@@ -1,0 +1,48 @@
+---
+description: Testing requirements for onboarding flow, step definitions, and domain content
+globs: lib/onboarding/steps.ts, lib/onboarding/formatBaselines.ts, lib/convictions/content.ts, app/(onboarding)/**
+alwaysApply: false
+---
+
+# Testing Onboarding
+
+Before pushing changes to onboarding steps, questions, domain content, or the onboarding UI, run the test suite.
+
+## Commands
+
+```bash
+npm test                  # Vitest API tests (instant, 16 tests). Validates step definitions, data accessors, domain content.
+npm run test:e2e          # Playwright E2E against prod (2-3 min). Full 13-step walkthrough with plan generation.
+npm run test:e2e:headed   # Same but with visible browser for debugging.
+```
+
+## When to run which
+
+- **Changed `lib/onboarding/steps.ts`** (step definitions, questions, options): Run `npm test`. Catches broken question IDs, missing options, structural issues.
+- **Changed `lib/convictions/content.ts`** (domain methodology text): Run `npm test`. Catches missing domain content and forbidden references (e.g. Attia).
+- **Changed `app/(onboarding)/onboarding/page.tsx`** (UI rendering): Run `npm run test:e2e`. Catches broken selectors, navigation issues, form inputs.
+- **Changed `lib/onboarding/formatBaselines.ts`** (AI prompt formatting): Run `npm test` then `npm run test:plan` to verify the AI still gets correct baselines.
+
+## What the tests catch
+
+### API tests (`tests/api/onboarding.test.ts`)
+- Step count is exactly 13, correct order (welcome -> 5x methodology/questions -> basics -> build)
+- Every domain has complete content (philosophy, principles, target summary)
+- No forbidden references in any domain content (Attia, Peter, etc.)
+- All question IDs are unique and resolve to valid paths in the data model
+- Single select, multi select, boolean, and number accessors work correctly
+- Full data flow: fill all questions and verify complete profile output
+
+### E2E tests (`tests/e2e/onboarding.spec.ts`)
+- Full 13-step walkthrough with real login, answer selection, plan generation, and redirect to chat
+- Progress bar advances (1/13 -> 2/13 -> 3/13)
+- Back button returns to previous step
+- Selections persist when navigating back and forth
+
+## Key architecture: platform-agnostic state machine
+
+Step definitions live in `lib/onboarding/steps.ts` as pure data (no React, no Telegram). The web page in `app/(onboarding)/onboarding/page.tsx` is a thin renderer. When adding steps or questions, only edit `steps.ts` -- the renderers are generic.
+
+## Test account
+
+E2E tests use credentials from `.env.test` (gitignored). Each test resets onboarding via `POST /api/dev/reset-onboarding` before running.

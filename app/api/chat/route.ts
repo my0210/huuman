@@ -32,6 +32,9 @@ export async function POST(req: Request) {
 
     const dbMessages = await loadMessages(chatId);
     const uiMessages = convertToUIMessages(dbMessages);
+    // #region agent log
+    console.log('[DEBUG-066419] raw DB:', dbMessages.length, 'msgs → after trim:', uiMessages.length, 'msgs, roles:', uiMessages.map(m => m.role).join(','));
+    // #endregion
 
     const { data: profile } = await supabase
       .from('user_profiles')
@@ -61,16 +64,9 @@ export async function POST(req: Request) {
       uiMessages,
       generateMessageId: generateId,
       onFinish: async ({ messages: finishedMessages }) => {
-        // #region agent log
-        console.log('[DEBUG-066419] onFinish fired, msgs:', finishedMessages.length, 'db:', dbMessages.length);
-        console.log('[DEBUG-066419] finishedMsgs:', JSON.stringify(finishedMessages.map(m => ({ id: m.id, role: m.role, partsCount: m.parts?.length }))));
-        // #endregion
         const newMessages = finishedMessages.filter(
           (msg) => !dbMessages.some((db) => db.id === msg.id),
         );
-        // #region agent log
-        console.log('[DEBUG-066419] newMessages to save:', newMessages.length, JSON.stringify(newMessages.map(m => ({ id: m.id, role: m.role }))));
-        // #endregion
         if (newMessages.length > 0) {
           await saveMessages(
             chatId,
@@ -80,9 +76,6 @@ export async function POST(req: Request) {
               parts: msg.parts as unknown[],
             })),
           );
-          // #region agent log
-          console.log('[DEBUG-066419] saveMessages completed for', newMessages.length, 'messages');
-          // #endregion
         }
       },
     });

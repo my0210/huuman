@@ -11,10 +11,12 @@ Before pushing changes to plan generation, schema, prompts, or session detail co
 ## Commands
 
 ```bash
+npm test               # Vitest unit/integration tests (instant). Includes onboarding step validation.
 npm run test:schema    # Instant. Validates JSON schema has no Anthropic-unsupported keywords.
 npm run test:plan      # ~2 min. Real API call. Generates a plan with Sonnet 4.6, validates output.
 npm run test:render    # Instant. Renders all 5 domain detail components with real AI output.
-npm run test:all       # Runs all three in sequence.
+npm run test:all       # Runs vitest + schema + plan in sequence.
+npm run test:e2e       # Playwright E2E against prod (2-3 min). Full onboarding + plan generation.
 ```
 
 ## When to run which

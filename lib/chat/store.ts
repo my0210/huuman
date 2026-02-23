@@ -73,10 +73,26 @@ export async function saveMessages(
 }
 
 export function convertToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
-  return dbMessages.map((msg) => ({
+  const cleaned = trimOrphanedUserMessages(dbMessages);
+  return cleaned.map((msg) => ({
     id: msg.id,
     role: msg.role as UIMessage['role'],
     parts: msg.parts as UIMessage['parts'],
     createdAt: new Date(msg.created_at),
   }));
+}
+
+function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {
+  const result: DBMessage[] = [];
+  for (let i = 0; i < messages.length; i++) {
+    if (
+      messages[i].role === 'user' &&
+      i + 1 < messages.length &&
+      messages[i + 1].role === 'user'
+    ) {
+      continue;
+    }
+    result.push(messages[i]);
+  }
+  return result;
 }
