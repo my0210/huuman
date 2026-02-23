@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     const tools = createTools(userId);
 
     const result = streamText({
-      model: anthropic('claude-sonnet-4-20250514'),
+      model: anthropic('claude-sonnet-4-6'),
       system: systemPrompt,
       messages: await convertToModelMessages(uiMessages),
       tools,
