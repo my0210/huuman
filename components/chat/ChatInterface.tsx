@@ -65,11 +65,11 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
     router.refresh();
   };
 
-  const handleResetOnboarding = async () => {
-    if (!confirm("Reset onboarding? This clears your profile and plan, then restarts onboarding.")) return;
+  const handleRedoOnboarding = async () => {
+    if (!confirm("Redo onboarding? This clears your profile baselines and sends you back through the flow.")) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/dev/reset", { method: "POST" });
+      const res = await fetch("/api/dev/reset-onboarding", { method: "POST" });
       if (res.ok) {
         router.push("/onboarding");
         router.refresh();
@@ -81,16 +81,16 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
     }
   };
 
-  const handleClearData = async () => {
-    if (!confirm("Clear all data? This deletes your plan, sessions, and habits but keeps your profile.")) return;
+  const handleResetEverything = async () => {
+    if (!confirm("Reset everything? This deletes all data (plan, chat, habits, profile) and restarts from scratch.")) return;
     setBusy(true);
     try {
       const res = await fetch("/api/dev/reset", { method: "POST" });
       if (res.ok) {
+        router.push("/onboarding");
         router.refresh();
-        setMenuOpen(false);
       } else {
-        alert("Clear failed");
+        alert("Reset failed");
       }
     } finally {
       setBusy(false);
@@ -129,26 +129,26 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
             </div>
 
             <button
-              onClick={handleResetOnboarding}
+              onClick={handleRedoOnboarding}
               disabled={busy}
               className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
             >
               <RotateCcw size={16} className="flex-none text-zinc-500" />
               <div>
-                <p className="font-medium">Reset onboarding</p>
-                <p className="text-xs text-zinc-500">Clear profile and plan, restart from scratch</p>
+                <p className="font-medium">Redo onboarding</p>
+                <p className="text-xs text-zinc-500">Clear profile baselines, redo the onboarding flow</p>
               </div>
             </button>
 
             <button
-              onClick={handleClearData}
+              onClick={handleResetEverything}
               disabled={busy}
               className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
             >
               <Trash2 size={16} className="flex-none text-zinc-500" />
               <div>
-                <p className="font-medium">Clear all data</p>
-                <p className="text-xs text-zinc-500">Delete plans, sessions, and habits</p>
+                <p className="font-medium">Reset everything</p>
+                <p className="text-xs text-zinc-500">Delete all data and start from scratch</p>
               </div>
             </button>
 
