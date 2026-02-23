@@ -79,7 +79,7 @@ export function convertToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
 function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
   return parts.map((p) => {
     if (p.type === 'tool-invocation' && !('args' in p && p.args != null)) {
-      return { ...p, args: {} } as typeof p;
+      return { ...p, args: {} } as unknown as typeof p;
     }
     return p;
   });
