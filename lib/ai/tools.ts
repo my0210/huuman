@@ -32,12 +32,22 @@ export function createTools(userId: string) {
         .eq('date', today)
         .maybeSingle();
 
+      const { data: activePlan } = await supabase
+        .from('weekly_plans')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('week_start', weekStart)
+        .eq('status', 'active')
+        .maybeSingle();
+
       return {
         date: today,
         weekStart,
         sessions: sessions ?? [],
         habits: habits ?? null,
         hasPlan: (sessions?.length ?? 0) > 0,
+        hasActivePlanForWeek: !!activePlan,
+        needsNewPlan: !activePlan,
       };
     },
   });
