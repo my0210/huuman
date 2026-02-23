@@ -12,6 +12,7 @@ import {
   sendChatAction,
   sendLongMessage,
   answerCallbackQuery,
+  escapeHtml,
 } from '@/lib/telegram/api';
 import { formatToolOutput, type FormattedResponse } from '@/lib/telegram/formatters';
 import {
@@ -126,7 +127,12 @@ async function handleMessage(message: Record<string, unknown>): Promise<void> {
   }
   if (text === '/web') {
     const userProfile = await loadUserProfile(profile.id, admin);
-    await sendMessage(chatId, `Log in at huuman.vercel.app with your email (${userProfile?.email ?? 'your registered email'}). Use "Sign in with magic link" -- no password needed.`);
+    const email = escapeHtml(userProfile?.email ?? 'your registered email');
+    await sendMessage(chatId, `Log in at huuman.vercel.app with your email (<b>${email}</b>). Use "Sign in with magic link" -- no password needed.`);
+    return;
+  }
+  if (text.startsWith('/log')) {
+    await handleLogCommand(chatId, profile.id, text);
     return;
   }
 
@@ -220,6 +226,58 @@ async function handleQuickCommand(chatId: number, userId: string, toolName: stri
   await sendFormatted(chatId, formatToolOutput(toolName, result as Record<string, unknown>));
 }
 
+// ─── /log command ─────────────────────────────────────────────────────────────
+
+async function handleLogCommand(chatId: number, userId: string, text: string): Promise<void> {
+  const parts = text.split(/\s+/).slice(1);
+
+  if (parts.length === 0) {
+    await sendMessage(chatId,
+      '<b>Usage</b>\n/log 8500 — log steps\n/log sleep 7.5 — sleep hours\n/log nutrition on — on-plan\n/log nutrition off — off-plan',
+    );
+    return;
+  }
+
+  const userClient = await createUserScopedClient(userId);
+  const tools = createTools(userId, userClient);
+  type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
+  const execOpts = { toolCallId: 'log', messages: [] as never[], abortSignal: new AbortController().signal };
+
+  const logArgs: Record<string, unknown> = {};
+
+  if (parts[0] === 'sleep' && parts[1]) {
+    const hours = parseFloat(parts[1]);
+    if (isNaN(hours)) {
+      await sendMessage(chatId, 'Usage: /log sleep 7.5');
+      return;
+    }
+    logArgs.sleepHours = hours;
+  } else if (parts[0] === 'nutrition') {
+    const value = parts[1]?.toLowerCase();
+    if (value === 'on') {
+      logArgs.nutritionOnPlan = true;
+    } else if (value === 'off') {
+      logArgs.nutritionOnPlan = false;
+    } else {
+      await sendMessage(chatId, 'Usage: /log nutrition on  or  /log nutrition off');
+      return;
+    }
+  } else {
+    const arg = parts[0] === 'steps' ? parts[1] : parts[0];
+    const steps = parseInt(String(arg), 10);
+    if (isNaN(steps)) {
+      await sendMessage(chatId,
+        '<b>Usage</b>\n/log 8500 — log steps\n/log sleep 7.5 — sleep hours\n/log nutrition on — on-plan\n/log nutrition off — off-plan',
+      );
+      return;
+    }
+    logArgs.steps = steps;
+  }
+
+  const result = await (tools.log_daily as unknown as ToolExec).execute(logArgs, execOpts);
+  await sendFormatted(chatId, formatToolOutput('log_daily', result as Record<string, unknown>));
+}
+
 // ─── Agent invocation ────────────────────────────────────────────────────────
 
 async function handleAgentMessage(chatId: number, userId: string, text: string): Promise<void> {
@@ -229,6 +287,7 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
   }
 
   activeLocks.add(userId);
+  const typingInterval = setInterval(() => sendChatAction(chatId), 4000);
 
   try {
     await sendChatAction(chatId);
@@ -261,7 +320,7 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
     }
 
     if (result.text) {
-      await sendLongMessage(chatId, result.text);
+      await sendLongMessage(chatId, escapeHtml(result.text));
     }
 
     const assistantParts: unknown[] = [];
@@ -293,8 +352,22 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
     console.error('[Webhook] Agent error:', error);
     await sendMessage(chatId, 'Something went wrong. Try again in a moment.');
   } finally {
+    clearInterval(typingInterval);
     activeLocks.delete(userId);
   }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+async function findNextTodaySession(
+  tools: ReturnType<typeof createTools>,
+  excludeSessionId: string,
+): Promise<Record<string, unknown> | undefined> {
+  type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
+  const opts = { toolCallId: 'cb-next', messages: [] as never[], abortSignal: new AbortController().signal };
+  const todayResult = await (tools.show_today_plan as unknown as ToolExec).execute({}, opts);
+  const sessions = ((todayResult as Record<string, unknown>).sessions as Array<Record<string, unknown>>) ?? [];
+  return sessions.find(s => s.status !== 'completed' && s.status !== 'skipped' && String(s.id) !== excludeSessionId);
 }
 
 // ─── Callback query handler ──────────────────────────────────────────────────
@@ -336,16 +409,64 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
 
     if (action === 'complete') {
       const result = await (tools.complete_session as unknown as ToolExec).execute({ sessionId }, execOpts);
-      await sendFormatted(chatId, formatToolOutput('complete_session', result as Record<string, unknown>));
+      const completionData = result as Record<string, unknown>;
+      const next = await findNextTodaySession(tools, sessionId);
+      if (next) completionData.nextSession = next;
+      await sendFormatted(chatId, formatToolOutput('complete_session', completionData));
       await answerCallbackQuery(queryId, 'Done!');
     } else if (action === 'skip') {
       const result = await (tools.adapt_plan as unknown as ToolExec).execute({ sessionId, action: 'skip', reason: 'Skipped via Telegram' }, execOpts);
-      await sendFormatted(chatId, formatToolOutput('adapt_plan', result as Record<string, unknown>));
+      const skipData = result as Record<string, unknown>;
+      const next = await findNextTodaySession(tools, sessionId);
+      if (next) skipData.nextSession = next;
+      await sendFormatted(chatId, formatToolOutput('adapt_plan', skipData));
       await answerCallbackQuery(queryId, 'Skipped');
+    } else if (action === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const newDate = tomorrow.toISOString().split('T')[0];
+      const result = await (tools.adapt_plan as unknown as ToolExec).execute(
+        { sessionId, action: 'reschedule', newDate, reason: 'Moved to tomorrow' },
+        execOpts,
+      );
+      await sendFormatted(chatId, formatToolOutput('adapt_plan', result as Record<string, unknown>));
+      await answerCallbackQuery(queryId, 'Moved to tomorrow');
     } else if (action === 'detail') {
       const result = await (tools.show_session as unknown as ToolExec).execute({ sessionId }, execOpts);
       await sendFormatted(chatId, formatToolOutput('show_session', result as Record<string, unknown>));
       await answerCallbackQuery(queryId);
+    }
+    return;
+  }
+
+  if (callbackData.startsWith('checkin:')) {
+    const parts = callbackData.split(':');
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('id')
+      .eq('telegram_chat_id', chatId)
+      .maybeSingle();
+
+    if (!profile) {
+      await answerCallbackQuery(queryId, 'Account not found.');
+      return;
+    }
+
+    const userClient = await createUserScopedClient(profile.id);
+    const tools = createTools(profile.id, userClient);
+    type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
+    const execOpts = { toolCallId: 'checkin', messages: [] as never[], abortSignal: new AbortController().signal };
+
+    if (parts[1] === 'nutrition') {
+      const onPlan = parts[2] === 'on';
+      const result = await (tools.log_daily as unknown as ToolExec).execute({ nutritionOnPlan: onPlan }, execOpts);
+      await sendFormatted(chatId, formatToolOutput('log_daily', result as Record<string, unknown>));
+      await answerCallbackQuery(queryId, onPlan ? 'On plan ✓' : 'Logged');
+    } else if (parts[1] === 'steps') {
+      const steps = parseInt(parts[2], 10);
+      const result = await (tools.log_daily as unknown as ToolExec).execute({ steps }, execOpts);
+      await sendFormatted(chatId, formatToolOutput('log_daily', result as Record<string, unknown>));
+      await answerCallbackQuery(queryId, `${(steps / 1000).toFixed(0)}k steps ✓`);
     }
     return;
   }

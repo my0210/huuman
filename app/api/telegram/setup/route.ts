@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { setWebhook, deleteWebhook } from '@/lib/telegram/api';
+import { setWebhook, deleteWebhook, setMyCommands } from '@/lib/telegram/api';
 
 export async function POST(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -19,6 +19,16 @@ export async function POST(req: Request) {
     ? url
     : `${url.replace(/\/$/, '')}/api/telegram/webhook`;
 
-  const result = await setWebhook(webhookUrl, process.env.TELEGRAM_WEBHOOK_SECRET!);
-  return NextResponse.json({ ...result, registeredUrl: webhookUrl });
+  const [webhookResult, commandsResult] = await Promise.all([
+    setWebhook(webhookUrl, process.env.TELEGRAM_WEBHOOK_SECRET!),
+    setMyCommands([
+      { command: 'today', description: "Today's sessions" },
+      { command: 'week', description: 'Weekly plan overview' },
+      { command: 'progress', description: "This week's progress" },
+      { command: 'log', description: 'Log steps, sleep, nutrition' },
+      { command: 'web', description: 'Open web dashboard' },
+    ]),
+  ]);
+
+  return NextResponse.json({ ...webhookResult, registeredUrl: webhookUrl, commands: commandsResult.ok });
 }

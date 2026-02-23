@@ -7,8 +7,8 @@ import {
   type OnboardingData,
   type OnboardingStep,
 } from '@/lib/onboarding/steps';
-import { DOMAIN_CONTENT } from '@/lib/convictions/content';
-import { sendMessage, editMessageReplyMarkup, type InlineKeyboard } from './api';
+import { DOMAIN_CONTENT, DOMAIN_ORDER } from '@/lib/convictions/content';
+import { sendMessage, editMessageReplyMarkup, escapeHtml, type InlineKeyboard } from './api';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 import { formatTodayPlan } from './formatters';
 
@@ -165,13 +165,23 @@ async function advanceOnboarding(
     const step = ONBOARDING_STEPS[state.step_index];
 
     if (step.type === 'welcome') {
-      await sendMessage(state.chat_id, `${step.title}\n\n${step.body}`);
+      await sendMessage(state.chat_id,
+        `<b>huuman</b>\n\nI'm going to build your weekly program across 5 domains: cardio, strength, nutrition, sleep, and mindfulness. First I need to know where you stand.\n\nTakes about 2 minutes.`,
+      );
       state.step_index++;
       await saveState(state, supabase);
       continue;
     }
 
     if (step.type === 'methodology') {
+      const content = DOMAIN_CONTENT[step.domain];
+      if (content) {
+        const num = DOMAIN_ORDER.indexOf(step.domain) + 1;
+        const icon = DOMAIN_ICON[step.domain] ?? '';
+        await sendMessage(state.chat_id,
+          `${icon} <b>${escapeHtml(content.title)}</b> — ${escapeHtml(content.weeklyTargetSummary)}  <i>(${num}/5)</i>\n\n${escapeHtml(content.philosophy)}`,
+        );
+      }
       state.step_index++;
       await saveState(state, supabase);
       continue;
@@ -206,15 +216,7 @@ async function sendQuestion(
   const question = step.questions[state.question_index];
   if (!question) return;
 
-  let prefix = '';
-  if (state.question_index === 0) {
-    const content = DOMAIN_CONTENT[step.domain];
-    if (content) {
-      prefix = `${content.title} -- ${content.weeklyTargetSummary}\n\n`;
-    }
-  }
-
-  const text = `${prefix}${question.label}`;
+  const text = question.label;
 
   if (question.kind === 'single_select') {
     const keyboard: InlineKeyboard = question.options.map((opt) => [
@@ -241,15 +243,16 @@ async function sendBasicsPrompt(
   const field = step.fields[state.question_index];
   if (!field) return;
 
-  const hint = field.hint ? `\n${field.hint}` : '';
-  await sendMessage(state.chat_id, `${field.label}?${hint}\n(${field.placeholder})`);
+  const prefix = state.question_index === 0 ? '<i>Almost done.</i>\n\n' : '';
+  const hint = field.hint ? `\n${escapeHtml(field.hint)}` : '';
+  await sendMessage(state.chat_id, `${prefix}${escapeHtml(field.label)}?${hint}\n(${escapeHtml(field.placeholder)})`);
 }
 
 async function handleBuild(
   state: OnboardingState,
   supabase: AppSupabaseClient,
 ): Promise<void> {
-  await sendMessage(state.chat_id, 'Building your personalized weekly plan...\nThis takes about 15-30 seconds.');
+  await sendMessage(state.chat_id, '<b>Building your plan...</b>\nThis takes about 15-30 seconds.');
 
   const { data } = state;
   const domainBaselines = {
@@ -295,7 +298,7 @@ async function handleBuild(
     type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
     const todayData = await (tools.show_today_plan as unknown as ToolExec).execute({}, { toolCallId: 'onboard', messages: [], abortSignal: new AbortController().signal });
     const messages = formatTodayPlan(todayData as Record<string, unknown>);
-    await sendMessage(state.chat_id, 'Your plan is ready!');
+    await sendMessage(state.chat_id, '✓ <b>Your plan is ready.</b>');
     for (const msg of messages) {
       await sendMessage(state.chat_id, msg.text, { reply_markup: msg.replyMarkup });
     }
@@ -337,6 +340,14 @@ async function saveState(state: OnboardingState, supabase: AppSupabaseClient): P
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const DOMAIN_ICON: Record<string, string> = {
+  cardio: '❤️',
+  strength: '🏋️',
+  mindfulness: '🧠',
+  nutrition: '🥗',
+  sleep: '🌙',
+};
 
 function getMultiSelectValue(data: OnboardingData, questionId: string): string[] {
   const [domain, field] = questionId.split('.') as [keyof OnboardingData, string];

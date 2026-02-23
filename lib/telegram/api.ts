@@ -47,7 +47,7 @@ export async function sendMessage(
   return call('sendMessage', {
     chat_id: Number(chatId),
     text,
-    parse_mode: options?.parse_mode,
+    parse_mode: options?.parse_mode ?? 'HTML',
     reply_markup: options?.reply_markup,
   });
 }
@@ -62,7 +62,7 @@ export async function editMessageText(
     chat_id: Number(chatId),
     message_id: messageId,
     text,
-    parse_mode: options?.parse_mode,
+    parse_mode: options?.parse_mode ?? 'HTML',
     reply_markup: options?.reply_markup,
   });
 }
@@ -114,6 +114,12 @@ export async function deleteWebhook(): Promise<TelegramResponse> {
   return call('deleteWebhook', {});
 }
 
+export async function setMyCommands(
+  commands: Array<{ command: string; description: string }>,
+): Promise<TelegramResponse> {
+  return call('setMyCommands', { commands });
+}
+
 // ─── Security ────────────────────────────────────────────────────────────────
 
 export function verifyWebhookSecret(received: string | null): boolean {
@@ -124,6 +130,12 @@ export function verifyWebhookSecret(received: string | null): boolean {
   const b = Buffer.from(expected);
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
+}
+
+// ─── HTML helpers ─────────────────────────────────────────────────────────────
+
+export function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

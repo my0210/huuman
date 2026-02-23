@@ -105,12 +105,15 @@ Telegram-specific tables (no RLS, accessed via admin client):
 - `PUT /api/profile` -- update user profile
 - `POST /api/telegram/webhook` -- Telegram bot webhook (maxDuration: 60s)
 - `POST /api/telegram/link` -- generate web->TG link code
-- `POST /api/telegram/setup` -- register/delete webhook URL
+- `POST /api/telegram/setup` -- register/delete webhook URL + register bot commands via setMyCommands
 - `POST /api/auth/telegram-register` -- create user + send magic link
 - `POST /api/auth/telegram-complete` -- link chat_id after magic link confirmation
+- `GET /api/cron/daily-briefing` -- morning briefing (7 AM UTC, Vercel Cron). Sends today's plan to all Telegram users with pending sessions.
+- `GET /api/cron/session-nudge` -- missed session nudge (6 PM UTC). Sends reminders for pending sessions with Done/Skip/→ Tomorrow buttons.
+- `GET /api/cron/evening-checkin` -- evening check-in (9 PM UTC). Prompts for nutrition and steps via inline keyboards.
 
 ### Middleware (`proxy.ts`)
-Redirects unauthenticated requests to `/login`. Public routes: login, signup, auth callbacks, all Telegram endpoints, registration pages.
+Redirects unauthenticated requests to `/login`. Public routes: login, signup, auth callbacks, all Telegram endpoints, registration pages, cron endpoints.
 
 ### Environment Variables
 - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` -- public Supabase
@@ -120,14 +123,36 @@ Redirects unauthenticated requests to `/login`. Public routes: login, signup, au
 - `TELEGRAM_BOT_TOKEN` -- bot at t.me/huuman_life_bot (server only)
 - `TELEGRAM_WEBHOOK_SECRET` -- webhook verification (server only)
 - `NEXT_PUBLIC_SITE_URL` -- production URL for redirects
+- `CRON_SECRET` -- Vercel Cron authentication (server only, set automatically by Vercel)
 
 ### Telegram Webhook Flow
 1. Verify `X-Telegram-Bot-Api-Secret-Token` header (timingSafeEqual)
 2. Process synchronously (Vercel serverless, no background work)
 3. For messages: resolve chat_id -> user_id via admin client, then create user-scoped client for all data ops
-4. For callback queries: route `ob:*` to onboarding, `act:*` to session actions, `cmd:*` to quick commands
+4. For callback queries: route `ob:*` to onboarding, `act:*` to session actions (including `act:tomorrow` for reschedule), `checkin:*` to daily habit logging, `cmd:*` to quick commands
 5. Agent invocation: `agent.generate({ messages, timeout: 55s })`, format tool results, send via Bot API
 6. Per-user concurrency lock prevents parallel agent calls
+7. Typing indicator refreshed every 4s during agent calls (Telegram expires it after ~5s)
+
+### Telegram Bot Commands
+Registered via `setMyCommands` during setup. Available in Telegram's menu button:
+- `/today` -- show today's sessions
+- `/week` -- weekly plan overview
+- `/progress` -- this week's progress
+- `/log` -- instant habit logging (`/log 8500` steps, `/log sleep 7.5`, `/log nutrition on|off`). Bypasses AI agent for zero latency.
+- `/web` -- login instructions for web dashboard
+
+### Telegram Message Formatting
+All messages use `parse_mode: 'HTML'` (defaulted in `sendMessage`). Formatters in `lib/telegram/formatters.ts` use `<b>`, `<i>` for visual hierarchy and `escapeHtml()` for user/AI content safety.
+
+### Telegram Onboarding
+Methodology steps (previously skipped) now send a condensed domain intro with icon, title, weekly target, and philosophy before each domain's questions. Progress indicator `(1/5)` through `(5/5)` shows position. Welcome message uses the coach persona.
+
+### Proactive Engagement (Vercel Cron)
+Three cron jobs in `vercel.json` drive proactive outreach to Telegram users:
+- **Morning briefing** (7 AM UTC): today's plan with action buttons
+- **Session nudge** (6 PM UTC): reminders for pending sessions with Done/Skip/→ Tomorrow
+- **Evening check-in** (9 PM UTC): nutrition on/off-plan buttons + step quick-tap buttons
 
 ### Testing
 - `npm run test:schema` -- validates JSON schema for Anthropic compatibility
