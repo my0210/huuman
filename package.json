@@ -7,10 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "test:schema": "tsx --tsconfig tsconfig.json scripts/test-plan-generation.ts --schema-only",
     "test:plan": "tsx --tsconfig tsconfig.json scripts/test-plan-generation.ts",
     "test:render": "tsx --tsconfig tsconfig.json scripts/test-session-rendering.tsx",
-    "test:all": "npm run test:schema && npm run test:plan && npm run test:render"
+    "test:all": "npm run test && npm run test:schema && npm run test:plan"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.46",
@@ -29,6 +33,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -41,6 +46,7 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.21.0",
     "typescript": "^5",
+    "vitest": "^4.0.18",
     "zod-to-json-schema": "^3.25.1"
   }
 }
