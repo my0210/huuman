@@ -126,12 +126,18 @@ export async function generateWeeklyPlan(
   const weekStart = weekStartOverride ?? getWeekStart();
   const prompt = getPlanGenerationPrompt(profile, weekStart);
 
-  // Generate the plan via Claude
-  const { object: plan } = await generateObject({
-    model: anthropic('claude-3-5-sonnet-20241022'),
-    schema: planSchema,
-    prompt,
-  });
+  let plan: z.infer<typeof planSchema>;
+  try {
+    const result = await generateObject({
+      model: anthropic('claude-3-5-sonnet-20241022'),
+      schema: planSchema,
+      prompt,
+    });
+    plan = result.object;
+  } catch (err) {
+    console.error('[PlanGen] Claude generateObject failed:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'AI generation failed' };
+  }
 
   // Validate against convictions
   const validation = validatePlan(plan.sessions);

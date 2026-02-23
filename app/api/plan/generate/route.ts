@@ -5,25 +5,34 @@ import { createClient } from '@/lib/supabase/server';
 export const maxDuration = 120;
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  let userId = body.userId as string | undefined;
+    let userId = body.userId as string | undefined;
 
-  if (!userId) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    userId = user?.id;
+    if (!userId) {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const result = await generateWeeklyPlan(userId, body.weekStart);
+
+    if (!result.success) {
+      console.error('[PlanGenRoute] Generation failed:', result.error);
+      return NextResponse.json({ error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('[PlanGenRoute] Unhandled error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal error' },
+      { status: 500 },
+    );
   }
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const result = await generateWeeklyPlan(userId, body.weekStart);
-
-  if (!result.success) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
-  }
-
-  return NextResponse.json(result);
 }

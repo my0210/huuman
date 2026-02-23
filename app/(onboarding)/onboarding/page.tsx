@@ -87,7 +87,8 @@ export default function OnboardingPage() {
       });
 
       if (!profileRes.ok) {
-        throw new Error("Failed to save profile");
+        const err = await profileRes.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to save profile");
       }
 
       const planRes = await fetch("/api/plan/generate", {
@@ -97,7 +98,8 @@ export default function OnboardingPage() {
       });
 
       if (!planRes.ok) {
-        throw new Error("Failed to generate plan");
+        const err = await planRes.json().catch(() => ({}));
+        throw new Error(err.error ?? "Failed to generate plan");
       }
 
       router.push("/");
