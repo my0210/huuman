@@ -15,7 +15,7 @@ const sessionSchema = z.object({
   domain: z.enum(['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep']),
   dayOfWeek: z.number().describe('Day of week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat'),
   title: z.string(),
-  detail: z.record(z.string(), z.unknown()),
+  detail: z.object({}).passthrough(),
   sortOrder: z.number(),
 });
 
