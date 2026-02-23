@@ -218,22 +218,33 @@ export function createTools(userId: string) {
 
   const adapt_plan = tool({
     description:
-      'Modify upcoming planned sessions. Use when the user can\'t make a session, wants to reschedule, swap days, or change the plan.',
+      'Modify upcoming planned sessions. Use when the user can\'t make a session, wants to reschedule, swap days, or change the plan. After adapting, call show_session to display the updated session.',
     inputSchema: z.object({
       sessionId: z.string().describe('Session to modify'),
       action: z.enum(['skip', 'reschedule', 'modify']),
       newDate: z.string().optional().describe('New date for reschedule (YYYY-MM-DD)'),
-      newDetail: z.record(z.string(), z.unknown()).optional().describe('Updated detail for modify'),
+      newDetail: z.record(z.string(), z.unknown()).optional().describe('Updated detail fields for modify -- merged with existing detail, so only include changed fields'),
+      newTitle: z.string().optional().describe('Updated session title (optional)'),
       reason: z.string().describe('Why the change is being made'),
     }),
-    execute: async ({ sessionId, action, newDate, newDetail, reason }: {
+    execute: async ({ sessionId, action, newDate, newDetail, newTitle, reason }: {
       sessionId: string;
       action: 'skip' | 'reschedule' | 'modify';
       newDate?: string;
       newDetail?: Record<string, unknown>;
+      newTitle?: string;
       reason: string;
     }) => {
       const supabase = await createClient();
+
+      const { data: existing } = await supabase
+        .from('planned_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .single();
+
+      if (!existing) return { error: 'Session not found' };
 
       if (action === 'skip') {
         const { data } = await supabase
@@ -247,7 +258,8 @@ export function createTools(userId: string) {
       }
 
       if (action === 'reschedule' && newDate) {
-        const dayOfWeek = new Date(newDate).getDay();
+        const [y, m, d] = newDate.split('-').map(Number);
+        const dayOfWeek = new Date(y, m - 1, d).getDay();
         const { data } = await supabase
           .from('planned_sessions')
           .update({ scheduled_date: newDate, day_of_week: dayOfWeek })
@@ -258,10 +270,14 @@ export function createTools(userId: string) {
         return { action: 'rescheduled', session: data, newDate, reason };
       }
 
-      if (action === 'modify' && newDetail) {
+      if (action === 'modify') {
+        const mergedDetail = { ...(existing.detail as Record<string, unknown>), ...newDetail };
+        const updates: Record<string, unknown> = { detail: mergedDetail };
+        if (newTitle) updates.title = newTitle;
+
         const { data } = await supabase
           .from('planned_sessions')
-          .update({ detail: newDetail })
+          .update(updates)
           .eq('id', sessionId)
           .eq('user_id', userId)
           .select()

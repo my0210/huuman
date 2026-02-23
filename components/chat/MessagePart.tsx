@@ -108,13 +108,28 @@ function LoadingCard({ toolName }: { toolName: string }) {
 }
 
 function AdaptConfirmation({ data }: { data: Record<string, unknown> }) {
+  if (data.error) {
+    return (
+      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
+        {String(data.error)}
+      </div>
+    );
+  }
+
   const action = data.action as string;
   const reason = data.reason as string;
+  const session = data.session as { title?: string } | null;
+
+  const actionLabels: Record<string, string> = {
+    skipped: "Skipped",
+    rescheduled: "Rescheduled",
+    modified: "Updated",
+  };
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 space-y-1">
       <p className="text-xs font-medium text-zinc-300">
-        Plan updated: {action}
+        {actionLabels[action] ?? action}{session?.title ? `: ${session.title}` : ""}
       </p>
       <p className="text-xs text-zinc-500">{reason}</p>
     </div>
