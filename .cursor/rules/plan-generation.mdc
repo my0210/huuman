@@ -1,0 +1,29 @@
+---
+description: Plan generation architecture and constraints
+alwaysApply: false
+globs: lib/ai/planSchema.ts, lib/ai/planGeneration.ts, lib/ai/prompts.ts
+---
+
+# Plan Generation Architecture
+
+## Schema: `lib/ai/planSchema.ts`
+
+- Uses AI SDK `jsonSchema()` (raw JSON Schema), not Zod, for the model schema. Anthropic Sonnet 4.6 rejects many Zod-generated JSON Schema features.
+- `detail` is `type: 'string'` (JSON-encoded) because Anthropic requires `additionalProperties: false` on all objects, and detail has dynamic per-domain properties.
+- `planGeneration.ts` parses the detail string back to an object after generation.
+- A separate `planZodSchema` exists for output validation in tests only.
+
+## Model: Claude Sonnet 4.6
+
+- Both chat and plan generation use `claude-sonnet-4-6`.
+- Sonnet 4.6 is strict about JSON Schema: no `minimum`/`maximum`, no `propertyNames`, all objects need explicit `additionalProperties: false`.
+
+## Conviction validation: `validatePlan()`
+
+- Handles string zone values (`"Zone 2"` and `2` are both valid).
+- Handles varied key names for warm-up/cool-down (`warmUp`, `warm_up`, `warmup`).
+- Parses duration from `targetMinutes` (number) or `duration` (string like "45 minutes").
+
+## Session detail components
+
+Components in `components/session/` must be resilient to varied AI output formats. The AI does not consistently use the same field names. Always check for multiple key variants (e.g. `detail.exercise ?? detail.name`).

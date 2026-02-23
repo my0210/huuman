@@ -1,0 +1,35 @@
+---
+description: Testing requirements for plan generation and session rendering
+globs: lib/ai/planSchema.ts, lib/ai/planGeneration.ts, lib/ai/prompts.ts, components/session/**
+alwaysApply: false
+---
+
+# Testing Plan Generation
+
+Before pushing changes to plan generation, schema, prompts, or session detail components, run the test suite.
+
+## Commands
+
+```bash
+npm run test:schema    # Instant. Validates JSON schema has no Anthropic-unsupported keywords.
+npm run test:plan      # ~2 min. Real API call. Generates a plan with Sonnet 4.6, validates output.
+npm run test:render    # Instant. Renders all 5 domain detail components with real AI output.
+npm run test:all       # Runs all three in sequence.
+```
+
+## When to run which
+
+- **Changed `planSchema.ts` or `planGeneration.ts`**: Run `test:schema` first (instant), then `test:plan` (API call).
+- **Changed session detail components** (`components/session/*.tsx`): Run `test:render`.
+- **Changed `prompts.ts` or conviction rules**: Run `test:plan` to verify the AI still produces valid output.
+- **Changed the model** (e.g. upgraded Anthropic model): Run `test:all`. Different models have different schema restrictions.
+
+## What the tests catch
+
+- `test:schema`: Anthropic rejects `minimum`, `maximum`, `propertyNames`, missing `additionalProperties: false` on objects. This test flags them before you hit the API.
+- `test:plan`: Schema accepted by model, output has all 5 domains, sessions have non-empty detail, conviction rules pass (zone types, warm-up/cool-down present).
+- `test:render`: Detail components handle the varied field names the AI returns (e.g. `zone: "Zone 2"` vs `zone: 2`, `exercise` vs `name`, `warmUp` vs `warm_up`).
+
+## Key constraint: Anthropic structured output
+
+Sonnet 4.6 requires `additionalProperties: false` on all objects. Since session `detail` has unknown properties per domain, it is encoded as a JSON string in the schema and parsed back to an object in `planGeneration.ts`. Do not change `detail` back to `type: 'object'` without running `test:plan`.
