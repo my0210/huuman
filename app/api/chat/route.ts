@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
 import type { UserProfile } from '@/lib/types';
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {

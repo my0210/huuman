@@ -49,11 +49,12 @@ export async function saveMessages(
   conversationId: string,
   messages: Array<{ id: string; role: string; parts: unknown[]; attachments?: unknown[] }>,
 ): Promise<void> {
-  if (messages.length === 0) return;
+  const valid = messages.filter((msg) => msg.id && msg.id.length > 0);
+  if (valid.length === 0) return;
 
   const supabase = await createClient();
 
-  const rows = messages.map((msg) => ({
+  const rows = valid.map((msg) => ({
     id: msg.id,
     conversation_id: conversationId,
     role: msg.role,
