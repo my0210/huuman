@@ -2,6 +2,38 @@ import { z } from 'zod';
 import { jsonSchema } from 'ai';
 import { ALL_CONVICTIONS } from '@/lib/convictions';
 
+export const domainSessionsJsonSchema = jsonSchema({
+  type: 'object',
+  properties: {
+    sessions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          domain: { type: 'string', enum: ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'] },
+          dayOfWeek: { type: 'number', description: 'Day of week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat' },
+          title: { type: 'string' },
+          detail: { type: 'string', description: 'A valid JSON string containing the domain-specific session detail object. MUST be a non-empty JSON object (not "{}"). See the prompt for required fields per domain.' },
+          sortOrder: { type: 'number' },
+        },
+        required: ['domain', 'dayOfWeek', 'title', 'detail', 'sortOrder'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['sessions'],
+  additionalProperties: false,
+});
+
+export const introJsonSchema = jsonSchema({
+  type: 'object',
+  properties: {
+    introMessage: { type: 'string', description: 'Personal 1-2 sentence coach brief for the week' },
+  },
+  required: ['introMessage'],
+  additionalProperties: false,
+});
+
 export const planJsonSchema = jsonSchema({
   type: 'object',
   properties: {

@@ -12,9 +12,10 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { planJsonSchema, planZodSchema, validatePlan, type PlanOutput, type SessionOutput } from '../lib/ai/planSchema';
-import { getPlanGenerationPrompt } from '../lib/ai/prompts';
-import type { UserProfile, DomainBaselines } from '../lib/types';
+import { planJsonSchema, domainSessionsJsonSchema, introJsonSchema, planZodSchema, validatePlan, type PlanOutput, type SessionOutput } from '../lib/ai/planSchema';
+import { getPlanGenerationPrompt, getDomainPlanPrompt, getIntroPlanPrompt } from '../lib/ai/prompts';
+import type { UserProfile, DomainBaselines, Domain } from '../lib/types';
+import { DOMAINS } from '../lib/types';
 
 const ANTHROPIC_UNSUPPORTED_KEYWORDS = [
   'minimum',
@@ -78,15 +79,23 @@ function walkSchema(obj: unknown, path: string, issues: string[]) {
 function testSchemaCompatibility() {
   console.log('\n--- Schema Compatibility ---\n');
 
-  const rawSchema = (planJsonSchema as { jsonSchema: unknown }).jsonSchema;
-  const issues: string[] = [];
-  walkSchema(rawSchema, '', issues);
+  const schemas: [string, unknown][] = [
+    ['planJsonSchema', planJsonSchema],
+    ['domainSessionsJsonSchema', domainSessionsJsonSchema],
+    ['introJsonSchema', introJsonSchema],
+  ];
 
-  if (issues.length === 0) {
-    pass('No unsupported JSON Schema keywords in planJsonSchema');
-  } else {
-    for (const issue of issues) {
-      fail(issue);
+  for (const [name, schema] of schemas) {
+    const rawSchema = (schema as { jsonSchema: unknown }).jsonSchema;
+    const issues: string[] = [];
+    walkSchema(rawSchema, '', issues);
+
+    if (issues.length === 0) {
+      pass(`No unsupported keywords in ${name}`);
+    } else {
+      for (const issue of issues) {
+        fail(`${name}: ${issue}`);
+      }
     }
   }
 
@@ -117,7 +126,7 @@ function testPromptGeneration() {
   try {
     const prompt = getPlanGenerationPrompt(MOCK_PROFILE, '2026-02-23');
     if (prompt.length > 100) {
-      pass(`Prompt generated (${prompt.length} chars)`);
+      pass(`Full prompt generated (${prompt.length} chars)`);
     } else {
       fail('Prompt suspiciously short');
     }
@@ -137,7 +146,20 @@ function testPromptGeneration() {
       fail('Missing domain baselines');
     }
   } catch (err) {
-    fail(`Prompt generation threw: ${err}`);
+    fail(`Full prompt generation threw: ${err}`);
+  }
+
+  for (const domain of DOMAINS) {
+    try {
+      const domainPrompt = getDomainPlanPrompt(domain, MOCK_PROFILE, '2026-02-23');
+      if (domainPrompt.length > 50 && domainPrompt.includes('CONVICTION RULES')) {
+        pass(`${domain} domain prompt generated (${domainPrompt.length} chars)`);
+      } else {
+        fail(`${domain} domain prompt too short or missing conviction rules`);
+      }
+    } catch (err) {
+      fail(`${domain} domain prompt threw: ${err}`);
+    }
   }
 }
 
@@ -148,40 +170,61 @@ function testPromptGeneration() {
 const EXPECTED_DOMAINS = ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'];
 
 async function testFullGeneration() {
-  console.log('\n--- Full Plan Generation (API call) ---\n');
+  console.log('\n--- Full Plan Generation – Parallel (API call) ---\n');
 
   const { generateObject } = await import('ai');
   const { anthropic } = await import('@ai-sdk/anthropic');
 
-  const prompt = getPlanGenerationPrompt(MOCK_PROFILE, '2026-02-23');
+  const model = anthropic('claude-sonnet-4-6');
 
-  info('Calling Claude Sonnet 4.6 with generateObject...');
+  info('Generating 5 domains in parallel with Claude Sonnet 4.6...');
   const startTime = Date.now();
 
-  let plan: PlanOutput;
+  let allSessions: SessionOutput[];
   try {
-    const result = await generateObject({
-      model: anthropic('claude-sonnet-4-6'),
-      schema: planJsonSchema,
-      prompt,
-    });
-    const raw = result.object as { introMessage: string; sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: string | Record<string, unknown>; sortOrder: number }> };
-    plan = {
-      introMessage: raw.introMessage,
-      sessions: raw.sessions.map((s) => ({
-        ...s,
-        domain: s.domain as PlanOutput['sessions'][number]['domain'],
-        detail: typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail,
-      })),
-    };
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    pass(`Generation completed in ${elapsed}s`);
+    const domainResults = await Promise.all(
+      DOMAINS.map(async (domain) => {
+        const domainStart = Date.now();
+        const prompt = getDomainPlanPrompt(domain, MOCK_PROFILE, '2026-02-23');
+        const result = await generateObject({
+          model,
+          schema: domainSessionsJsonSchema,
+          prompt,
+        });
+        const raw = result.object as { sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: string | Record<string, unknown>; sortOrder: number }> };
+        const elapsed = ((Date.now() - domainStart) / 1000).toFixed(1);
+        info(`${domain} completed in ${elapsed}s (${raw.sessions.length} sessions)`);
+        return raw.sessions.map((s, i) => ({
+          domain: domain as SessionOutput['domain'],
+          dayOfWeek: s.dayOfWeek,
+          title: s.title,
+          detail: (typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail) as Record<string, unknown>,
+          sortOrder: s.sortOrder ?? i,
+        }));
+      }),
+    );
+    allSessions = domainResults.flat();
   } catch (err) {
-    fail(`generateObject threw: ${err instanceof Error ? err.message : err}`);
+    fail(`Parallel generation threw: ${err instanceof Error ? err.message : err}`);
     return null;
   }
 
-  // Validate with Zod schema
+  let introMessage: string;
+  try {
+    const titles = allSessions.map(s => s.title);
+    const introPrompt = getIntroPlanPrompt(MOCK_PROFILE, '2026-02-23', titles);
+    const introResult = await generateObject({ model, schema: introJsonSchema, prompt: introPrompt });
+    introMessage = (introResult.object as { introMessage: string }).introMessage;
+  } catch (err) {
+    fail(`Intro generation threw: ${err instanceof Error ? err.message : err}`);
+    return null;
+  }
+
+  const totalElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  pass(`Full parallel generation completed in ${totalElapsed}s`);
+
+  const plan: PlanOutput = { introMessage, sessions: allSessions };
+
   const parseResult = planZodSchema.safeParse(plan);
   if (parseResult.success) {
     pass('Output passes Zod validation schema');
@@ -189,17 +232,14 @@ async function testFullGeneration() {
     fail(`Zod validation failed: ${parseResult.error.message}`);
   }
 
-  // Check intro message
   if (plan.introMessage && plan.introMessage.length > 10) {
     pass(`Intro message: "${plan.introMessage.slice(0, 80)}..."`);
   } else {
     fail('Missing or empty introMessage');
   }
 
-  // Check session count
   info(`Total sessions: ${plan.sessions.length}`);
 
-  // Check all 5 domains present
   const domainCounts: Record<string, number> = {};
   for (const s of plan.sessions) {
     domainCounts[s.domain] = (domainCounts[s.domain] ?? 0) + 1;
@@ -213,7 +253,6 @@ async function testFullGeneration() {
     }
   }
 
-  // Check dayOfWeek values
   const invalidDays = plan.sessions.filter((s) => s.dayOfWeek < 0 || s.dayOfWeek > 6);
   if (invalidDays.length === 0) {
     pass('All dayOfWeek values in 0-6 range');
@@ -221,7 +260,6 @@ async function testFullGeneration() {
     fail(`${invalidDays.length} sessions with invalid dayOfWeek`);
   }
 
-  // Check detail objects are non-empty
   const emptyDetails = plan.sessions.filter((s) => Object.keys(s.detail).length === 0);
   if (emptyDetails.length === 0) {
     pass('All sessions have non-empty detail objects');
@@ -229,7 +267,6 @@ async function testFullGeneration() {
     fail(`${emptyDetails.length} sessions with empty detail`);
   }
 
-  // Run conviction validation
   const validation = validatePlan(plan.sessions);
   if (validation.valid) {
     pass('Passes conviction validation');

@@ -52,6 +52,47 @@ const EXPERIENCE_LABELS: Record<string, string> = {
   regular: 'regular practice',
 };
 
+export function formatSingleDomainBaseline(domain: string, baselines: DomainBaselines): string {
+  switch (domain) {
+    case 'cardio': {
+      const { cardio } = baselines;
+      const activities = cardio.activities.length > 0 ? cardio.activities.join(', ') : 'none currently';
+      const sustain = cardio.canSustain45min
+        ? 'can sustain 45+ min at conversational pace'
+        : 'cannot yet sustain 45 min at conversational pace';
+      return `${WEEKLY_MINUTES_LABELS[cardio.weeklyMinutes] ?? cardio.weeklyMinutes}, ${activities}, ${sustain}`;
+    }
+    case 'strength': {
+      const { strength } = baselines;
+      const days = strength.daysPerWeek === 0
+        ? 'not currently training'
+        : `${strength.daysPerWeek} day${strength.daysPerWeek > 1 ? 's' : ''}/week`;
+      const setup = strength.setup.length > 0
+        ? `trains at ${strength.setup.join(' + ')}`
+        : 'no home or gym setup';
+      const types = strength.trainingTypes.length > 0
+        ? strength.trainingTypes.map((t) => TRAINING_TYPE_LABELS[t] ?? t).join(' + ')
+        : 'no strength training';
+      return `${types}, ${days}, ${LIFT_LABELS[strength.liftFamiliarity] ?? strength.liftFamiliarity}, ${setup}`;
+    }
+    case 'nutrition': {
+      const { nutrition } = baselines;
+      const restrictions = nutrition.restrictions.length > 0 ? nutrition.restrictions.join(', ') : 'no dietary restrictions';
+      return `${PATTERN_LABELS[nutrition.pattern] ?? nutrition.pattern}, ${restrictions}`;
+    }
+    case 'sleep': {
+      const { sleep } = baselines;
+      return `${HOURS_LABELS[sleep.hours] ?? sleep.hours}, bedtime ${BEDTIME_LABELS[sleep.bedtime] ?? sleep.bedtime}, ${SLEEP_ISSUES_LABELS[sleep.sleepIssues] ?? sleep.sleepIssues}`;
+    }
+    case 'mindfulness': {
+      const { mindfulness } = baselines;
+      return `${EXPERIENCE_LABELS[mindfulness.experience] ?? mindfulness.experience}`;
+    }
+    default:
+      return '';
+  }
+}
+
 export function formatDomainBaselines(baselines: DomainBaselines): string {
   const lines: string[] = [];
 

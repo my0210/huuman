@@ -1,6 +1,6 @@
-import { UserProfile } from '@/lib/types';
-import { getAllPromptRules } from '@/lib/convictions';
-import { formatDomainBaselines } from '@/lib/onboarding/formatBaselines';
+import { UserProfile, Domain, DOMAIN_META } from '@/lib/types';
+import { getAllPromptRules, getConviction } from '@/lib/convictions';
+import { formatDomainBaselines, formatSingleDomainBaseline } from '@/lib/onboarding/formatBaselines';
 
 export function getSystemPrompt(profile?: UserProfile | null): string {
   const convictionBlock = getAllPromptRules();
@@ -143,6 +143,137 @@ Example output structure:
     }
   ]
 }`;
+}
+
+const DOMAIN_EXAMPLES: Record<Domain, string> = {
+  cardio: `{
+      "domain": "cardio",
+      "dayOfWeek": 1,
+      "title": "Zone 2 Easy Run",
+      "detail": "{\\"zone\\":2,\\"targetMinutes\\":50,\\"activity\\":\\"run\\",\\"targetHR\\":\\"125-140 bpm\\",\\"warmUp\\":\\"5 min walk then 3 min light jog\\",\\"coolDown\\":\\"5 min walk, calf stretches\\",\\"notes\\":\\"Conversational pace throughout\\"}",
+      "sortOrder": 0
+    }`,
+  strength: `{
+      "domain": "strength",
+      "dayOfWeek": 2,
+      "title": "Upper Body Push & Pull",
+      "detail": "{\\"focus\\":\\"upper body\\",\\"warmUp\\":\\"5 min band pull-aparts, arm circles\\",\\"exercises\\":[{\\"name\\":\\"Bench Press\\",\\"sets\\":3,\\"reps\\":\\"8-10\\",\\"weight\\":\\"60 kg\\",\\"rest\\":\\"90s\\",\\"cues\\":\\"retract scapula, feet flat\\"},{\\"name\\":\\"Barbell Row\\",\\"sets\\":3,\\"reps\\":\\"8-10\\",\\"weight\\":\\"50 kg\\",\\"rest\\":\\"90s\\",\\"cues\\":\\"chest to bar, squeeze lats\\"}],\\"coolDown\\":\\"5 min chest and lat stretches\\"}",
+      "sortOrder": 0
+    }`,
+  nutrition: `{
+      "domain": "nutrition",
+      "dayOfWeek": 1,
+      "title": "Daily Nutrition Target",
+      "detail": "{\\"calories\\":2200,\\"proteinGrams\\":190,\\"guidelines\\":\\"Hit protein at every meal. 40g breakfast, 50g lunch, 50g dinner, 50g snacks.\\",\\"mealIdeas\\":[\\"Greek yogurt + granola + berries\\",\\"Chicken stir-fry with rice\\",\\"Salmon with roasted veg\\"]}",
+      "sortOrder": 0
+    }`,
+  mindfulness: `{
+      "domain": "mindfulness",
+      "dayOfWeek": 1,
+      "title": "Box Breathing",
+      "detail": "{\\"type\\":\\"breathwork\\",\\"targetMinutes\\":8,\\"guidelines\\":\\"4 counts in, 4 hold, 4 out, 4 hold. Seated, eyes closed.\\"}",
+      "sortOrder": 0
+    }`,
+  sleep: `{
+      "domain": "sleep",
+      "dayOfWeek": 1,
+      "title": "Sleep Routine",
+      "detail": "{\\"targetHours\\":7.5,\\"bedtimeWindow\\":\\"10:30-11:00 PM\\",\\"wakeWindow\\":\\"6:00-6:30 AM\\",\\"guidelines\\":\\"No screens 30 min before bed. Dim lights at 10 PM.\\"}",
+      "sortOrder": 0
+    }`,
+};
+
+const DOMAIN_DETAIL_REQS: Record<Domain, string> = {
+  cardio: 'zone, target minutes, activity type, HR range, warm-up, cool-down, pacing cues',
+  strength: 'focus area, exercises with sets/reps/weight/rest, warm-up, cool-down, form cues',
+  nutrition: 'daily calorie/protein targets (if weight provided), guidelines, meal ideas',
+  mindfulness: 'type, duration, guided/unguided, specific instructions',
+  sleep: 'target hours, bedtime/wake windows, wind-down routine',
+};
+
+export function getDomainPlanPrompt(
+  domain: Domain,
+  profile: UserProfile,
+  weekStart: string,
+): string {
+  const conviction = getConviction(domain);
+  const convictionRules = conviction.promptRules.join('\n');
+  const profileBlock = formatProfileCompact(domain, profile);
+  const example = DOMAIN_EXAMPLES[domain];
+  const detailReqs = DOMAIN_DETAIL_REQS[domain];
+  const label = DOMAIN_META[domain].label;
+
+  return `Generate ${label} sessions for the full week (Monday through Sunday).
+
+## CONVICTION RULES (MUST FOLLOW)
+
+${convictionRules}
+
+## USER PROFILE
+
+${profileBlock}
+
+## WEEK STARTING: ${weekStart}
+
+## REQUIREMENTS
+
+1. Create ${label.toLowerCase()} sessions for Monday through Sunday. Include rest days where appropriate (omit sessions on rest days).
+2. Respect ALL user constraints -- schedule, equipment, limitations.
+3. Follow conviction rules exactly.
+4. Each session MUST include full detail: ${detailReqs}
+
+## OUTPUT FORMAT
+
+The "detail" field is a JSON STRING (not an object). You must serialize the detail object to a JSON string.
+
+CRITICAL: Every session MUST have a non-empty detail string. A detail of "{}" is a generation failure.
+
+Example session:
+${example}`;
+}
+
+export function getIntroPlanPrompt(
+  profile: UserProfile,
+  weekStart: string,
+  sessionTitles: string[],
+): string {
+  const name = profile.email.split('@')[0];
+  return `Write a 1-2 sentence intro message for a weekly fitness plan starting ${weekStart}.
+
+User: ${name}, age ${profile.age ?? 'unknown'}, ${profile.weightKg ? profile.weightKg + ' kg' : 'weight unknown'}.
+
+This week's sessions include: ${sessionTitles.slice(0, 8).join(', ')}.
+
+Sound like an elite coach briefing their client on the week. Reference one concrete detail about their situation (schedule, progression, a specific target). No hype, no "excited to", no "let's crush it", no "I've designed". Just the brief and what matters. Plain text, no markdown.`;
+}
+
+function formatProfileCompact(domain: Domain, profile: UserProfile): string {
+  const lines: string[] = [];
+  if (profile.age) lines.push(`Age: ${profile.age}`);
+  if (profile.weightKg) lines.push(`Weight: ${profile.weightKg} kg`);
+
+  if (profile.domainBaselines) {
+    lines.push(`${DOMAIN_META[domain].label} baseline: ${formatSingleDomainBaseline(domain, profile.domainBaselines)}`);
+  }
+
+  if (profile.goals.primary.length > 0) {
+    lines.push(`Goals: ${profile.goals.primary.join(', ')}`);
+  }
+
+  const c = profile.constraints;
+  if (c.equipment.gymAccess) lines.push('Has gym access');
+  if (c.equipment.outdoorAccess) lines.push('Has outdoor access');
+  if (c.equipment.homeEquipment.length > 0) {
+    lines.push(`Home equipment: ${c.equipment.homeEquipment.join(', ')}`);
+  }
+  if (c.limitations.injuries.length > 0) {
+    lines.push(`Injuries: ${c.limitations.injuries.join(', ')}`);
+  }
+  if (c.limitations.medical.length > 0) {
+    lines.push(`Medical: ${c.limitations.medical.join(', ')}`);
+  }
+
+  return lines.join('\n');
 }
 
 function formatProfile(profile: UserProfile): string {
