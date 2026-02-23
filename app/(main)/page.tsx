@@ -7,8 +7,8 @@ export default async function MainPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const userId = user!.id;
-  const chatId = await getOrCreateConversation(userId);
-  const dbMessages = await loadMessages(chatId);
+  const chatId = await getOrCreateConversation(userId, supabase);
+  const dbMessages = await loadMessages(chatId, supabase);
   const initialMessages = convertToUIMessages(dbMessages);
 
   return <ChatInterface chatId={chatId} initialMessages={initialMessages} />;

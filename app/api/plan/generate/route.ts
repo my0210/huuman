@@ -8,10 +8,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    const supabase = await createClient();
+
     let userId = body.userId as string | undefined;
 
     if (!userId) {
-      const supabase = await createClient();
       const { data: { user } } = await supabase.auth.getUser();
       userId = user?.id;
     }
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await generateWeeklyPlan(userId, body.weekStart);
+    const result = await generateWeeklyPlan(userId, supabase, body.weekStart);
 
     if (!result.success) {
       console.error('[PlanGenRoute] Generation failed:', result.error);

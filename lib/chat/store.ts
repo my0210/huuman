@@ -1,11 +1,8 @@
 import 'server-only';
 import type { UIMessage } from 'ai';
-import { createClient } from '@/lib/supabase/server';
-import type { DBMessage } from '@/lib/types';
+import type { AppSupabaseClient, DBMessage } from '@/lib/types';
 
-export async function getOrCreateConversation(userId: string): Promise<string> {
-  const supabase = await createClient();
-
+export async function getOrCreateConversation(userId: string, supabase: AppSupabaseClient): Promise<string> {
   const { data: existing } = await supabase
     .from('conversations')
     .select('id')
@@ -29,9 +26,7 @@ export async function getOrCreateConversation(userId: string): Promise<string> {
   return created.id;
 }
 
-export async function loadMessages(conversationId: string): Promise<DBMessage[]> {
-  const supabase = await createClient();
-
+export async function loadMessages(conversationId: string, supabase: AppSupabaseClient): Promise<DBMessage[]> {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
@@ -48,11 +43,10 @@ export async function loadMessages(conversationId: string): Promise<DBMessage[]>
 export async function saveMessages(
   conversationId: string,
   messages: Array<{ id: string; role: string; parts: unknown[]; attachments?: unknown[] }>,
+  supabase: AppSupabaseClient,
 ): Promise<void> {
   const valid = messages.filter((msg) => msg.id && msg.id.length > 0);
   if (valid.length === 0) return;
-
-  const supabase = await createClient();
 
   const rows = valid.map((msg) => ({
     id: msg.id,

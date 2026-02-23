@@ -1,21 +1,16 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
 import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META } from '@/lib/types';
+import type { AppSupabaseClient } from '@/lib/types';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
-/**
- * Creates all chat tools with the userId baked in via closure.
- * Call this in the API route after authenticating the user.
- */
-export function createTools(userId: string) {
+export function createTools(userId: string, supabase: AppSupabaseClient) {
 
   const show_today_plan = tool({
     description:
       'Show the user their planned sessions for today. Call this when greeting the user, when they ask "what should I do today", or at the start of any conversation.',
     inputSchema: z.object({}),
     execute: async () => {
-      const supabase = await createClient();
       const today = getTodayISO();
       const weekStart = getWeekStart();
 
@@ -58,7 +53,6 @@ export function createTools(userId: string) {
       'Show the full weekly plan. Use when the user asks about their week, wants an overview, or says "show my plan".',
     inputSchema: z.object({}),
     execute: async () => {
-      const supabase = await createClient();
       const weekStart = getWeekStart();
 
       const { data: plan } = await supabase
@@ -92,8 +86,6 @@ export function createTools(userId: string) {
       sessionId: z.string().describe('The ID of the planned session to show'),
     }),
     execute: async ({ sessionId }: { sessionId: string }) => {
-      const supabase = await createClient();
-
       const { data: session } = await supabase
         .from('planned_sessions')
         .select('*')
@@ -117,8 +109,6 @@ export function createTools(userId: string) {
         .describe('Optional actual values (e.g., actual duration, actual weights)'),
     }),
     execute: async ({ sessionId, completedDetail }: { sessionId: string; completedDetail?: Record<string, unknown> }) => {
-      const supabase = await createClient();
-
       const { data: session, error } = await supabase
         .from('planned_sessions')
         .update({
@@ -151,7 +141,6 @@ export function createTools(userId: string) {
       'Show weekly progress across all 5 domains. Use when the user asks about progress or wants a status check.',
     inputSchema: z.object({}),
     execute: async () => {
-      const supabase = await createClient();
       const weekStart = getWeekStart();
 
       const { data: sessions } = await supabase
@@ -193,7 +182,6 @@ export function createTools(userId: string) {
       sleepHours?: number;
       sleepQuality?: number;
     }) => {
-      const supabase = await createClient();
       const today = getTodayISO();
 
       const updates: Record<string, unknown> = {};
@@ -235,8 +223,6 @@ export function createTools(userId: string) {
       newTitle?: string;
       reason: string;
     }) => {
-      const supabase = await createClient();
-
       const { data: existing } = await supabase
         .from('planned_sessions')
         .select('*')
@@ -297,7 +283,7 @@ export function createTools(userId: string) {
     }),
     execute: async ({ weekStart }: { weekStart?: string }) => {
       const targetWeek = weekStart ?? getWeekStart();
-      return await generateWeeklyPlan(userId, targetWeek);
+      return await generateWeeklyPlan(userId, supabase, targetWeek);
     },
   });
 

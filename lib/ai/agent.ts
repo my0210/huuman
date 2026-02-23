@@ -2,10 +2,10 @@ import { ToolLoopAgent, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createTools } from './tools';
 import { getSystemPrompt } from './prompts';
-import type { UserProfile } from '@/lib/types';
+import type { UserProfile, AppSupabaseClient } from '@/lib/types';
 
-export function createCoachAgent(userId: string, profile: UserProfile | null) {
-  const tools = createTools(userId);
+export function createCoachAgent(userId: string, profile: UserProfile | null, supabase: AppSupabaseClient) {
+  const tools = createTools(userId, supabase);
   const instructions = getSystemPrompt(profile);
 
   return new ToolLoopAgent({

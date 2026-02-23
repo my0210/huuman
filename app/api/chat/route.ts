@@ -2,9 +2,9 @@ import { createAgentUIStreamResponse, generateId } from 'ai';
 import { createCoachAgent } from '@/lib/ai/agent';
 import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
-import type { UserProfile } from '@/lib/types';
+import { loadUserProfile } from '@/lib/core/user';
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   try {
@@ -27,37 +27,14 @@ export async function POST(req: Request) {
           parts: message.parts,
           attachments: [],
         },
-      ]);
+      ], supabase);
     }
 
-    const dbMessages = await loadMessages(chatId);
+    const dbMessages = await loadMessages(chatId, supabase);
     const uiMessages = convertToUIMessages(dbMessages);
-    // #region agent log
-    console.log('[DEBUG-066419] raw DB:', dbMessages.length, 'msgs → after trim:', uiMessages.length, 'msgs, roles:', uiMessages.map(m => m.role).join(','));
-    // #endregion
 
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    const userProfile: UserProfile | null = profile
-      ? {
-          id: profile.id,
-          email: profile.email,
-          age: profile.age,
-          weightKg: profile.weight_kg ? Number(profile.weight_kg) : undefined,
-          domainBaselines: profile.domain_baselines as UserProfile['domainBaselines'],
-          goals: profile.goals as { primary: string[]; freeText?: string },
-          constraints: profile.constraints as UserProfile['constraints'],
-          onboardingCompleted: profile.onboarding_completed,
-          createdAt: profile.created_at,
-          updatedAt: profile.updated_at,
-        }
-      : null;
-
-    const agent = createCoachAgent(userId, userProfile);
+    const userProfile = await loadUserProfile(userId, supabase);
+    const agent = createCoachAgent(userId, userProfile, supabase);
 
     return createAgentUIStreamResponse({
       agent,
@@ -75,6 +52,7 @@ export async function POST(req: Request) {
               role: msg.role,
               parts: msg.parts as unknown[],
             })),
+            supabase,
           );
         }
       },
