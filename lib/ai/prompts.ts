@@ -1,6 +1,13 @@
-import { UserProfile, Domain, SessionDomain, DOMAIN_META } from '@/lib/types';
+import { UserProfile, Domain, SessionDomain, DOMAIN_META, CONTEXT_CATEGORIES, type ContextCategory } from '@/lib/types';
 import { getAllPromptRules, getConviction, getTrackingPromptRules } from '@/lib/convictions';
 import { formatDomainBaselines, formatSingleDomainBaseline } from '@/lib/onboarding/formatBaselines';
+
+const CATEGORY_LABELS: Record<ContextCategory, string> = {
+  physical: 'Physical',
+  environment: 'Environment',
+  equipment: 'Equipment',
+  schedule: 'Schedule',
+};
 
 export function getSystemPrompt(profile?: UserProfile | null): string {
   const convictionBlock = getAllPromptRules();
@@ -28,7 +35,7 @@ ${profileBlock}
 You have tools that render interactive UI inside the chat. ALWAYS use them:
 
 1. When greeting or starting a conversation: call show_today_plan
-2. If show_today_plan returns needsNewPlan=true: IMMEDIATELY call generate_plan to create this week's plan, then call show_today_plan again
+2. If show_today_plan returns needsNewPlan=true: Before generating, ask one question -- "New week. Anything changed? Injuries, where you're training, schedule." If they report changes, call save_context first. Then call generate_plan, then show_today_plan.
 3. When discussing progress: call show_progress FIRST, then respond
 4. When the user completes something: call complete_session, then briefly acknowledge and point to what's next
 5. When the user asks about their week: call show_week_plan
@@ -37,10 +44,11 @@ You have tools that render interactive UI inside the chat. ALWAYS use them:
 8. When the user needs a new plan: call generate_plan
 9. When the user wants breathwork/meditation: call start_timer
 10. When the user wants to change the plan: call adapt_plan, then call show_session to display the updated session
+11. When the user mentions an injury, physical limitation, equipment change, training location, travel, or schedule change: call save_context immediately. Use permanent scope for chronic conditions and owned equipment. Use temporary scope with an expiry date for acute injuries, travel, and this-week overrides. If a plan exists for this week and the change affects upcoming sessions, follow up with adapt_plan.
 
 NEVER just describe data in text when you could call a tool to show it as an interactive card.
-Chain tools when needed -- e.g., complete_session then show_progress, adapt_plan then show_session.
-When a new week starts and there is no plan, generate one automatically before responding.
+Chain tools when needed -- e.g., complete_session then show_progress, save_context then adapt_plan then show_session.
+Pay attention to context clues in conversation. If the user says "I ran but my knee hurt after," save a physical context note. If they mention "I'm at my parents' this weekend," save a temporary environment note. Build a picture of this person over time.
 
 ## VOICE & RESPONSE STYLE
 
@@ -86,7 +94,7 @@ ${previousWeekContext ? `## PREVIOUS WEEK CONTEXT\n${previousWeekContext}\n` : '
 ## REQUIREMENTS
 
 1. Create sessions across 3 domains (cardio, strength, mindfulness) for the full week (Monday through Sunday)
-2. Respect ALL user constraints -- schedule, equipment, limitations
+2. Respect ALL user context -- injuries, equipment, environment, schedule. If the user has temporary context (e.g., training at home this week, traveling), adapt the plan accordingly.
 3. Follow conviction rules exactly (Zone 2 min 45 min, Zone 5 max 1x/week, progressive overload, etc.)
 4. Each session MUST include full detail:
    - Cardio: zone, target minutes, activity type, HR range, warm-up, cool-down, pacing cues
@@ -187,7 +195,7 @@ ${profileBlock}
 ## REQUIREMENTS
 
 1. Create ${label.toLowerCase()} sessions for Monday through Sunday. Include rest days where appropriate (omit sessions on rest days).
-2. Respect ALL user constraints -- schedule, equipment, limitations.
+2. Respect ALL user context -- injuries, equipment, environment, schedule.
 3. Follow conviction rules exactly.
 4. Each session MUST include full detail: ${detailReqs}
 
@@ -245,6 +253,31 @@ SLEEP:
 - wakeWindow: 30-min window that gives them their target hours (e.g. "06:00-06:30")`;
 }
 
+function formatContextBlock(profile: UserProfile): string {
+  if (!profile.context || profile.context.length === 0) return '';
+
+  const byCategory = new Map<ContextCategory, typeof profile.context>();
+  for (const item of profile.context) {
+    const list = byCategory.get(item.category) ?? [];
+    list.push(item);
+    byCategory.set(item.category, list);
+  }
+
+  const lines: string[] = ['', 'Active Context:'];
+  for (const cat of CONTEXT_CATEGORIES) {
+    const items = byCategory.get(cat);
+    if (!items || items.length === 0) continue;
+    lines.push(`  ${CATEGORY_LABELS[cat]}:`);
+    for (const item of items) {
+      const temporal = item.scope === 'temporary' && item.expiresAt
+        ? ` [until ${item.expiresAt}]`
+        : '';
+      lines.push(`  - ${item.content}${temporal}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 function formatProfileCompact(domain: Domain, profile: UserProfile): string {
   const lines: string[] = [];
   if (profile.age) lines.push(`Age: ${profile.age}`);
@@ -254,22 +287,8 @@ function formatProfileCompact(domain: Domain, profile: UserProfile): string {
     lines.push(`${DOMAIN_META[domain].label} baseline: ${formatSingleDomainBaseline(domain, profile.domainBaselines)}`);
   }
 
-  if (profile.goals.primary.length > 0) {
-    lines.push(`Goals: ${profile.goals.primary.join(', ')}`);
-  }
-
-  const c = profile.constraints;
-  if (c.equipment.gymAccess) lines.push('Has gym access');
-  if (c.equipment.outdoorAccess) lines.push('Has outdoor access');
-  if (c.equipment.homeEquipment.length > 0) {
-    lines.push(`Home equipment: ${c.equipment.homeEquipment.join(', ')}`);
-  }
-  if (c.limitations.injuries.length > 0) {
-    lines.push(`Injuries: ${c.limitations.injuries.join(', ')}`);
-  }
-  if (c.limitations.medical.length > 0) {
-    lines.push(`Medical: ${c.limitations.medical.join(', ')}`);
-  }
+  const contextBlock = formatContextBlock(profile);
+  if (contextBlock) lines.push(contextBlock);
 
   return lines.join('\n');
 }
@@ -286,27 +305,8 @@ function formatProfile(profile: UserProfile): string {
     lines.push(formatDomainBaselines(profile.domainBaselines));
   }
 
-  if (profile.goals.primary.length > 0) {
-    lines.push(`Goals: ${profile.goals.primary.join(', ')}`);
-  }
-  if (profile.goals.freeText) {
-    lines.push(`Goal notes: ${profile.goals.freeText}`);
-  }
-
-  const c = profile.constraints;
-  if (c.schedule.workHours) lines.push(`Work hours: ${c.schedule.workHours}`);
-  if (c.schedule.preferredWorkoutTimes.length > 0) {
-    lines.push(`Preferred workout times: ${c.schedule.preferredWorkoutTimes.join(', ')}`);
-  }
-  if (c.equipment.homeEquipment.length > 0) {
-    lines.push(`Home equipment: ${c.equipment.homeEquipment.join(', ')}`);
-  }
-  if (c.limitations.injuries.length > 0) {
-    lines.push(`Injuries: ${c.limitations.injuries.join(', ')}`);
-  }
-  if (c.limitations.medical.length > 0) {
-    lines.push(`Medical: ${c.limitations.medical.join(', ')}`);
-  }
+  const contextBlock = formatContextBlock(profile);
+  if (contextBlock) lines.push(contextBlock);
 
   return lines.join('\n');
 }

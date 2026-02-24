@@ -74,6 +74,7 @@ export interface UserProfile {
   domainBaselines?: DomainBaselines;
   goals: UserGoals;
   constraints: UserConstraints;
+  context: UserContextItem[];
   onboardingCompleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -105,6 +106,26 @@ export interface BlockedTime {
   day: DayOfWeek;
   time: string;
   reason: string;
+}
+
+// =============================================================================
+// User Context (categorized, time-scoped facts about the user)
+// =============================================================================
+
+export type ContextCategory = 'physical' | 'environment' | 'equipment' | 'schedule';
+export const CONTEXT_CATEGORIES: ContextCategory[] = ['physical', 'environment', 'equipment', 'schedule'];
+
+export type ContextScope = 'permanent' | 'temporary';
+
+export interface UserContextItem {
+  id: string;
+  category: ContextCategory;
+  content: string;
+  scope: ContextScope;
+  expiresAt?: string;
+  active: boolean;
+  source: 'onboarding' | 'conversation';
+  createdAt: string;
 }
 
 // =============================================================================

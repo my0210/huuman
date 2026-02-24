@@ -47,6 +47,10 @@ const MOCK_PROFILE: UserProfile = {
     equipment: { gymAccess: true, homeEquipment: [], outdoorAccess: true },
     limitations: { injuries: [], medical: [] },
   },
+  context: [
+    { id: 'test-1', category: 'environment', content: 'Has gym access', scope: 'permanent', active: true, source: 'onboarding', createdAt: new Date().toISOString() },
+    { id: 'test-2', category: 'physical', content: 'Injury: knee', scope: 'permanent', active: true, source: 'onboarding', createdAt: new Date().toISOString() },
+  ],
   onboardingCompleted: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),

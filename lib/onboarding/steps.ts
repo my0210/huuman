@@ -24,9 +24,14 @@ export type FieldDef = {
 export type OnboardingStep =
   | { type: 'welcome'; title: string; body: string; subtitle: string }
   | { type: 'methodology'; domain: Domain }
-  | { type: 'questions'; domain: Domain; title: string; questions: QuestionDef[] }
+  | { type: 'questions'; domain?: Domain; title: string; questions: QuestionDef[] }
   | { type: 'basics'; title: string; subtitle: string; fields: FieldDef[] }
   | { type: 'build' };
+
+export type OnboardingContextData = {
+  injuries: string[];
+  homeEquipment: string[];
+};
 
 export type OnboardingData = {
   cardio: CardioBaseline;
@@ -34,6 +39,7 @@ export type OnboardingData = {
   nutrition: NutritionBaseline;
   sleep: SleepBaseline;
   mindfulness: MindfulnessBaseline;
+  context: OnboardingContextData;
   age: string;
   weightKg: string;
 };
@@ -48,6 +54,7 @@ export const INITIAL_ONBOARDING_DATA: OnboardingData = {
   nutrition: { pattern: 'no_structure', restrictions: [] },
   sleep: { hours: '7_8', bedtime: '10_11pm', sleepIssues: 'no' },
   mindfulness: { experience: 'never' },
+  context: { injuries: [], homeEquipment: [] },
   age: '',
   weightKg: '',
 };
@@ -265,7 +272,44 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     ],
   },
 
-  // Step 11: Basics (age + weight)
+  // Step 11: Context (injuries + home equipment)
+  {
+    type: 'questions',
+    title: 'Good to know',
+    questions: [
+      {
+        id: 'context.injuries',
+        label: 'Any current injuries or physical limitations?',
+        kind: 'multi_select',
+        noneLabel: 'None',
+        options: [
+          { value: 'shoulder', label: 'Shoulder' },
+          { value: 'knee', label: 'Knee' },
+          { value: 'lower_back', label: 'Lower back' },
+          { value: 'hip', label: 'Hip' },
+          { value: 'neck', label: 'Neck' },
+          { value: 'wrist_elbow', label: 'Wrist / elbow' },
+          { value: 'ankle_foot', label: 'Ankle / foot' },
+        ],
+      },
+      {
+        id: 'context.homeEquipment',
+        label: 'What equipment do you have at home?',
+        kind: 'multi_select',
+        noneLabel: 'None',
+        options: [
+          { value: 'dumbbells', label: 'Dumbbells' },
+          { value: 'pull_up_bar', label: 'Pull-up bar' },
+          { value: 'resistance_bands', label: 'Resistance bands' },
+          { value: 'kettlebell', label: 'Kettlebell' },
+          { value: 'barbell_rack', label: 'Barbell + rack' },
+          { value: 'bench', label: 'Bench' },
+        ],
+      },
+    ],
+  },
+
+  // Step 12: Basics (age + weight)
   {
     type: 'basics',
     title: 'A couple more things',
@@ -276,7 +320,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     ],
   },
 
-  // Step 12: Build plan
+  // Step 13: Build plan
   { type: 'build' },
 ];
 

@@ -340,6 +340,58 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
     },
   });
 
+  const save_context = tool({
+    description:
+      "Save or update information about the user's situation -- injuries, physical limitations, equipment, training environment, travel, or schedule changes. Each fact is saved separately with a time scope. Also use to deactivate outdated facts.",
+    inputSchema: z.object({
+      add: z.array(z.object({
+        category: z.enum(['physical', 'environment', 'equipment', 'schedule']),
+        content: z.string().describe('Clear, specific description of the fact'),
+        scope: z.enum(['permanent', 'temporary']),
+        expiresAt: z.string().optional().describe('ISO date when temporary items expire (YYYY-MM-DD)'),
+      })).optional().describe('New context items to save'),
+      removeIds: z.array(z.string()).optional().describe('IDs of context items that are no longer relevant'),
+    }),
+    execute: async ({ add, removeIds }: {
+      add?: Array<{ category: string; content: string; scope: string; expiresAt?: string }>;
+      removeIds?: string[];
+    }) => {
+      if (removeIds && removeIds.length > 0) {
+        await supabase
+          .from('user_context')
+          .update({ active: false })
+          .eq('user_id', userId)
+          .in('id', removeIds);
+      }
+
+      if (add && add.length > 0) {
+        const rows = add.map((item) => ({
+          user_id: userId,
+          category: item.category,
+          content: item.content,
+          scope: item.scope,
+          expires_at: item.expiresAt ?? null,
+          source: 'conversation' as const,
+        }));
+        await supabase.from('user_context').insert(rows);
+      }
+
+      const today = getTodayISO();
+      const { data: active } = await supabase
+        .from('user_context')
+        .select('id, category, content, scope, expires_at')
+        .eq('user_id', userId)
+        .eq('active', true)
+        .or(`expires_at.is.null,expires_at.gte.${today}`);
+
+      return {
+        saved: add?.length ?? 0,
+        removed: removeIds?.length ?? 0,
+        activeContext: active ?? [],
+      };
+    },
+  });
+
   return {
     show_today_plan,
     show_week_plan,
@@ -350,6 +402,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
     adapt_plan,
     generate_plan,
     start_timer,
+    save_context,
   };
 }
 

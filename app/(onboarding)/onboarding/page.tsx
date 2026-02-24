@@ -52,6 +52,41 @@ export default function OnboardingPage() {
     };
 
     try {
+      const contextItems: { category: string; content: string; scope: string; source: string }[] = [];
+
+      for (const injury of data.context.injuries) {
+        contextItems.push({
+          category: "physical",
+          content: `Injury: ${injury.replace(/_/g, " ")}`,
+          scope: "permanent",
+          source: "onboarding",
+        });
+      }
+      for (const equip of data.context.homeEquipment) {
+        contextItems.push({
+          category: "equipment",
+          content: `Has ${equip.replace(/_/g, " ")} at home`,
+          scope: "permanent",
+          source: "onboarding",
+        });
+      }
+      if (data.strength.setup.includes("gym")) {
+        contextItems.push({
+          category: "environment",
+          content: "Has gym access",
+          scope: "permanent",
+          source: "onboarding",
+        });
+      }
+      if (data.strength.setup.includes("home")) {
+        contextItems.push({
+          category: "environment",
+          content: "Trains at home",
+          scope: "permanent",
+          source: "onboarding",
+        });
+      }
+
       const profileRes = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -63,11 +98,12 @@ export default function OnboardingPage() {
             schedule: { blockedTimes: [], preferredWorkoutTimes: [] },
             equipment: {
               gymAccess: data.strength.setup.includes("gym"),
-              homeEquipment: [],
+              homeEquipment: data.context.homeEquipment,
               outdoorAccess: true,
             },
-            limitations: { injuries: [], medical: [] },
+            limitations: { injuries: data.context.injuries, medical: [] },
           },
+          contextItems,
           onboardingCompleted: true,
         }),
       });

@@ -4,13 +4,13 @@ import { DOMAIN_CONTENT, DOMAIN_ORDER } from '@/lib/convictions/content';
 import type { Domain } from '@/lib/types';
 
 describe('Onboarding step definitions', () => {
-  it('has exactly 13 steps', () => {
-    expect(ONBOARDING_STEPS).toHaveLength(13);
+  it('has exactly 14 steps', () => {
+    expect(ONBOARDING_STEPS).toHaveLength(14);
   });
 
   it('starts with welcome and ends with build', () => {
     expect(ONBOARDING_STEPS[0].type).toBe('welcome');
-    expect(ONBOARDING_STEPS[12].type).toBe('build');
+    expect(ONBOARDING_STEPS[13].type).toBe('build');
   });
 
   it('alternates methodology and questions for each domain', () => {
@@ -32,8 +32,20 @@ describe('Onboarding step definitions', () => {
     }
   });
 
-  it('has a basics step at index 11', () => {
-    const basicsStep = ONBOARDING_STEPS[11];
+  it('has a context step at index 11', () => {
+    const contextStep = ONBOARDING_STEPS[11];
+    expect(contextStep.type).toBe('questions');
+    if (contextStep.type === 'questions') {
+      expect(contextStep.domain).toBeUndefined();
+      expect(contextStep.title).toBe('Good to know');
+      const qIds = contextStep.questions.map(q => q.id);
+      expect(qIds).toContain('context.injuries');
+      expect(qIds).toContain('context.homeEquipment');
+    }
+  });
+
+  it('has a basics step at index 12', () => {
+    const basicsStep = ONBOARDING_STEPS[12];
     expect(basicsStep.type).toBe('basics');
     if (basicsStep.type === 'basics') {
       expect(basicsStep.fields.length).toBe(2);
@@ -178,6 +190,9 @@ describe('Full onboarding data flow', () => {
 
     data = setQuestionValue(data, 'mindfulness.experience', 'tried_few_times');
 
+    data = setQuestionValue(data, 'context.injuries', ['knee', 'shoulder']);
+    data = setQuestionValue(data, 'context.homeEquipment', ['dumbbells', 'resistance_bands']);
+
     data = setFieldValue(data, 'age', '35');
     data = setFieldValue(data, 'weightKg', '80');
 
@@ -190,6 +205,8 @@ describe('Full onboarding data flow', () => {
     expect(data.nutrition.pattern).toBe('loosely_healthy');
     expect(data.sleep.hours).toBe('7_8');
     expect(data.mindfulness.experience).toBe('tried_few_times');
+    expect(data.context.injuries).toEqual(['knee', 'shoulder']);
+    expect(data.context.homeEquipment).toEqual(['dumbbells', 'resistance_bands']);
     expect(data.age).toBe('35');
     expect(data.weightKg).toBe('80');
   });

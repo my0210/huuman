@@ -27,7 +27,7 @@ AI longevity coach that generates weekly health plans and helps users execute th
     │     Shared Core       │
     │                       │
     │  createCoachAgent()   │  lib/ai/agent.ts
-    │  createTools()        │  lib/ai/tools.ts (9 tools)
+    │  createTools()        │  lib/ai/tools.ts (10 tools)
     │  generateWeeklyPlan() │  lib/ai/planGeneration.ts
     │  loadUserProfile()    │  lib/core/user.ts
     │  chat store functions │  lib/chat/store.ts
@@ -74,19 +74,20 @@ Bidirectional linking:
 - `validatePlan()` validates cardio/strength session rules
 
 ### AI agent
-`ToolLoopAgent` with `stepCountIs(5)` stop condition. The agent has 9 tools that render interactive UI:
+`ToolLoopAgent` with `stepCountIs(5)` stop condition. The agent has 10 tools that render interactive UI:
 - Web: tools return JSON, `MessagePart.tsx` maps toolName -> React card component
 - Telegram: tools return JSON, `formatters.ts` maps toolName -> text + inline keyboards
 
 ### Onboarding state machine
-`lib/onboarding/steps.ts` defines 13 steps as pure data (no React). Two renderers:
+`lib/onboarding/steps.ts` defines 14 steps as pure data (no React). Includes 5 domain methodology/baseline pairs, a "Good to know" step (injuries + home equipment), basics (age/weight), and build. Two renderers:
 - Web: `app/(onboarding)/onboarding/page.tsx` renders as cards/buttons/inputs
 - Telegram: `lib/telegram/onboarding.ts` renders as messages + inline keyboards
 
 ## Database Schema (Supabase)
 
-6 tables, all with RLS:
-- `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints, onboarding_completed, telegram_chat_id
+7 tables, all with RLS:
+- `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints (legacy), onboarding_completed, telegram_chat_id
+- `user_context` -- user_id, category (physical/environment/equipment/schedule), content (text), scope (permanent/temporary), expires_at, active, source (onboarding/conversation). Categorized, time-scoped facts about the user that drive plan personalization.
 - `weekly_plans` -- user_id, week_start, status, intro_message, tracking_briefs (JSONB: personalized nutrition/sleep targets). Unique on (user_id, week_start).
 - `planned_sessions` -- plan_id, user_id, domain (cardio/strength/mindfulness), scheduled_date, title, status, detail (JSONB), completed_detail
 - `daily_habits` -- user_id, date, steps, nutrition, sleep. Unique on (user_id, date).

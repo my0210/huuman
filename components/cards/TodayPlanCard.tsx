@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Dumbbell, Brain, ChevronDown, Check, Flame, Moon } from "lucide-react";
 import { SessionDetailInline } from "./SessionDetailCard";
+import { useChatSend } from "@/components/chat/ChatActions";
 
 const domainIcons: Record<string, React.ReactNode> = {
   cardio: <Heart size={14} />,
@@ -76,106 +77,89 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
   }
 
   const dayName = new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" });
+  const completed = sessions.filter((s) => s.status === "completed").length;
+  const total = sessions.length;
 
   return (
-    <div className="space-y-3">
-      {sessions.length > 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-800/50">
-            <p className="text-xs font-medium text-zinc-400">{dayName}</p>
-            <p className="text-sm font-semibold text-zinc-200">
-              {sessions.length} session{sessions.length !== 1 ? "s" : ""} planned
-            </p>
-          </div>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-zinc-800/50 flex items-center justify-between">
+        <p className="text-sm font-semibold text-zinc-200">{dayName}</p>
+        {total > 0 && (
+          <p className={`text-xs font-medium ${completed === total ? "text-emerald-400" : "text-zinc-500"}`}>
+            {completed === total ? "All done" : `${completed} of ${total}`}
+          </p>
+        )}
+      </div>
 
-          <div className="divide-y divide-zinc-800/50">
-            {sessions.map((session) => (
-              <SessionRow key={session.id} session={session} />
-            ))}
-          </div>
+      {/* Session rows */}
+      {sessions.length > 0 && (
+        <div className="divide-y divide-zinc-800/50">
+          {sessions.map((session) => (
+            <SessionRow key={session.id} session={session} />
+          ))}
         </div>
       )}
 
-      <DailyTracking habits={habits} trackingBriefs={trackingBriefs} />
+      {/* Divider between sessions and tracking */}
+      {trackingBriefs && (
+        <>
+          <div className="border-t border-dashed border-zinc-800" />
+          <div className="divide-y divide-zinc-800/50">
+            <NutritionRow brief={trackingBriefs.nutrition} habits={habits} />
+            <SleepRow brief={trackingBriefs.sleep} habits={habits} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function DailyTracking({ habits, trackingBriefs }: { habits: Habits | null; trackingBriefs: TrackingBriefs | null }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-zinc-800/50">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Daily tracking</p>
-      </div>
-
-      <div className="divide-y divide-zinc-800/50">
-        {/* Nutrition */}
-        <div className="px-4 py-2.5 flex items-center gap-2.5">
-          <Flame size={13} className="text-green-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            {trackingBriefs?.nutrition ? (
-              <p className="text-xs text-zinc-300 truncate">
-                {trackingBriefs.nutrition.calorieTarget} kcal · {trackingBriefs.nutrition.proteinTargetG}g protein
-              </p>
-            ) : (
-              <p className="text-xs text-zinc-500">No targets set</p>
-            )}
-          </div>
-          {habits?.nutrition_on_plan != null && (
-            <span className={`text-xs font-medium ${habits.nutrition_on_plan ? "text-green-400" : "text-zinc-500"}`}>
-              {habits.nutrition_on_plan ? "On plan" : "Off plan"}
-            </span>
-          )}
-        </div>
-
-        {/* Sleep */}
-        <div className="px-4 py-2.5 flex items-center gap-2.5">
-          <Moon size={13} className="text-violet-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            {trackingBriefs?.sleep ? (
-              <p className="text-xs text-zinc-300 truncate">
-                {trackingBriefs.sleep.targetHours}h target · Bed {trackingBriefs.sleep.bedtimeWindow}
-              </p>
-            ) : (
-              <p className="text-xs text-zinc-500">No targets set</p>
-            )}
-          </div>
-          {habits?.sleep_hours != null && (
-            <span className="text-xs font-medium text-violet-400 tabular-nums">
-              {habits.sleep_hours}h
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+// =============================================================================
+// Session Row
+// =============================================================================
 
 function SessionRow({ session }: { session: Session }) {
   const [expanded, setExpanded] = useState(false);
+  const send = useChatSend();
   const colors = domainColors[session.domain] ?? "text-zinc-400 bg-zinc-900 border-zinc-800";
   const isCompleted = session.status === "completed";
 
+  const handleTap = () => {
+    if (isCompleted || !send) return;
+    send({ text: `Let's do my ${session.title} session` });
+  };
+
   return (
     <div>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/30 transition-colors text-left"
-      >
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border ${colors}`}>
-          {isCompleted ? <Check size={14} /> : domainIcons[session.domain]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium truncate ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-200"}`}>
-            {session.title}
-          </p>
-          <p className="text-xs text-zinc-500 capitalize">{session.domain}</p>
-        </div>
-        <ChevronDown
-          size={14}
-          className={`text-zinc-600 transition-transform ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
+      <div className="flex items-center">
+        <button
+          onClick={handleTap}
+          disabled={isCompleted}
+          className={`flex-1 flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+            isCompleted ? "opacity-60 cursor-default" : "hover:bg-zinc-800/30 active:bg-zinc-800/50"
+          }`}
+        >
+          <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${colors}`}>
+            {isCompleted ? <Check size={14} /> : domainIcons[session.domain]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-medium truncate ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-200"}`}>
+              {session.title}
+            </p>
+            <p className="text-xs text-zinc-500 capitalize">{session.domain}</p>
+          </div>
+        </button>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="px-3 py-3 text-zinc-600 hover:text-zinc-400 transition-colors self-stretch flex items-center"
+        >
+          <ChevronDown
+            size={14}
+            className={`transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
 
       <AnimatePresence>
         {expanded && (
@@ -193,5 +177,102 @@ function SessionRow({ session }: { session: Session }) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+// =============================================================================
+// Nutrition Row
+// =============================================================================
+
+function NutritionRow({ brief, habits }: { brief: NutritionBrief; habits: Habits | null }) {
+  const send = useChatSend();
+  const logged = habits?.nutrition_on_plan != null;
+  const onPlan = habits?.nutrition_on_plan;
+
+  const handleTap = () => {
+    if (!send) return;
+    send({
+      text: logged
+        ? "I want to update my nutrition log"
+        : "Let's talk about my nutrition today",
+    });
+  };
+
+  return (
+    <button
+      onClick={handleTap}
+      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-zinc-800/30 active:bg-zinc-800/50 transition-colors"
+    >
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-900/50 bg-green-950/50 text-green-400 shrink-0">
+        <Flame size={14} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-zinc-200 truncate">
+          {brief.calorieTarget} kcal · {brief.proteinTargetG}g protein
+        </p>
+        <p className="text-xs text-zinc-500">Nutrition</p>
+      </div>
+      <div className="shrink-0">
+        {!logged && (
+          <span className="text-xs text-zinc-600">—</span>
+        )}
+        {logged && onPlan && (
+          <span className="text-xs font-medium text-green-400 flex items-center gap-1">
+            <Check size={10} /> On plan
+          </span>
+        )}
+        {logged && !onPlan && (
+          <span className="text-xs font-medium text-zinc-500">Off plan</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
+// =============================================================================
+// Sleep Row
+// =============================================================================
+
+function SleepRow({ brief, habits }: { brief: SleepBrief; habits: Habits | null }) {
+  const send = useChatSend();
+  const logged = habits?.sleep_hours != null;
+  const hours = habits?.sleep_hours;
+
+  const handleTap = () => {
+    if (!send) return;
+    send({
+      text: logged
+        ? "I want to update my sleep log"
+        : "Log my sleep",
+    });
+  };
+
+  return (
+    <button
+      onClick={handleTap}
+      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-zinc-800/30 active:bg-zinc-800/50 transition-colors"
+    >
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-900/50 bg-violet-950/50 text-violet-400 shrink-0">
+        <Moon size={14} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-zinc-200 truncate">
+          {brief.targetHours}h target · Bed {brief.bedtimeWindow}
+        </p>
+        <p className="text-xs text-zinc-500">Sleep</p>
+      </div>
+      <div className="shrink-0">
+        {!logged && (
+          <span className="text-xs text-zinc-600 tabular-nums">— / {brief.targetHours}h</span>
+        )}
+        {logged && (
+          <span className={`text-xs font-medium tabular-nums ${
+            (hours ?? 0) >= brief.targetHours ? "text-violet-400" : "text-zinc-400"
+          }`}>
+            {hours}h / {brief.targetHours}h
+          </span>
+        )}
+      </div>
+    </button>
   );
 }

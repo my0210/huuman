@@ -8,6 +8,7 @@ import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Chec
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
+import { ChatActionsProvider } from "./ChatActions";
 
 interface ChatInterfaceProps {
   chatId: string;
@@ -233,6 +234,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
       )}
 
       {/* Messages */}
+      <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
@@ -288,6 +290,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
           </div>
         )}
       </div>
+      </ChatActionsProvider>
 
       {/* Input */}
       <form

@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { ContextCategory, ContextScope } from '@/lib/types';
+
+interface ContextItemInput {
+  category: ContextCategory;
+  content: string;
+  scope: ContextScope;
+  expiresAt?: string;
+  source: 'onboarding' | 'conversation';
+}
 
 export async function PUT(req: Request) {
   const supabase = await createClient();
@@ -31,6 +40,18 @@ export async function PUT(req: Request) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (Array.isArray(body.contextItems) && body.contextItems.length > 0) {
+    const rows = (body.contextItems as ContextItemInput[]).map((item) => ({
+      user_id: user.id,
+      category: item.category,
+      content: item.content,
+      scope: item.scope,
+      expires_at: item.expiresAt ?? null,
+      source: item.source,
+    }));
+    await supabase.from('user_context').insert(rows);
   }
 
   return NextResponse.json({ profile: data });

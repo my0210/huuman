@@ -271,10 +271,10 @@ async function handleBuild(
       schedule: { blockedTimes: [], preferredWorkoutTimes: [] },
       equipment: {
         gymAccess: data.strength.setup.includes('gym'),
-        homeEquipment: [],
+        homeEquipment: data.context.homeEquipment,
         outdoorAccess: true,
       },
-      limitations: { injuries: [], medical: [] },
+      limitations: { injuries: data.context.injuries, medical: [] },
     },
   };
   if (data.age) profileUpdate.age = Number(data.age);
@@ -284,6 +284,23 @@ async function handleBuild(
     .from('user_profiles')
     .update(profileUpdate)
     .eq('id', state.user_id);
+
+  const contextItems: { user_id: string; category: string; content: string; scope: string; source: string }[] = [];
+  for (const injury of data.context.injuries) {
+    contextItems.push({ user_id: state.user_id, category: 'physical', content: `Injury: ${injury.replace(/_/g, ' ')}`, scope: 'permanent', source: 'onboarding' });
+  }
+  for (const equip of data.context.homeEquipment) {
+    contextItems.push({ user_id: state.user_id, category: 'equipment', content: `Has ${equip.replace(/_/g, ' ')} at home`, scope: 'permanent', source: 'onboarding' });
+  }
+  if (data.strength.setup.includes('gym')) {
+    contextItems.push({ user_id: state.user_id, category: 'environment', content: 'Has gym access', scope: 'permanent', source: 'onboarding' });
+  }
+  if (data.strength.setup.includes('home')) {
+    contextItems.push({ user_id: state.user_id, category: 'environment', content: 'Trains at home', scope: 'permanent', source: 'onboarding' });
+  }
+  if (contextItems.length > 0) {
+    await supabase.from('user_context').insert(contextItems);
+  }
 
   const result = await generateWeeklyPlan(state.user_id, supabase);
 
