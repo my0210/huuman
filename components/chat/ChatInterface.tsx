@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
 import { ChatActionsProvider } from "./ChatActions";
 import { LANGUAGES, getSavedLanguage, saveLanguage, getLanguageByCode, type LanguageCode } from "@/lib/languages";
+import { t } from "@/lib/translations";
 
 interface ChatInterfaceProps {
   chatId: string;
@@ -160,7 +161,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                   >
                     <ArrowLeft size={14} />
                   </button>
-                  <h2 className="text-sm font-semibold text-zinc-100">Language</h2>
+                  <h2 className="text-sm font-semibold text-zinc-100">{t("settings.language", currentLanguage)}</h2>
                 </div>
                 <div className="max-h-[50dvh] overflow-y-auto -mx-2 scrollbar-none">
                   {LANGUAGES.map((lang) => {
@@ -193,7 +194,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-zinc-100">Settings</h2>
+                  <h2 className="text-sm font-semibold text-zinc-100">{t("settings.title", currentLanguage)}</h2>
                   <button
                     onClick={() => { setMenuOpen(false); setSettingsView("main"); }}
                     className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
@@ -208,7 +209,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                 >
                   <Globe size={16} className="flex-none text-zinc-500" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">Language</p>
+                    <p className="font-medium">{t("settings.language", currentLanguage)}</p>
                     <p className="text-xs text-zinc-500">{getLanguageByCode(currentLanguage)?.native ?? "English"}</p>
                   </div>
                 </button>
@@ -219,8 +220,8 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                 >
                   <Database size={16} className="flex-none text-zinc-500" />
                   <div>
-                    <p className="font-medium">Your data</p>
-                    <p className="text-xs text-zinc-500">See and manage what the coach knows about you</p>
+                    <p className="font-medium">{t("settings.data", currentLanguage)}</p>
+                    <p className="text-xs text-zinc-500">{t("settings.dataDesc", currentLanguage)}</p>
                   </div>
                 </button>
 
@@ -231,8 +232,8 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                 >
                   <RotateCcw size={16} className="flex-none text-zinc-500" />
                   <div>
-                    <p className="font-medium">Redo onboarding</p>
-                    <p className="text-xs text-zinc-500">Clear profile baselines, redo the onboarding flow</p>
+                    <p className="font-medium">{t("settings.redoOnboarding", currentLanguage)}</p>
+                    <p className="text-xs text-zinc-500">{t("settings.redoOnboardingDesc", currentLanguage)}</p>
                   </div>
                 </button>
 
@@ -243,8 +244,8 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                 >
                   <Trash2 size={16} className="flex-none text-zinc-500" />
                   <div>
-                    <p className="font-medium">Reset everything</p>
-                    <p className="text-xs text-zinc-500">Delete all data and start from scratch</p>
+                    <p className="font-medium">{t("settings.reset", currentLanguage)}</p>
+                    <p className="text-xs text-zinc-500">{t("settings.resetDesc", currentLanguage)}</p>
                   </div>
                 </button>
 
@@ -257,15 +258,15 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                     >
                       <MessageCircle size={16} className="flex-none text-zinc-500" />
                       <div>
-                        <p className="font-medium">Connect Telegram</p>
-                        <p className="text-xs text-zinc-500">Chat with your coach on Telegram</p>
+                        <p className="font-medium">{t("settings.connectTelegram", currentLanguage)}</p>
+                        <p className="text-xs text-zinc-500">{t("settings.connectTelegramDesc", currentLanguage)}</p>
                       </div>
                     </button>
                   ) : (
                     <div className="rounded-xl px-3 py-3 space-y-2">
                       <div className="flex items-center gap-3">
                         <MessageCircle size={16} className="flex-none text-cyan-400" />
-                        <p className="text-sm font-medium text-zinc-300">Connect Telegram</p>
+                        <p className="text-sm font-medium text-zinc-300">{t("settings.connectTelegram", currentLanguage)}</p>
                       </div>
                       <p className="text-xs text-zinc-500 ml-7">
                         Open this link in Telegram to connect:
@@ -296,7 +297,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                     className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-400 hover:bg-zinc-800 transition-colors"
                   >
                     <LogOut size={16} className="flex-none text-zinc-500" />
-                    <p className="font-medium">Sign out</p>
+                    <p className="font-medium">{t("settings.signOut", currentLanguage)}</p>
                   </button>
                 </div>
               </>
@@ -311,22 +312,22 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
             <p className="text-zinc-400 text-sm max-w-xs">
-              Your plan is ready. Ask me anything or pick a shortcut below.
+              {t("chat.ready", currentLanguage)}
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
-              {[
-                "What should I do today?",
-                "Show me my week",
-                "How am I doing?",
-              ].map((suggestion) => (
+              {([
+                { key: "chat.today" as const, en: "What should I do today?" },
+                { key: "chat.week" as const, en: "Show me my week" },
+                { key: "chat.progress" as const, en: "How am I doing?" },
+              ]).map(({ key, en }) => (
                 <button
-                  key={suggestion}
+                  key={key}
                   onClick={() => {
-                    sendMessage({ text: suggestion });
+                    sendMessage({ text: t(key, currentLanguage) || en });
                   }}
                   className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
                 >
-                  {suggestion}
+                  {t(key, currentLanguage)}
                 </button>
               ))}
             </div>
@@ -396,7 +397,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Message huuman..."
+            placeholder={t("chat.placeholder", currentLanguage)}
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
           />
           <button

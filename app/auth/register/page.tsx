@@ -4,9 +4,12 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import LanguageSelector from "@/components/auth/LanguageSelector";
+import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
+import { t } from "@/lib/translations";
 
 export default function TelegramRegisterPage() {
   const [languageChosen, setLanguageChosen] = useState(false);
+  const [lang, setLang] = useState<LanguageCode>("en");
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +56,7 @@ export default function TelegramRegisterPage() {
   }
 
   if (!languageChosen) {
-    return <LanguageSelector onSelect={() => setLanguageChosen(true)} />;
+    return <LanguageSelector onSelect={() => { setLang(getSavedLanguage()); setLanguageChosen(true); }} />;
   }
 
   if (status === "sent") {
@@ -85,14 +88,14 @@ export default function TelegramRegisterPage() {
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-zinc-100">huuman</h1>
             <p className="text-base text-zinc-400">
-              Enter your email to create your account.
+              {t("register.enterEmail", lang)}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-zinc-300">
-                Email
+                {t("register.emailLabel", lang)}
               </label>
               <input
                 id="email"
@@ -121,16 +124,16 @@ export default function TelegramRegisterPage() {
               {status === "loading" ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  Setting up...
+                  {t("register.settingUp", lang)}
                 </>
               ) : (
-                "Continue"
+                t("continue", lang)
               )}
             </button>
           </form>
 
           <p className="text-xs text-zinc-600 text-center">
-            Your email secures your account and lets you access huuman on any device.
+            {t("register.emailNote", lang)}
           </p>
 
           <a

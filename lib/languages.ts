@@ -46,4 +46,11 @@ export function getSavedLanguage(): LanguageCode {
 
 export function saveLanguage(code: LanguageCode) {
   localStorage.setItem("preferred_language", code);
+  document.cookie = `lang=${code};path=/;max-age=31536000;SameSite=Lax`;
+}
+
+export function getLanguageFromCookies(cookieHeader: string | null): LanguageCode {
+  if (!cookieHeader) return "en";
+  const match = cookieHeader.match(/(?:^|;\s*)lang=([^;]+)/);
+  return (match?.[1] as LanguageCode) || "en";
 }

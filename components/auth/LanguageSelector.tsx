@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LANGUAGES, saveLanguage, type LanguageCode } from "@/lib/languages";
+import { t } from "@/lib/translations";
 
 interface LanguageSelectorProps {
   onSelect: (languageCode: string) => void;
@@ -124,7 +125,7 @@ export default function LanguageSelector({ onSelect }: LanguageSelectorProps) {
             onClick={handleConfirm}
             className="mt-2 w-full rounded-xl bg-zinc-100 py-3.5 text-[15px] font-semibold text-zinc-900 transition-colors hover:bg-white active:bg-zinc-200"
           >
-            Continue
+            {t("continue", selected)}
           </motion.button>
         </div>
       </motion.div>

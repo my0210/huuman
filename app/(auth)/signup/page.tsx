@@ -5,9 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import LanguageSelector from "@/components/auth/LanguageSelector";
+import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
+import { t } from "@/lib/translations";
 
 export default function SignupPage() {
   const [languageChosen, setLanguageChosen] = useState(false);
+  const [lang, setLang] = useState<LanguageCode>("en");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -39,7 +42,7 @@ export default function SignupPage() {
   };
 
   if (!languageChosen) {
-    return <LanguageSelector onSelect={() => setLanguageChosen(true)} />;
+    return <LanguageSelector onSelect={() => { setLang(getSavedLanguage()); setLanguageChosen(true); }} />;
   }
 
   return (
@@ -54,7 +57,7 @@ export default function SignupPage() {
         <div className="w-full max-w-sm space-y-8 px-6">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-zinc-100">huuman</h1>
-            <p className="mt-2 text-sm text-zinc-500">Create your account</p>
+            <p className="mt-2 text-sm text-zinc-500">{t("signup.title", lang)}</p>
           </div>
 
           <form onSubmit={handleSignup} className="space-y-4">
@@ -63,7 +66,7 @@ export default function SignupPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
+                placeholder={t("signup.email", lang)}
                 required
                 className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
               />
@@ -73,7 +76,7 @@ export default function SignupPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password (min 6 characters)"
+                placeholder={t("signup.password", lang)}
                 required
                 minLength={6}
                 className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
@@ -89,14 +92,14 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full rounded-xl bg-zinc-100 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? t("signup.loading", lang) : t("signup.submit", lang)}
             </button>
           </form>
 
           <p className="text-center text-xs text-zinc-500">
-            Already have an account?{" "}
+            {t("signup.hasAccount", lang)}{" "}
             <a href="/login" className="text-zinc-300 hover:text-zinc-100">
-              Sign in
+              {t("signup.signin", lang)}
             </a>
           </p>
         </div>

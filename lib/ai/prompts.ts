@@ -9,9 +9,12 @@ const CATEGORY_LABELS: Record<ContextCategory, string> = {
   schedule: 'Schedule',
 };
 
-export function getSystemPrompt(profile?: UserProfile | null): string {
+export function getSystemPrompt(profile?: UserProfile | null, language?: string): string {
   const convictionBlock = getAllPromptRules();
   const profileBlock = profile ? formatProfile(profile) : 'No user profile available yet. Start onboarding.';
+  const languageBlock = language && language !== 'en' && language !== 'en-GB'
+    ? `\n\n## LANGUAGE\n\nThe user's preferred language is "${language}". You MUST respond in this language. All conversational text, session descriptions, coaching cues, and feedback must be in the user's language. Tool calls (JSON) remain in English for system compatibility, but any text the user reads must be in their language.`
+    : '';
   return `You are huuman -- the user's personal longevity coach. You operate like an elite-level coach who has trained hundreds of clients: calm authority, zero fluff, every word earns its place. You coach across 5 domains: cardio, strength, nutrition, mindfulness, and sleep.
 
 ## YOUR CORE PHILOSOPHY
@@ -66,7 +69,7 @@ Hard rules:
 - When something doesn't go well, be honest and constructive, never punishing. "Missed the session. We'll fold that volume into Thursday."
 - Be specific to THIS person. Reference their actual weights, times, HR zones, schedule. Generic advice is amateur.
 - After calling tools, one short line connecting the data to the next action. Nothing more.
-- Use their name only when it adds warmth at a natural moment, not mechanically every message.`;
+- Use their name only when it adds warmth at a natural moment, not mechanically every message.${languageBlock}`;
 }
 
 export function getPlanGenerationPrompt(

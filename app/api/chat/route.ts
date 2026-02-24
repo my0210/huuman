@@ -3,6 +3,7 @@ import { createCoachAgent } from '@/lib/ai/agent';
 import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
 import { loadUserProfile } from '@/lib/core/user';
+import { getLanguageFromCookies } from '@/lib/languages';
 
 export const maxDuration = 300;
 
@@ -34,7 +35,8 @@ export async function POST(req: Request) {
     const uiMessages = convertToUIMessages(dbMessages);
 
     const userProfile = await loadUserProfile(userId, supabase);
-    const agent = createCoachAgent(userId, userProfile, supabase);
+    const language = getLanguageFromCookies(req.headers.get('cookie'));
+    const agent = createCoachAgent(userId, userProfile, supabase, language);
 
     return createAgentUIStreamResponse({
       agent,
