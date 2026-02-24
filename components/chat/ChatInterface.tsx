@@ -261,24 +261,42 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
           </div>
         )}
 
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[85%] ${
-                message.role === "user"
-                  ? "rounded-2xl rounded-br-md bg-zinc-800 px-4 py-2.5"
-                  : "space-y-3"
-              }`}
-            >
-              {message.parts.map((part, index) => (
-                <MessagePart key={index} part={part} role={message.role} />
-              ))}
+        {messages.map((message, i) => {
+          const ts = (message as unknown as { createdAt?: Date | string }).createdAt;
+          const time = ts ? new Date(ts) : null;
+          const prevTs = i > 0
+            ? (messages[i - 1] as unknown as { createdAt?: Date | string }).createdAt
+            : null;
+          const prevTime = prevTs ? new Date(prevTs) : null;
+
+          const showTimestamp = time && (
+            !prevTime ||
+            time.getTime() - prevTime.getTime() > 5 * 60 * 1000
+          );
+
+          return (
+            <div key={message.id}>
+              {showTimestamp && time && (
+                <p className="text-center text-[10px] text-zinc-600 py-2">
+                  {formatChatTimestamp(time)}
+                </p>
+              )}
+              <div className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] ${
+                    message.role === "user"
+                      ? "rounded-2xl rounded-br-md bg-zinc-800 px-4 py-2.5"
+                      : "space-y-3"
+                  }`}
+                >
+                  {message.parts.map((part, index) => (
+                    <MessagePart key={index} part={part} role={message.role} />
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {isLoading && messages[messages.length - 1]?.role === "user" && (
           <div className="flex justify-start">
@@ -316,4 +334,27 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
       </form>
     </div>
   );
+}
+
+function formatChatTimestamp(date: Date): string {
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+
+  if (isToday) return time;
+  if (isYesterday) return `Yesterday ${time}`;
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  const dateStr = date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  return `${dateStr} ${time}`;
 }

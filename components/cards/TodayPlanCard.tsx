@@ -76,7 +76,8 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
     );
   }
 
-  const dayName = new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" });
+  const d = new Date(date + "T12:00:00");
+  const dayName = d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const completed = sessions.filter((s) => s.status === "completed").length;
   const total = sessions.length;
 
