@@ -166,7 +166,7 @@ async function advanceOnboarding(
 
     if (step.type === 'welcome') {
       await sendMessage(state.chat_id,
-        `<b>huuman</b>\n\nI'm going to build your weekly program across 5 domains: cardio, strength, nutrition, sleep, and mindfulness. First I need to know where you stand.\n\nTakes about 2 minutes.`,
+        `<b>huuman</b>\n\nI'm going to build your weekly program across 5 domains: cardio, strength, mindfulness, nutrition, and sleep. First I need to know where you stand.\n\nTakes about 2 minutes.`,
       );
       state.step_index++;
       await saveState(state, supabase);

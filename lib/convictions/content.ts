@@ -92,4 +92,4 @@ export const DOMAIN_CONTENT: Record<Domain, DomainContent> = {
   },
 };
 
-export const DOMAIN_ORDER: Domain[] = ['cardio', 'strength', 'nutrition', 'sleep', 'mindfulness'];
+export const DOMAIN_ORDER: Domain[] = ['cardio', 'strength', 'mindfulness', 'nutrition', 'sleep'];

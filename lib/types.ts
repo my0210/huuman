@@ -8,7 +8,7 @@ export type AppSupabaseClient = SupabaseClient;
 
 export type Domain = 'cardio' | 'strength' | 'nutrition' | 'mindfulness' | 'sleep';
 
-export const DOMAINS: Domain[] = ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'];
+export const DOMAINS: Domain[] = ['cardio', 'strength', 'mindfulness', 'nutrition', 'sleep'];
 
 export type SessionDomain = 'cardio' | 'strength' | 'mindfulness';
 export const SESSION_DOMAINS: SessionDomain[] = ['cardio', 'strength', 'mindfulness'];

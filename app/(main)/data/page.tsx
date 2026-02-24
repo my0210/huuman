@@ -133,7 +133,7 @@ export default function DataPage() {
           <section className="space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Baselines</h2>
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
-              {(["cardio", "strength", "nutrition", "sleep", "mindfulness"] as const).map((domain) => (
+              {(["cardio", "strength", "mindfulness", "nutrition", "sleep"] as const).map((domain) => (
                 <div key={domain} className="px-4 py-3">
                   <p className="text-xs font-medium text-zinc-400" style={{ color: DOMAIN_META[domain].color }}>
                     {DOMAIN_META[domain].label}

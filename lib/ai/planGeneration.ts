@@ -176,7 +176,7 @@ export async function generateWeeklyPlan(
       title: s.title,
       status: 'pending',
       detail,
-      sort_order: s.sortOrder,
+      sort_order: SESSION_DOMAINS.indexOf(s.domain as SessionDomain) * 100 + (s.sortOrder ?? 0),
     };
   });
 

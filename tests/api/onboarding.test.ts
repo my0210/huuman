@@ -14,7 +14,7 @@ describe('Onboarding step definitions', () => {
   });
 
   it('alternates methodology and questions for each domain', () => {
-    const domains: Domain[] = ['cardio', 'strength', 'nutrition', 'sleep', 'mindfulness'];
+    const domains: Domain[] = ['cardio', 'strength', 'mindfulness', 'nutrition', 'sleep'];
     for (let i = 0; i < domains.length; i++) {
       const methStep = ONBOARDING_STEPS[1 + i * 2];
       const qStep = ONBOARDING_STEPS[2 + i * 2];

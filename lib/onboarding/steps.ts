@@ -68,7 +68,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     type: 'welcome',
     title: 'Welcome to huuman',
-    body: 'We build your weekly plan across 5 evidence-based domains: cardio, strength, nutrition, sleep, and mindfulness.',
+    body: 'We build your weekly plan across 5 evidence-based domains: cardio, strength, mindfulness, nutrition, and sleep.',
     subtitle: "First, we'll walk you through each domain -- the approach we follow and why. Then we'll ask where you are today so your plan starts in the right place.",
   },
 
@@ -171,10 +171,33 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     ],
   },
 
-  // Step 5: Nutrition methodology
+  // Step 5: Mindfulness methodology
+  { type: 'methodology', domain: 'mindfulness' },
+
+  // Step 6: Mindfulness baseline
+  {
+    type: 'questions',
+    domain: 'mindfulness',
+    title: 'Your mindfulness baseline',
+    questions: [
+      {
+        id: 'mindfulness.experience',
+        label: 'Have you tried meditation, breathwork, or journaling?',
+        kind: 'single_select',
+        options: [
+          { value: 'never', label: 'Never tried any' },
+          { value: 'tried_few_times', label: 'Tried a few times' },
+          { value: 'occasional', label: 'I practice occasionally' },
+          { value: 'regular', label: 'I have a regular practice' },
+        ],
+      },
+    ],
+  },
+
+  // Step 7: Nutrition methodology
   { type: 'methodology', domain: 'nutrition' },
 
-  // Step 6: Nutrition baseline
+  // Step 8: Nutrition baseline
   {
     type: 'questions',
     domain: 'nutrition',
@@ -205,10 +228,10 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     ],
   },
 
-  // Step 7: Sleep methodology
+  // Step 9: Sleep methodology
   { type: 'methodology', domain: 'sleep' },
 
-  // Step 8: Sleep baseline
+  // Step 10: Sleep baseline
   {
     type: 'questions',
     domain: 'sleep',
@@ -244,29 +267,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
           { value: 'no', label: 'No' },
           { value: 'sometimes', label: 'Sometimes' },
           { value: 'often', label: 'Often' },
-        ],
-      },
-    ],
-  },
-
-  // Step 9: Mindfulness methodology
-  { type: 'methodology', domain: 'mindfulness' },
-
-  // Step 10: Mindfulness baseline
-  {
-    type: 'questions',
-    domain: 'mindfulness',
-    title: 'Your mindfulness baseline',
-    questions: [
-      {
-        id: 'mindfulness.experience',
-        label: 'Have you tried meditation, breathwork, or journaling?',
-        kind: 'single_select',
-        options: [
-          { value: 'never', label: 'Never tried any' },
-          { value: 'tried_few_times', label: 'Tried a few times' },
-          { value: 'occasional', label: 'I practice occasionally' },
-          { value: 'regular', label: 'I have a regular practice' },
         ],
       },
     ],
