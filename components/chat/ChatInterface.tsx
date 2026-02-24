@@ -170,8 +170,9 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                       <button
                         key={lang.code}
                         onClick={() => {
-                          setCurrentLanguage(lang.code);
+                          if (lang.code === currentLanguage) return;
                           saveLanguage(lang.code);
+                          window.location.reload();
                         }}
                         className={`w-full flex items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm transition-colors ${
                           isActive
