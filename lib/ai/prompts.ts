@@ -76,6 +76,7 @@ export function getPlanGenerationPrompt(
   profile: UserProfile,
   weekStart: string,
   previousWeekContext?: string,
+  startFromDate?: string,
 ): string {
   const convictionBlock = getAllPromptRules();
   const profileBlock = formatProfile(profile);
@@ -91,12 +92,12 @@ ${convictionBlock}
 ${profileBlock}
 
 ## WEEK STARTING: ${weekStart}
-
+${startFromDate && startFromDate !== weekStart ? `## PLAN FROM: ${startFromDate} (skip days before this date -- the week is already in progress)\n` : ''}
 ${previousWeekContext ? `## PREVIOUS WEEK CONTEXT\n${previousWeekContext}\n` : ''}
 
 ## REQUIREMENTS
 
-1. Create sessions across 3 domains (cardio, strength, mindfulness) for the full week (Monday through Sunday)
+1. Create sessions across 3 domains (cardio, strength, mindfulness)${startFromDate && startFromDate !== weekStart ? ` from ${startFromDate} through Sunday. Do NOT create sessions for days before ${startFromDate}.` : ' for the full week (Monday through Sunday)'}
 2. Respect ALL user context -- injuries, equipment, environment, schedule. If the user has temporary context (e.g., training at home this week, traveling), adapt the plan accordingly.
 3. Follow conviction rules exactly (Zone 2 min 45 min, Zone 5 max 1x/week, progressive overload, etc.)
 4. Each session MUST include full detail:
@@ -175,6 +176,7 @@ export function getDomainPlanPrompt(
   domain: SessionDomain,
   profile: UserProfile,
   weekStart: string,
+  startFromDate?: string,
 ): string {
   const conviction = getConviction(domain);
   const convictionRules = conviction.promptRules.join('\n');
@@ -182,8 +184,9 @@ export function getDomainPlanPrompt(
   const example = SESSION_EXAMPLES[domain];
   const detailReqs = SESSION_DETAIL_REQS[domain];
   const label = DOMAIN_META[domain].label;
+  const midWeek = startFromDate && startFromDate !== weekStart;
 
-  return `Generate ${label} sessions for the full week (Monday through Sunday).
+  return `Generate ${label} sessions${midWeek ? ` from ${startFromDate} through Sunday` : ' for the full week (Monday through Sunday)'}.
 
 ## CONVICTION RULES (MUST FOLLOW)
 
@@ -194,10 +197,10 @@ ${convictionRules}
 ${profileBlock}
 
 ## WEEK STARTING: ${weekStart}
-
+${midWeek ? `## PLAN FROM: ${startFromDate} (skip days before this date)\n` : ''}
 ## REQUIREMENTS
 
-1. Create ${label.toLowerCase()} sessions for Monday through Sunday. Include rest days where appropriate (omit sessions on rest days).
+1. Create ${label.toLowerCase()} sessions${midWeek ? ` from ${startFromDate} through Sunday. Do NOT create sessions for days before ${startFromDate}.` : ' for Monday through Sunday.'} Include rest days where appropriate (omit sessions on rest days).
 2. Respect ALL user context -- injuries, equipment, environment, schedule.
 3. Follow conviction rules exactly.
 4. Each session MUST include full detail: ${detailReqs}

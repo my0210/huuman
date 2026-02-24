@@ -1,7 +1,7 @@
 import { generateObject } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import type { AppSupabaseClient, UserProfile, TrackingBriefs, SessionDomain } from '@/lib/types';
-import { getWeekStart, SESSION_DOMAINS } from '@/lib/types';
+import { getWeekStart, getTodayISO, SESSION_DOMAINS } from '@/lib/types';
 import { loadUserProfile } from '@/lib/core/user';
 import { getDomainPlanPrompt, getIntroPlanPrompt, getTrackingBriefsPrompt } from './prompts';
 import {
@@ -28,8 +28,9 @@ async function generateDomainSessions(
   domain: SessionDomain,
   profile: UserProfile,
   weekStart: string,
+  startFromDate?: string,
 ): Promise<SessionOutput[]> {
-  const prompt = getDomainPlanPrompt(domain, profile, weekStart);
+  const prompt = getDomainPlanPrompt(domain, profile, weekStart, startFromDate);
 
   const result = await generateObject({
     model,
@@ -105,6 +106,8 @@ export async function generateWeeklyPlan(
   }
 
   const weekStart = weekStartOverride ?? getWeekStart();
+  const today = getTodayISO();
+  const startFromDate = today > weekStart ? today : undefined;
 
   let allSessions: SessionOutput[];
   let introMessage: string;
@@ -112,7 +115,7 @@ export async function generateWeeklyPlan(
   try {
     const [domainResults, briefs] = await Promise.all([
       Promise.all(
-        SESSION_DOMAINS.map(domain => generateDomainSessions(domain, profile, weekStart)),
+        SESSION_DOMAINS.map(domain => generateDomainSessions(domain, profile, weekStart, startFromDate)),
       ),
       generateTrackingBriefs(profile),
     ]);
@@ -178,7 +181,7 @@ export async function generateWeeklyPlan(
       detail,
       sort_order: SESSION_DOMAINS.indexOf(s.domain as SessionDomain) * 100 + (s.sortOrder ?? 0),
     };
-  });
+  }).filter((s) => s.scheduled_date >= today);
 
   const { error: sessionsError } = await supabase
     .from('planned_sessions')
