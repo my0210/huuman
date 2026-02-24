@@ -14,30 +14,31 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
       const today = getTodayISO();
       const weekStart = getWeekStart();
 
-      const { data: allSessions } = await supabase
-        .from('planned_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('scheduled_date', today)
-        .order('sort_order');
-
-      const sessions = (allSessions ?? []).filter(
-        (s: Record<string, unknown>) => SESSION_DOMAINS.includes(s.domain as typeof SESSION_DOMAINS[number]),
-      );
-
-      const { data: habits } = await supabase
-        .from('daily_habits')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('date', today)
-        .maybeSingle();
-
       const { data: activePlan } = await supabase
         .from('weekly_plans')
         .select('id, tracking_briefs')
         .eq('user_id', userId)
         .eq('week_start', weekStart)
         .eq('status', 'active')
+        .maybeSingle();
+
+      let sessions: Record<string, unknown>[] = [];
+      if (activePlan) {
+        const { data: allSessions } = await supabase
+          .from('planned_sessions')
+          .select('*')
+          .eq('plan_id', activePlan.id)
+          .eq('scheduled_date', today)
+          .in('domain', SESSION_DOMAINS)
+          .order('sort_order');
+        sessions = allSessions ?? [];
+      }
+
+      const { data: habits } = await supabase
+        .from('daily_habits')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('date', today)
         .maybeSingle();
 
       return {
@@ -67,17 +68,17 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('week_start', weekStart)
         .maybeSingle();
 
-      const { data: allSessions } = await supabase
-        .from('planned_sessions')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('scheduled_date', weekStart)
-        .order('scheduled_date')
-        .order('sort_order');
-
-      const sessions = (allSessions ?? []).filter(
-        (s: Record<string, unknown>) => SESSION_DOMAINS.includes(s.domain as typeof SESSION_DOMAINS[number]),
-      );
+      let sessions: Record<string, unknown>[] = [];
+      if (plan) {
+        const { data: allSessions } = await supabase
+          .from('planned_sessions')
+          .select('*')
+          .eq('plan_id', plan.id)
+          .in('domain', SESSION_DOMAINS)
+          .order('scheduled_date')
+          .order('sort_order');
+        sessions = allSessions ?? [];
+      }
 
       return {
         weekStart,
@@ -136,28 +137,52 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
       }
 
       const weekStart = getWeekStart();
-      const { data: allSessions } = await supabase
-        .from('planned_sessions')
-        .select('domain, status')
+      const { data: activePlan } = await supabase
+        .from('weekly_plans')
+        .select('id')
         .eq('user_id', userId)
-        .gte('scheduled_date', weekStart);
+        .eq('week_start', weekStart)
+        .eq('status', 'active')
+        .maybeSingle();
 
-      return { session, weekProgress: computeWeekProgress(allSessions ?? []) };
+      let weekSessions: Record<string, unknown>[] = [];
+      if (activePlan) {
+        const { data } = await supabase
+          .from('planned_sessions')
+          .select('domain, status')
+          .eq('plan_id', activePlan.id)
+          .in('domain', SESSION_DOMAINS);
+        weekSessions = data ?? [];
+      }
+
+      return { session, weekProgress: computeWeekProgress(weekSessions) };
     },
   });
 
   const show_progress = tool({
     description:
-      'Show weekly progress across all 5 domains. Use when the user asks about progress or wants a status check.',
+      'Show weekly progress across session domains. Use when the user asks about progress or wants a status check.',
     inputSchema: z.object({}),
     execute: async () => {
       const weekStart = getWeekStart();
 
-      const { data: sessions } = await supabase
-        .from('planned_sessions')
-        .select('domain, status')
+      const { data: activePlan } = await supabase
+        .from('weekly_plans')
+        .select('id')
         .eq('user_id', userId)
-        .gte('scheduled_date', weekStart);
+        .eq('week_start', weekStart)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      let sessionRows: Record<string, unknown>[] = [];
+      if (activePlan) {
+        const { data } = await supabase
+          .from('planned_sessions')
+          .select('domain, status')
+          .eq('plan_id', activePlan.id)
+          .in('domain', SESSION_DOMAINS);
+        sessionRows = data ?? [];
+      }
 
       const { data: habits } = await supabase
         .from('daily_habits')
@@ -167,7 +192,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
       return {
         weekStart,
-        progress: computeWeekProgress(sessions ?? []),
+        progress: computeWeekProgress(sessionRows),
         steps: (habits ?? []).map((h: Record<string, unknown>) => ({
           date: h.date,
           steps: h.steps_actual ?? 0,
