@@ -4,6 +4,8 @@ import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META, SESSION_DOMAIN
 import type { AppSupabaseClient } from '@/lib/types';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
+interface SessionRow { domain: string; status: string }
+
 export function createTools(userId: string, supabase: AppSupabaseClient) {
 
   const show_today_plan = tool({
@@ -145,14 +147,14 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('status', 'active')
         .maybeSingle();
 
-      let weekSessions: Record<string, unknown>[] = [];
+      let weekSessions: SessionRow[] = [];
       if (activePlan) {
         const { data } = await supabase
           .from('planned_sessions')
           .select('domain, status')
           .eq('plan_id', activePlan.id)
           .in('domain', SESSION_DOMAINS);
-        weekSessions = data ?? [];
+        weekSessions = (data ?? []) as SessionRow[];
       }
 
       return { session, weekProgress: computeWeekProgress(weekSessions) };
@@ -174,14 +176,14 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('status', 'active')
         .maybeSingle();
 
-      let sessionRows: Record<string, unknown>[] = [];
+      let sessionRows: SessionRow[] = [];
       if (activePlan) {
         const { data } = await supabase
           .from('planned_sessions')
           .select('domain, status')
           .eq('plan_id', activePlan.id)
           .in('domain', SESSION_DOMAINS);
-        sessionRows = data ?? [];
+        sessionRows = (data ?? []) as SessionRow[];
       }
 
       const { data: habits } = await supabase
@@ -354,8 +356,6 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 // =============================================================================
 // Helpers
 // =============================================================================
-
-interface SessionRow { domain: string; status: string }
 
 function computeWeekProgress(sessions: SessionRow[]) {
   const byDomain: Record<string, { total: number; completed: number; skipped: number }> = {};
