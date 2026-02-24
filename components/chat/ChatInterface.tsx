@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check } from "lucide-react";
+import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
@@ -153,6 +153,17 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                 <X size={14} />
               </button>
             </div>
+
+            <button
+              onClick={() => { setMenuOpen(false); router.push("/data"); }}
+              className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            >
+              <Database size={16} className="flex-none text-zinc-500" />
+              <div>
+                <p className="font-medium">Your data</p>
+                <p className="text-xs text-zinc-500">See and manage what the coach knows about you</p>
+              </div>
+            </button>
 
             <button
               onClick={handleRedoOnboarding}
