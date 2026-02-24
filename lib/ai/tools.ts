@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META } from '@/lib/types';
+import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META, SESSION_DOMAINS } from '@/lib/types';
 import type { AppSupabaseClient } from '@/lib/types';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
@@ -8,18 +8,22 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
   const show_today_plan = tool({
     description:
-      'Show the user their planned sessions for today. Call this when greeting the user, when they ask "what should I do today", or at the start of any conversation.',
+      'Show the user their planned sessions for today plus daily tracking targets. Call this when greeting the user, when they ask "what should I do today", or at the start of any conversation.',
     inputSchema: z.object({}),
     execute: async () => {
       const today = getTodayISO();
       const weekStart = getWeekStart();
 
-      const { data: sessions } = await supabase
+      const { data: allSessions } = await supabase
         .from('planned_sessions')
         .select('*')
         .eq('user_id', userId)
         .eq('scheduled_date', today)
         .order('sort_order');
+
+      const sessions = (allSessions ?? []).filter(
+        (s: Record<string, unknown>) => SESSION_DOMAINS.includes(s.domain as typeof SESSION_DOMAINS[number]),
+      );
 
       const { data: habits } = await supabase
         .from('daily_habits')
@@ -30,7 +34,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
       const { data: activePlan } = await supabase
         .from('weekly_plans')
-        .select('id')
+        .select('id, tracking_briefs')
         .eq('user_id', userId)
         .eq('week_start', weekStart)
         .eq('status', 'active')
@@ -39,9 +43,10 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
       return {
         date: today,
         weekStart,
-        sessions: sessions ?? [],
+        sessions,
         habits: habits ?? null,
-        hasPlan: (sessions?.length ?? 0) > 0,
+        trackingBriefs: activePlan?.tracking_briefs ?? null,
+        hasPlan: sessions.length > 0,
         hasActivePlanForWeek: !!activePlan,
         needsNewPlan: !activePlan,
       };
@@ -62,7 +67,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('week_start', weekStart)
         .maybeSingle();
 
-      const { data: sessions } = await supabase
+      const { data: allSessions } = await supabase
         .from('planned_sessions')
         .select('*')
         .eq('user_id', userId)
@@ -70,10 +75,15 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .order('scheduled_date')
         .order('sort_order');
 
+      const sessions = (allSessions ?? []).filter(
+        (s: Record<string, unknown>) => SESSION_DOMAINS.includes(s.domain as typeof SESSION_DOMAINS[number]),
+      );
+
       return {
         weekStart,
         plan: plan ?? null,
-        sessions: sessions ?? [],
+        sessions,
+        trackingBriefs: plan?.tracking_briefs ?? null,
         hasPlan: plan !== null,
       };
     },
@@ -324,7 +334,7 @@ interface SessionRow { domain: string; status: string }
 
 function computeWeekProgress(sessions: SessionRow[]) {
   const byDomain: Record<string, { total: number; completed: number; skipped: number }> = {};
-  for (const d of DOMAINS) {
+  for (const d of SESSION_DOMAINS) {
     byDomain[d] = { total: 0, completed: 0, skipped: 0 };
   }
   for (const s of sessions) {

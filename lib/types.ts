@@ -10,6 +10,10 @@ export type Domain = 'cardio' | 'strength' | 'nutrition' | 'mindfulness' | 'slee
 
 export const DOMAINS: Domain[] = ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'];
 
+export type SessionDomain = 'cardio' | 'strength' | 'mindfulness';
+export const SESSION_DOMAINS: SessionDomain[] = ['cardio', 'strength', 'mindfulness'];
+export const TRACKING_DOMAINS: Domain[] = ['nutrition', 'sleep'];
+
 export const DOMAIN_META: Record<Domain, { label: string; icon: string; color: string }> = {
   cardio:      { label: 'Cardio',      icon: 'heart',     color: '#ef4444' },
   strength:    { label: 'Strength',    icon: 'dumbbell',  color: '#f97316' },
@@ -115,8 +119,26 @@ export interface WeeklyPlan {
   weekStart: string; // ISO date (Monday)
   status: PlanStatus;
   introMessage: string;
+  trackingBriefs?: TrackingBriefs;
   sessions: PlannedSession[];
   createdAt: string;
+}
+
+export interface NutritionBrief {
+  calorieTarget: number;
+  proteinTargetG: number;
+  guidelines: string[];
+}
+
+export interface SleepBrief {
+  targetHours: number;
+  bedtimeWindow: string;
+  wakeWindow: string;
+}
+
+export interface TrackingBriefs {
+  nutrition: NutritionBrief;
+  sleep: SleepBrief;
 }
 
 // =============================================================================

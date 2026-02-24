@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Check, Circle } from "lucide-react";
 import { DAY_LABELS, DayOfWeek } from "@/lib/types";
 
+const SESSION_DOMAINS = ["cardio", "strength", "mindfulness"];
+
 interface Session {
   id: string;
   domain: string;
@@ -23,12 +25,11 @@ const domainDot: Record<string, string> = {
   cardio: "bg-red-400",
   strength: "bg-orange-400",
   mindfulness: "bg-cyan-400",
-  nutrition: "bg-green-400",
-  sleep: "bg-violet-400",
 };
 
 export function WeekPlanCard({ data }: { data: Record<string, unknown> }) {
-  const { sessions, hasPlan } = data as unknown as WeekPlanData;
+  const { sessions: allSessions, hasPlan } = data as unknown as WeekPlanData;
+  const sessions = allSessions.filter((s) => SESSION_DOMAINS.includes(s.domain));
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   if (!hasPlan || sessions.length === 0) {

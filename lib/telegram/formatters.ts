@@ -2,6 +2,8 @@ import { escapeHtml, type InlineKeyboard } from './api';
 
 const esc = escapeHtml;
 
+const SESSION_DOMAINS = ['cardio', 'strength', 'mindfulness'];
+
 export interface FormattedResponse {
   text: string;
   replyMarkup?: { inline_keyboard: InlineKeyboard };
@@ -10,7 +12,8 @@ export interface FormattedResponse {
 // ─── Tool formatters ─────────────────────────────────────────────────────────
 
 export function formatTodayPlan(data: Record<string, unknown>): FormattedResponse[] {
-  const sessions = data.sessions as Array<Record<string, unknown>>;
+  const allSessions = data.sessions as Array<Record<string, unknown>>;
+  const sessions = (allSessions ?? []).filter(s => SESSION_DOMAINS.includes(s.domain as string));
   const date = data.date as string;
 
   if (!sessions || sessions.length === 0) {
@@ -60,10 +63,12 @@ export function formatTodayPlan(data: Record<string, unknown>): FormattedRespons
 }
 
 export function formatWeekPlan(data: Record<string, unknown>): FormattedResponse {
-  const sessions = data.sessions as Array<Record<string, unknown>>;
+  const allSessions = data.sessions as Array<Record<string, unknown>>;
+  const sessions = (allSessions ?? []).filter(s => SESSION_DOMAINS.includes(s.domain as string));
   const plan = data.plan as Record<string, unknown> | null;
+  const briefs = data.trackingBriefs as Record<string, unknown> | null;
 
-  if (!sessions || sessions.length === 0) {
+  if (sessions.length === 0) {
     return { text: 'No plan this week. Ask me to generate one.' };
   }
 
@@ -88,6 +93,18 @@ export function formatWeekPlan(data: Record<string, unknown>): FormattedResponse
       })
       .join('\n');
     lines.push(`<b>${esc(dayName)}</b>\n${items}`);
+  }
+
+  if (briefs) {
+    const nut = briefs.nutrition as Record<string, unknown> | undefined;
+    const slp = briefs.sleep as Record<string, unknown> | undefined;
+    const parts: string[] = [];
+    if (nut?.calorieTarget) parts.push(`${nut.calorieTarget} kcal · ${nut.proteinTargetG}g protein`);
+    if (slp?.targetHours) parts.push(`${slp.targetHours}h sleep · Bed ${slp.bedtimeWindow}`);
+    if (parts.length > 0) {
+      lines.push('', '<b>Daily targets</b>');
+      for (const p of parts) lines.push(`  ${esc(p)}`);
+    }
   }
 
   return { text: lines.join('\n') };
@@ -315,8 +332,6 @@ const COMPLETION_NOTES: Record<string, string> = {
   cardio: 'Aerobic work in the bank.',
   strength: 'Strength work done.',
   mindfulness: 'Good practice.',
-  nutrition: 'On plan.',
-  sleep: 'Rest logged.',
 };
 
 function sessionBrief(session: Record<string, unknown>): string {

@@ -1,12 +1,13 @@
 import { generateObject } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
-import type { AppSupabaseClient, UserProfile, Domain } from '@/lib/types';
-import { getWeekStart, DOMAINS } from '@/lib/types';
+import type { AppSupabaseClient, UserProfile, TrackingBriefs, SessionDomain } from '@/lib/types';
+import { getWeekStart, SESSION_DOMAINS } from '@/lib/types';
 import { loadUserProfile } from '@/lib/core/user';
-import { getDomainPlanPrompt, getIntroPlanPrompt } from './prompts';
+import { getDomainPlanPrompt, getIntroPlanPrompt, getTrackingBriefsPrompt } from './prompts';
 import {
   planJsonSchema,
   domainSessionsJsonSchema,
+  trackingBriefsJsonSchema,
   introJsonSchema,
   validatePlan,
   type PlanOutput,
@@ -24,7 +25,7 @@ const model = anthropic('claude-sonnet-4-6');
 // =============================================================================
 
 async function generateDomainSessions(
-  domain: Domain,
+  domain: SessionDomain,
   profile: UserProfile,
   weekStart: string,
 ): Promise<SessionOutput[]> {
@@ -55,6 +56,20 @@ async function generateDomainSessions(
       sortOrder: s.sortOrder ?? i,
     };
   });
+}
+
+async function generateTrackingBriefs(
+  profile: UserProfile,
+): Promise<TrackingBriefs> {
+  const prompt = getTrackingBriefsPrompt(profile);
+
+  const result = await generateObject({
+    model,
+    schema: trackingBriefsJsonSchema,
+    prompt,
+  });
+
+  return result.object as TrackingBriefs;
 }
 
 async function generateIntroMessage(
@@ -93,11 +108,16 @@ export async function generateWeeklyPlan(
 
   let allSessions: SessionOutput[];
   let introMessage: string;
+  let trackingBriefs: TrackingBriefs;
   try {
-    const domainResults = await Promise.all(
-      DOMAINS.map(domain => generateDomainSessions(domain, profile, weekStart)),
-    );
+    const [domainResults, briefs] = await Promise.all([
+      Promise.all(
+        SESSION_DOMAINS.map(domain => generateDomainSessions(domain, profile, weekStart)),
+      ),
+      generateTrackingBriefs(profile),
+    ]);
     allSessions = domainResults.flat();
+    trackingBriefs = briefs;
 
     introMessage = await generateIntroMessage(profile, weekStart, allSessions);
   } catch (err) {
@@ -120,6 +140,7 @@ export async function generateWeeklyPlan(
         week_start: weekStart,
         status: 'active',
         intro_message: plan.introMessage,
+        tracking_briefs: trackingBriefs,
         generation_context: { validation: validation.issues },
       },
       { onConflict: 'user_id,week_start' },

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { jsonSchema } from 'ai';
-import { ALL_CONVICTIONS } from '@/lib/convictions';
 
 export const domainSessionsJsonSchema = jsonSchema({
   type: 'object',
@@ -10,7 +9,7 @@ export const domainSessionsJsonSchema = jsonSchema({
       items: {
         type: 'object',
         properties: {
-          domain: { type: 'string', enum: ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'] },
+          domain: { type: 'string', enum: ['cardio', 'strength', 'mindfulness'] },
           dayOfWeek: { type: 'number', description: 'Day of week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat' },
           title: { type: 'string' },
           detail: { type: 'string', description: 'A valid JSON string containing the domain-specific session detail object. MUST be a non-empty JSON object (not "{}"). See the prompt for required fields per domain.' },
@@ -22,6 +21,38 @@ export const domainSessionsJsonSchema = jsonSchema({
     },
   },
   required: ['sessions'],
+  additionalProperties: false,
+});
+
+export const trackingBriefsJsonSchema = jsonSchema({
+  type: 'object',
+  properties: {
+    nutrition: {
+      type: 'object',
+      properties: {
+        calorieTarget: { type: 'number', description: 'Daily calorie target' },
+        proteinTargetG: { type: 'number', description: 'Daily protein target in grams' },
+        guidelines: {
+          type: 'array',
+          items: { type: 'string' },
+          description: '2-3 personalized nutrition guidelines for this person',
+        },
+      },
+      required: ['calorieTarget', 'proteinTargetG', 'guidelines'],
+      additionalProperties: false,
+    },
+    sleep: {
+      type: 'object',
+      properties: {
+        targetHours: { type: 'number', description: 'Nightly sleep target in hours' },
+        bedtimeWindow: { type: 'string', description: 'Recommended bedtime window e.g. "22:00-22:30"' },
+        wakeWindow: { type: 'string', description: 'Recommended wake window e.g. "06:00-06:30"' },
+      },
+      required: ['targetHours', 'bedtimeWindow', 'wakeWindow'],
+      additionalProperties: false,
+    },
+  },
+  required: ['nutrition', 'sleep'],
   additionalProperties: false,
 });
 
@@ -43,7 +74,7 @@ export const planJsonSchema = jsonSchema({
       items: {
         type: 'object',
         properties: {
-          domain: { type: 'string', enum: ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'] },
+          domain: { type: 'string', enum: ['cardio', 'strength', 'mindfulness'] },
           dayOfWeek: { type: 'number', description: 'Day of week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat' },
           title: { type: 'string' },
           detail: { type: 'string', description: 'A valid JSON string containing the domain-specific session detail object. MUST be a non-empty JSON object (not "{}"). See the prompt for required fields per domain.' },
@@ -59,7 +90,7 @@ export const planJsonSchema = jsonSchema({
 });
 
 export interface SessionOutput {
-  domain: 'cardio' | 'strength' | 'nutrition' | 'mindfulness' | 'sleep';
+  domain: 'cardio' | 'strength' | 'mindfulness';
   dayOfWeek: number;
   title: string;
   detail: Record<string, unknown>;
@@ -74,7 +105,7 @@ export interface PlanOutput {
 export const planZodSchema = z.object({
   introMessage: z.string(),
   sessions: z.array(z.object({
-    domain: z.enum(['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep']),
+    domain: z.enum(['cardio', 'strength', 'mindfulness']),
     dayOfWeek: z.number(),
     title: z.string(),
     detail: z.record(z.string(), z.unknown()),
@@ -92,8 +123,6 @@ export function validatePlan(sessions: SessionOutput[]): ValidationResult {
 
   const cardioSessions = sessions.filter(s => s.domain === 'cardio');
   const strengthSessions = sessions.filter(s => s.domain === 'strength');
-
-  const cardioRules = ALL_CONVICTIONS.cardio;
 
   function parseZone(raw: unknown): number | null {
     if (typeof raw === 'number') return raw;

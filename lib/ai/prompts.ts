@@ -1,15 +1,15 @@
-import { UserProfile, Domain, DOMAIN_META } from '@/lib/types';
-import { getAllPromptRules, getConviction } from '@/lib/convictions';
+import { UserProfile, Domain, SessionDomain, DOMAIN_META } from '@/lib/types';
+import { getAllPromptRules, getConviction, getTrackingPromptRules } from '@/lib/convictions';
 import { formatDomainBaselines, formatSingleDomainBaseline } from '@/lib/onboarding/formatBaselines';
 
 export function getSystemPrompt(profile?: UserProfile | null): string {
   const convictionBlock = getAllPromptRules();
   const profileBlock = profile ? formatProfile(profile) : 'No user profile available yet. Start onboarding.';
-  return `You are huuman -- the user's personal longevity coach. You operate like an elite-level coach who has trained hundreds of clients: calm authority, zero fluff, every word earns its place. You program across 5 domains: cardio, strength, nutrition, mindfulness, and sleep.
+  return `You are huuman -- the user's personal longevity coach. You operate like an elite-level coach who has trained hundreds of clients: calm authority, zero fluff, every word earns its place. You coach across 5 domains: cardio, strength, nutrition, mindfulness, and sleep.
 
 ## YOUR CORE PHILOSOPHY
 
-The PLAN is the product. You build precise, evidence-based weekly programs adapted to this person's body, schedule, and goals -- then you coach them through execution. Every session is fully prescribed. The user opens the app and knows exactly what to do.
+The PLAN is the product. You build precise, evidence-based weekly programs -- then you coach through execution. The plan contains sessions (cardio, strength, mindfulness) that the user executes. Nutrition and sleep are tracked daily against personalized targets you set each week (calorie target, protein target, sleep hours, bedtime window). The user opens the app and knows exactly what to do and what to hit.
 
 You don't cheerleader. You don't lecture. You observe, adjust, and direct. A missed day is data, not a moral failing -- you note it and move on. What matters is the weekly rhythm and long-term trajectory.
 
@@ -69,7 +69,7 @@ export function getPlanGenerationPrompt(
   const convictionBlock = getAllPromptRules();
   const profileBlock = formatProfile(profile);
 
-  return `Generate a detailed weekly plan for this user.
+  return `Generate a detailed weekly plan for this user. The plan contains SESSIONS only (cardio, strength, mindfulness). Nutrition and sleep are handled separately as daily tracking targets.
 
 ## CONVICTION RULES (MUST FOLLOW)
 
@@ -85,16 +85,15 @@ ${previousWeekContext ? `## PREVIOUS WEEK CONTEXT\n${previousWeekContext}\n` : '
 
 ## REQUIREMENTS
 
-1. Create sessions across ALL 5 domains for the full week (Monday through Sunday)
+1. Create sessions across 3 domains (cardio, strength, mindfulness) for the full week (Monday through Sunday)
 2. Respect ALL user constraints -- schedule, equipment, limitations
 3. Follow conviction rules exactly (Zone 2 min 45 min, Zone 5 max 1x/week, progressive overload, etc.)
 4. Each session MUST include full detail:
    - Cardio: zone, target minutes, activity type, HR range, warm-up, cool-down, pacing cues
    - Strength: focus area, exercises with sets/reps/weight/rest, warm-up, cool-down, form cues
    - Mindfulness: type, duration, guided/unguided, specific instructions
-   - Nutrition: daily calorie/protein targets (if weight provided), guidelines, meal ideas
-   - Sleep: target hours, bedtime/wake windows, wind-down routine
-5. Write an introMessage: 1-2 sentences max. Sound like an elite coach briefing their client on the week. Reference one concrete detail about their situation (schedule change, progression from last week, a specific target). No hype, no "excited to", no "let's crush it", no "I've designed". Just the brief and what matters.
+5. DO NOT include nutrition or sleep sessions -- those are tracked daily, not as sessions
+6. Write an introMessage: 1-2 sentences max. Sound like an elite coach briefing their client on the week. Reference one concrete detail about their situation (schedule change, progression from last week, a specific target). No hype, no "excited to", no "let's crush it", no "I've designed". Just the brief and what matters.
 
 ## OUTPUT FORMAT
 
@@ -121,31 +120,17 @@ Example output structure:
       "sortOrder": 1
     },
     {
-      "domain": "nutrition",
-      "dayOfWeek": 1,
-      "title": "Daily Nutrition Target",
-      "detail": "{\"calories\":2200,\"proteinGrams\":190,\"guidelines\":\"Hit protein at every meal. 40g breakfast, 50g lunch, 50g dinner, 50g snacks.\",\"mealIdeas\":[\"Greek yogurt + granola + berries\",\"Chicken stir-fry with rice\",\"Salmon with roasted veg\"]}",
-      "sortOrder": 2
-    },
-    {
       "domain": "mindfulness",
       "dayOfWeek": 1,
       "title": "Box Breathing",
       "detail": "{\"type\":\"breathwork\",\"targetMinutes\":8,\"guidelines\":\"4 counts in, 4 hold, 4 out, 4 hold. Seated, eyes closed.\"}",
-      "sortOrder": 3
-    },
-    {
-      "domain": "sleep",
-      "dayOfWeek": 1,
-      "title": "Sleep Routine",
-      "detail": "{\"targetHours\":7.5,\"bedtimeWindow\":\"10:30-11:00 PM\",\"wakeWindow\":\"6:00-6:30 AM\",\"guidelines\":\"No screens 30 min before bed. Dim lights at 10 PM.\"}",
-      "sortOrder": 4
+      "sortOrder": 2
     }
   ]
 }`;
 }
 
-const DOMAIN_EXAMPLES: Record<Domain, string> = {
+const SESSION_EXAMPLES: Record<SessionDomain, string> = {
   cardio: `{
       "domain": "cardio",
       "dayOfWeek": 1,
@@ -160,13 +145,6 @@ const DOMAIN_EXAMPLES: Record<Domain, string> = {
       "detail": "{\\"focus\\":\\"upper body\\",\\"warmUp\\":\\"5 min band pull-aparts, arm circles\\",\\"exercises\\":[{\\"name\\":\\"Bench Press\\",\\"sets\\":3,\\"reps\\":\\"8-10\\",\\"weight\\":\\"60 kg\\",\\"rest\\":\\"90s\\",\\"cues\\":\\"retract scapula, feet flat\\"},{\\"name\\":\\"Barbell Row\\",\\"sets\\":3,\\"reps\\":\\"8-10\\",\\"weight\\":\\"50 kg\\",\\"rest\\":\\"90s\\",\\"cues\\":\\"chest to bar, squeeze lats\\"}],\\"coolDown\\":\\"5 min chest and lat stretches\\"}",
       "sortOrder": 0
     }`,
-  nutrition: `{
-      "domain": "nutrition",
-      "dayOfWeek": 1,
-      "title": "Daily Nutrition Target",
-      "detail": "{\\"calories\\":2200,\\"proteinGrams\\":190,\\"guidelines\\":\\"Hit protein at every meal. 40g breakfast, 50g lunch, 50g dinner, 50g snacks.\\",\\"mealIdeas\\":[\\"Greek yogurt + granola + berries\\",\\"Chicken stir-fry with rice\\",\\"Salmon with roasted veg\\"]}",
-      "sortOrder": 0
-    }`,
   mindfulness: `{
       "domain": "mindfulness",
       "dayOfWeek": 1,
@@ -174,33 +152,24 @@ const DOMAIN_EXAMPLES: Record<Domain, string> = {
       "detail": "{\\"type\\":\\"breathwork\\",\\"targetMinutes\\":8,\\"guidelines\\":\\"4 counts in, 4 hold, 4 out, 4 hold. Seated, eyes closed.\\"}",
       "sortOrder": 0
     }`,
-  sleep: `{
-      "domain": "sleep",
-      "dayOfWeek": 1,
-      "title": "Sleep Routine",
-      "detail": "{\\"targetHours\\":7.5,\\"bedtimeWindow\\":\\"10:30-11:00 PM\\",\\"wakeWindow\\":\\"6:00-6:30 AM\\",\\"guidelines\\":\\"No screens 30 min before bed. Dim lights at 10 PM.\\"}",
-      "sortOrder": 0
-    }`,
 };
 
-const DOMAIN_DETAIL_REQS: Record<Domain, string> = {
+const SESSION_DETAIL_REQS: Record<SessionDomain, string> = {
   cardio: 'zone, target minutes, activity type, HR range, warm-up, cool-down, pacing cues',
   strength: 'focus area, exercises with sets/reps/weight/rest, warm-up, cool-down, form cues',
-  nutrition: 'daily calorie/protein targets (if weight provided), guidelines, meal ideas',
   mindfulness: 'type, duration, guided/unguided, specific instructions',
-  sleep: 'target hours, bedtime/wake windows, wind-down routine',
 };
 
 export function getDomainPlanPrompt(
-  domain: Domain,
+  domain: SessionDomain,
   profile: UserProfile,
   weekStart: string,
 ): string {
   const conviction = getConviction(domain);
   const convictionRules = conviction.promptRules.join('\n');
   const profileBlock = formatProfileCompact(domain, profile);
-  const example = DOMAIN_EXAMPLES[domain];
-  const detailReqs = DOMAIN_DETAIL_REQS[domain];
+  const example = SESSION_EXAMPLES[domain];
+  const detailReqs = SESSION_DETAIL_REQS[domain];
   const label = DOMAIN_META[domain].label;
 
   return `Generate ${label} sessions for the full week (Monday through Sunday).
@@ -245,6 +214,35 @@ User: ${name}, age ${profile.age ?? 'unknown'}, ${profile.weightKg ? profile.wei
 This week's sessions include: ${sessionTitles.slice(0, 8).join(', ')}.
 
 Sound like an elite coach briefing their client on the week. Reference one concrete detail about their situation (schedule, progression, a specific target). No hype, no "excited to", no "let's crush it", no "I've designed". Just the brief and what matters. Plain text, no markdown.`;
+}
+
+export function getTrackingBriefsPrompt(profile: UserProfile): string {
+  const trackingRules = getTrackingPromptRules();
+  const profileBlock = formatProfile(profile);
+
+  return `Set this person's weekly nutrition and sleep targets. You are their coach -- be specific and opinionated based on their profile.
+
+## CONVICTION RULES
+
+${trackingRules}
+
+## USER PROFILE
+
+${profileBlock}
+
+## REQUIREMENTS
+
+Generate personalized targets:
+
+NUTRITION:
+- calorieTarget: a specific daily calorie number. If weight and goals are provided, calculate based on their situation (cut = deficit, maintain = TDEE, build = surplus). If weight is unknown, estimate a reasonable target.
+- proteinTargetG: 0.7-1g per pound of bodyweight (convert from kg). Round to nearest 5g.
+- guidelines: 2-3 short, actionable rules specific to this person. Not generic advice. Reference their restrictions, goals, or habits.
+
+SLEEP:
+- targetHours: specific target (e.g. 7.5, not a range)
+- bedtimeWindow: 30-min window based on their baseline (e.g. "22:00-22:30")
+- wakeWindow: 30-min window that gives them their target hours (e.g. "06:00-06:30")`;
 }
 
 function formatProfileCompact(domain: Domain, profile: UserProfile): string {

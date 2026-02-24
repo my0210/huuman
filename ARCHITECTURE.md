@@ -1,6 +1,6 @@
 # huuman Architecture
 
-AI longevity coach that generates weekly health plans across 5 domains (cardio, strength, nutrition, sleep, mindfulness) and helps users execute them. Two clients: web app and Telegram bot, sharing the same core.
+AI longevity coach that generates weekly health plans and helps users execute them. Two clients: web app and Telegram bot, sharing the same core. The plan contains **sessions** (cardio, strength, mindfulness) that users execute, plus **tracking briefs** -- personalized nutrition/sleep targets generated once per week and tracked daily.
 
 ## Stack
 
@@ -68,9 +68,10 @@ Bidirectional linking:
 
 ### Conviction system
 `lib/convictions/*.ts` define non-negotiable rules per domain (Zone 2 min 45 min, 3 strength sessions/week, etc.). These are:
-- Injected into the system prompt
-- Used to validate generated plans (`validatePlan()`)
-- Referenced in plan generation prompts
+- All 5 domains injected into the system prompt (coach conversational knowledge)
+- Session domains (cardio/strength/mindfulness) used in plan generation prompts
+- Tracking domains (nutrition/sleep) used in tracking briefs generation
+- `validatePlan()` validates cardio/strength session rules
 
 ### AI agent
 `ToolLoopAgent` with `stepCountIs(5)` stop condition. The agent has 9 tools that render interactive UI:
@@ -86,8 +87,8 @@ Bidirectional linking:
 
 6 tables, all with RLS:
 - `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints, onboarding_completed, telegram_chat_id
-- `weekly_plans` -- user_id, week_start, status, intro_message. Unique on (user_id, week_start).
-- `planned_sessions` -- plan_id, user_id, domain, scheduled_date, title, status, detail (JSONB), completed_detail
+- `weekly_plans` -- user_id, week_start, status, intro_message, tracking_briefs (JSONB: personalized nutrition/sleep targets). Unique on (user_id, week_start).
+- `planned_sessions` -- plan_id, user_id, domain (cardio/strength/mindfulness), scheduled_date, title, status, detail (JSONB), completed_detail
 - `daily_habits` -- user_id, date, steps, nutrition, sleep. Unique on (user_id, date).
 - `conversations` -- user_id, created_at
 - `messages` -- conversation_id, role, parts (JSONB), attachments

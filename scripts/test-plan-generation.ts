@@ -12,10 +12,10 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import { zodToJsonSchema } from 'zod-to-json-schema';
-import { planJsonSchema, domainSessionsJsonSchema, introJsonSchema, planZodSchema, validatePlan, type PlanOutput, type SessionOutput } from '../lib/ai/planSchema';
-import { getPlanGenerationPrompt, getDomainPlanPrompt, getIntroPlanPrompt } from '../lib/ai/prompts';
-import type { UserProfile, DomainBaselines, Domain } from '../lib/types';
-import { DOMAINS } from '../lib/types';
+import { planJsonSchema, domainSessionsJsonSchema, trackingBriefsJsonSchema, introJsonSchema, planZodSchema, validatePlan, type PlanOutput, type SessionOutput } from '../lib/ai/planSchema';
+import { getPlanGenerationPrompt, getDomainPlanPrompt, getIntroPlanPrompt, getTrackingBriefsPrompt } from '../lib/ai/prompts';
+import type { UserProfile, DomainBaselines, SessionDomain, TrackingBriefs } from '../lib/types';
+import { SESSION_DOMAINS } from '../lib/types';
 
 const ANTHROPIC_UNSUPPORTED_KEYWORDS = [
   'minimum',
@@ -82,6 +82,7 @@ function testSchemaCompatibility() {
   const schemas: [string, unknown][] = [
     ['planJsonSchema', planJsonSchema],
     ['domainSessionsJsonSchema', domainSessionsJsonSchema],
+    ['trackingBriefsJsonSchema', trackingBriefsJsonSchema],
     ['introJsonSchema', introJsonSchema],
   ];
 
@@ -149,7 +150,7 @@ function testPromptGeneration() {
     fail(`Full prompt generation threw: ${err}`);
   }
 
-  for (const domain of DOMAINS) {
+  for (const domain of SESSION_DOMAINS) {
     try {
       const domainPrompt = getDomainPlanPrompt(domain, MOCK_PROFILE, '2026-02-23');
       if (domainPrompt.length > 50 && domainPrompt.includes('CONVICTION RULES')) {
@@ -161,13 +162,24 @@ function testPromptGeneration() {
       fail(`${domain} domain prompt threw: ${err}`);
     }
   }
+
+  try {
+    const briefsPrompt = getTrackingBriefsPrompt(MOCK_PROFILE);
+    if (briefsPrompt.length > 50 && briefsPrompt.includes('CONVICTION RULES')) {
+      pass(`Tracking briefs prompt generated (${briefsPrompt.length} chars)`);
+    } else {
+      fail('Tracking briefs prompt too short or missing conviction rules');
+    }
+  } catch (err) {
+    fail(`Tracking briefs prompt threw: ${err}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Full generation test (real API call)
 // ---------------------------------------------------------------------------
 
-const EXPECTED_DOMAINS = ['cardio', 'strength', 'nutrition', 'mindfulness', 'sleep'];
+const EXPECTED_SESSION_DOMAINS: SessionDomain[] = ['cardio', 'strength', 'mindfulness'];
 
 async function testFullGeneration() {
   console.log('\n--- Full Plan Generation – Parallel (API call) ---\n');
@@ -177,33 +189,49 @@ async function testFullGeneration() {
 
   const model = anthropic('claude-sonnet-4-6');
 
-  info('Generating 5 domains in parallel with Claude Sonnet 4.6...');
+  info('Generating 3 session domains + tracking briefs in parallel with Claude Sonnet 4.6...');
   const startTime = Date.now();
 
   let allSessions: SessionOutput[];
+  let trackingBriefs: TrackingBriefs;
   try {
-    const domainResults = await Promise.all(
-      DOMAINS.map(async (domain) => {
-        const domainStart = Date.now();
-        const prompt = getDomainPlanPrompt(domain, MOCK_PROFILE, '2026-02-23');
+    const [domainResults, briefs] = await Promise.all([
+      Promise.all(
+        SESSION_DOMAINS.map(async (domain) => {
+          const domainStart = Date.now();
+          const prompt = getDomainPlanPrompt(domain, MOCK_PROFILE, '2026-02-23');
+          const result = await generateObject({
+            model,
+            schema: domainSessionsJsonSchema,
+            prompt,
+          });
+          const raw = result.object as { sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: string | Record<string, unknown>; sortOrder: number }> };
+          const elapsed = ((Date.now() - domainStart) / 1000).toFixed(1);
+          info(`${domain} completed in ${elapsed}s (${raw.sessions.length} sessions)`);
+          return raw.sessions.map((s, i) => ({
+            domain: domain as SessionOutput['domain'],
+            dayOfWeek: s.dayOfWeek,
+            title: s.title,
+            detail: (typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail) as Record<string, unknown>,
+            sortOrder: s.sortOrder ?? i,
+          }));
+        }),
+      ),
+      (async () => {
+        const briefStart = Date.now();
+        const prompt = getTrackingBriefsPrompt(MOCK_PROFILE);
         const result = await generateObject({
           model,
-          schema: domainSessionsJsonSchema,
+          schema: trackingBriefsJsonSchema,
           prompt,
         });
-        const raw = result.object as { sessions: Array<{ domain: string; dayOfWeek: number; title: string; detail: string | Record<string, unknown>; sortOrder: number }> };
-        const elapsed = ((Date.now() - domainStart) / 1000).toFixed(1);
-        info(`${domain} completed in ${elapsed}s (${raw.sessions.length} sessions)`);
-        return raw.sessions.map((s, i) => ({
-          domain: domain as SessionOutput['domain'],
-          dayOfWeek: s.dayOfWeek,
-          title: s.title,
-          detail: (typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail) as Record<string, unknown>,
-          sortOrder: s.sortOrder ?? i,
-        }));
-      }),
-    );
+        const elapsed = ((Date.now() - briefStart) / 1000).toFixed(1);
+        info(`Tracking briefs completed in ${elapsed}s`);
+        return result.object as TrackingBriefs;
+      })(),
+    ]);
     allSessions = domainResults.flat();
+    trackingBriefs = briefs;
   } catch (err) {
     fail(`Parallel generation threw: ${err instanceof Error ? err.message : err}`);
     return null;
@@ -245,12 +273,20 @@ async function testFullGeneration() {
     domainCounts[s.domain] = (domainCounts[s.domain] ?? 0) + 1;
   }
 
-  for (const domain of EXPECTED_DOMAINS) {
+  for (const domain of EXPECTED_SESSION_DOMAINS) {
     if (domainCounts[domain] && domainCounts[domain] > 0) {
       pass(`${domain}: ${domainCounts[domain]} sessions`);
     } else {
       fail(`${domain}: 0 sessions (expected at least 1)`);
     }
+  }
+
+  // Verify no nutrition/sleep sessions were generated
+  const strayDomains = plan.sessions.filter((s) => !EXPECTED_SESSION_DOMAINS.includes(s.domain));
+  if (strayDomains.length === 0) {
+    pass('No nutrition/sleep sessions generated (correct)');
+  } else {
+    fail(`${strayDomains.length} unexpected non-session domain sessions found`);
   }
 
   const invalidDays = plan.sessions.filter((s) => s.dayOfWeek < 0 || s.dayOfWeek > 6);
@@ -274,6 +310,27 @@ async function testFullGeneration() {
     for (const issue of validation.issues) {
       info(`Conviction issue: ${issue}`);
     }
+  }
+
+  // Validate tracking briefs
+  console.log('\n--- Tracking Briefs ---\n');
+  if (trackingBriefs.nutrition?.calorieTarget > 0) {
+    pass(`Nutrition: ${trackingBriefs.nutrition.calorieTarget} kcal / ${trackingBriefs.nutrition.proteinTargetG}g protein`);
+  } else {
+    fail('Missing or invalid nutrition calorie target');
+  }
+  if (trackingBriefs.nutrition?.guidelines?.length >= 2) {
+    pass(`Nutrition guidelines: ${trackingBriefs.nutrition.guidelines.length} rules`);
+    for (const g of trackingBriefs.nutrition.guidelines) {
+      info(`  "${g}"`);
+    }
+  } else {
+    fail('Expected at least 2 nutrition guidelines');
+  }
+  if (trackingBriefs.sleep?.targetHours > 0) {
+    pass(`Sleep: ${trackingBriefs.sleep.targetHours}h target, bed ${trackingBriefs.sleep.bedtimeWindow}, wake ${trackingBriefs.sleep.wakeWindow}`);
+  } else {
+    fail('Missing or invalid sleep target');
   }
 
   return plan;

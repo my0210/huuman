@@ -9,8 +9,6 @@ const DOMAIN_ICON: Record<string, string> = {
   cardio: '❤️',
   strength: '🏋️',
   mindfulness: '🧠',
-  nutrition: '🥗',
-  sleep: '🌙',
 };
 
 export async function GET(req: Request) {
