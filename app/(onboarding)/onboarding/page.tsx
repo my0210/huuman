@@ -124,6 +124,8 @@ export default function OnboardingPage() {
         throw new Error(err.error ?? "Failed to generate plan");
       }
 
+      await fetch("/api/chat/seed", { method: "POST" }).catch(() => {});
+
       router.push("/");
       router.refresh();
     } catch (e) {

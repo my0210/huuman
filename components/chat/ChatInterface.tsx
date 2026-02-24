@@ -26,6 +26,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const autoSentRef = useRef(false);
   const router = useRouter();
 
   const transport = useMemo(
@@ -61,6 +62,19 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (autoSentRef.current || initialMessages.length === 0) return;
+    const last = initialMessages[initialMessages.length - 1];
+    const lastTime = (last as unknown as { createdAt?: Date | string }).createdAt;
+    if (!lastTime) return;
+    const ageMs = Date.now() - new Date(lastTime).getTime();
+    const EIGHT_HOURS = 8 * 60 * 60 * 1000;
+    if (ageMs > EIGHT_HOURS) {
+      autoSentRef.current = true;
+      sendMessage({ text: "Ready to go. Show me today's plan." });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
