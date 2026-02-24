@@ -344,7 +344,7 @@ function formatChatTimestamp(date: Date): string {
   yesterday.setDate(yesterday.getDate() - 1);
   const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
   if (isToday) return time;
   if (isYesterday) return `Yesterday ${time}`;
