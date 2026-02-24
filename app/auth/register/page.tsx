@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import LanguageSelector from "@/components/auth/LanguageSelector";
 
 export default function TelegramRegisterPage() {
+  const [languageChosen, setLanguageChosen] = useState(false);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +52,10 @@ export default function TelegramRegisterPage() {
     );
   }
 
+  if (!languageChosen) {
+    return <LanguageSelector onSelect={() => setLanguageChosen(true)} />;
+  }
+
   if (status === "sent") {
     return (
       <div className="min-h-dvh bg-zinc-950 px-6 pt-20">
@@ -66,66 +73,74 @@ export default function TelegramRegisterPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-zinc-950 px-6 pt-16 pb-8">
-      <div className="mx-auto max-w-sm space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-zinc-100">huuman</h1>
-          <p className="text-base text-zinc-400">
-            Enter your email to create your account.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="register-form"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="min-h-dvh bg-zinc-950 px-6 pt-16 pb-8"
+      >
+        <div className="mx-auto max-w-sm space-y-8">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-zinc-300">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoFocus
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3.5 text-base text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
-            />
+            <h1 className="text-3xl font-bold text-zinc-100">huuman</h1>
+            <p className="text-base text-zinc-400">
+              Enter your email to create your account.
+            </p>
           </div>
 
-          {error && (
-            <div className="rounded-xl border border-red-800 bg-red-900/20 px-4 py-3">
-              <p className="text-sm text-red-400">{error}</p>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-zinc-300">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoFocus
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3.5 text-base text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={status === "loading" || !email.trim()}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-zinc-100 py-3.5 text-base font-semibold text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-50 transition-colors"
-          >
-            {status === "loading" ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Setting up...
-              </>
-            ) : (
-              "Continue"
+            {error && (
+              <div className="rounded-xl border border-red-800 bg-red-900/20 px-4 py-3">
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
             )}
-          </button>
-        </form>
 
-        <p className="text-xs text-zinc-600 text-center">
-          Your email secures your account and lets you access huuman on any device.
-        </p>
+            <button
+              type="submit"
+              disabled={status === "loading" || !email.trim()}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-zinc-100 py-3.5 text-base font-semibold text-zinc-900 hover:bg-white active:bg-zinc-200 disabled:opacity-50 transition-colors"
+            >
+              {status === "loading" ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Setting up...
+                </>
+              ) : (
+                "Continue"
+              )}
+            </button>
+          </form>
 
-        <a
-          href="https://t.me/huuman_life_bot"
-          className="block text-center text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-        >
-          Back to Telegram
-        </a>
-      </div>
-    </div>
+          <p className="text-xs text-zinc-600 text-center">
+            Your email secures your account and lets you access huuman on any device.
+          </p>
+
+          <a
+            href="https://t.me/huuman_life_bot"
+            className="block text-center text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+          >
+            Back to Telegram
+          </a>
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }

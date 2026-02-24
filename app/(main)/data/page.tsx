@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Plus, Calendar } from "lucide-react";
+import { ArrowLeft, Trash2, Send } from "lucide-react";
 import { DOMAIN_META } from "@/lib/types";
 import type { ContextCategory, ContextScope, DomainBaselines } from "@/lib/types";
 import { formatSingleDomainBaseline } from "@/lib/onboarding/formatBaselines";
@@ -42,11 +42,7 @@ export default function DataPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [newContent, setNewContent] = useState("");
-  const [newCategory, setNewCategory] = useState<ContextCategory>("physical");
-  const [newScope, setNewScope] = useState<ContextScope>("permanent");
-  const [newExpiry, setNewExpiry] = useState("");
   const [adding, setAdding] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     fetch("/api/context")
@@ -84,19 +80,12 @@ export default function DataPage() {
     const res = await fetch("/api/context", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: newContent.trim(),
-        category: newCategory,
-        scope: newScope,
-        expiresAt: newScope === "temporary" && newExpiry ? newExpiry : undefined,
-      }),
+      body: JSON.stringify({ content: newContent.trim() }),
     });
     if (res.ok) {
       const { item } = await res.json();
       setItems((prev) => [item, ...prev]);
       setNewContent("");
-      setNewExpiry("");
-      setShowAddForm(false);
     }
     setAdding(false);
   };
@@ -200,99 +189,32 @@ export default function DataPage() {
       </div>
 
       {/* Add new context */}
-      <div className="flex-none border-t border-zinc-800 bg-zinc-950 px-4 py-3">
-        {!showAddForm ? (
+      <form
+        onSubmit={(e) => { e.preventDefault(); handleAdd(); }}
+        className="flex-none border-t border-zinc-800 bg-zinc-950 px-4 py-3"
+      >
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            placeholder="Bad left knee, training at home this week..."
+            disabled={adding}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none disabled:opacity-50"
+          />
           <button
-            onClick={() => setShowAddForm(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-400 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
+            type="submit"
+            disabled={!newContent.trim() || adding}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
           >
-            <Plus size={16} />
-            Add something the coach should know
+            {adding ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-zinc-900" />
+            ) : (
+              <Send size={16} />
+            )}
           </button>
-        ) : (
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              placeholder="e.g. Bad left knee, training at home this week..."
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && newContent.trim()) {
-                  e.preventDefault();
-                  handleAdd();
-                }
-              }}
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
-            />
-
-            <div className="flex items-center gap-2 flex-wrap">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setNewCategory(cat)}
-                  className={`rounded-full px-3 py-1 text-xs transition-colors ${
-                    newCategory === cat
-                      ? "bg-zinc-100 text-zinc-900"
-                      : "bg-zinc-800 text-zinc-400 hover:text-zinc-300"
-                  }`}
-                >
-                  {CATEGORY_LABELS[cat]}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 rounded-lg bg-zinc-800 p-0.5">
-                <button
-                  onClick={() => { setNewScope("permanent"); setNewExpiry(""); }}
-                  className={`rounded-md px-3 py-1 text-xs transition-colors ${
-                    newScope === "permanent" ? "bg-zinc-700 text-zinc-100" : "text-zinc-500"
-                  }`}
-                >
-                  Permanent
-                </button>
-                <button
-                  onClick={() => setNewScope("temporary")}
-                  className={`rounded-md px-3 py-1 text-xs transition-colors ${
-                    newScope === "temporary" ? "bg-zinc-700 text-zinc-100" : "text-zinc-500"
-                  }`}
-                >
-                  Temporary
-                </button>
-              </div>
-
-              {newScope === "temporary" && (
-                <div className="flex items-center gap-1.5">
-                  <Calendar size={12} className="text-zinc-500" />
-                  <input
-                    type="date"
-                    value={newExpiry}
-                    onChange={(e) => setNewExpiry(e.target.value)}
-                    className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-300 focus:border-zinc-500 focus:outline-none"
-                  />
-                </div>
-              )}
-
-              <div className="flex-1" />
-
-              <button
-                onClick={() => { setShowAddForm(false); setNewContent(""); setNewExpiry(""); }}
-                className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAdd}
-                disabled={!newContent.trim() || adding}
-                className="rounded-lg bg-zinc-100 px-4 py-1.5 text-xs font-medium text-zinc-900 disabled:opacity-30 transition-opacity"
-              >
-                {adding ? "Adding..." : "Add"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

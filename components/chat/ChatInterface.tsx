@@ -4,11 +4,12 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database } from "lucide-react";
+import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
 import { ChatActionsProvider } from "./ChatActions";
+import { LANGUAGES, getSavedLanguage, saveLanguage, getLanguageByCode, type LanguageCode } from "@/lib/languages";
 
 interface ChatInterfaceProps {
   chatId: string;
@@ -18,6 +19,8 @@ interface ChatInterfaceProps {
 export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState<"main" | "language">("main");
+  const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
   const [busy, setBusy] = useState(false);
   const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -47,6 +50,10 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   });
 
   const isLoading = status === "streaming" || status === "submitted";
+
+  useEffect(() => {
+    setCurrentLanguage(getSavedLanguage());
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -142,104 +149,158 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
       {/* Settings panel */}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMenuOpen(false)} />
+          <div className="absolute inset-0 bg-black/60" onClick={() => { setMenuOpen(false); setSettingsView("main"); }} />
           <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 space-y-1">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-zinc-100">Settings</h2>
-              <button
-                onClick={() => setMenuOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-              >
-                <X size={14} />
-              </button>
-            </div>
+            {settingsView === "language" ? (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    onClick={() => setSettingsView("main")}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <ArrowLeft size={14} />
+                  </button>
+                  <h2 className="text-sm font-semibold text-zinc-100">Language</h2>
+                </div>
+                <div className="max-h-[50dvh] overflow-y-auto -mx-2 scrollbar-none">
+                  {LANGUAGES.map((lang) => {
+                    const isActive = currentLanguage === lang.code;
+                    return (
+                      <button
+                        key={lang.code}
+                        onClick={() => {
+                          setCurrentLanguage(lang.code);
+                          saveLanguage(lang.code);
+                        }}
+                        className={`w-full flex items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm transition-colors ${
+                          isActive
+                            ? "bg-blue-600 text-white"
+                            : "text-zinc-300 hover:bg-zinc-800"
+                        }`}
+                      >
+                        <div className="flex items-baseline gap-2 min-w-0">
+                          <span className="font-medium truncate">{lang.native}</span>
+                          <span className={`text-xs flex-none ${isActive ? "text-blue-100" : "text-zinc-500"}`}>
+                            {lang.region}
+                          </span>
+                        </div>
+                        {isActive && <Check size={14} className="flex-none ml-2" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-zinc-100">Settings</h2>
+                  <button
+                    onClick={() => { setMenuOpen(false); setSettingsView("main"); }}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
 
-            <button
-              onClick={() => { setMenuOpen(false); router.push("/data"); }}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-            >
-              <Database size={16} className="flex-none text-zinc-500" />
-              <div>
-                <p className="font-medium">Your data</p>
-                <p className="text-xs text-zinc-500">See and manage what the coach knows about you</p>
-              </div>
-            </button>
-
-            <button
-              onClick={handleRedoOnboarding}
-              disabled={busy}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
-            >
-              <RotateCcw size={16} className="flex-none text-zinc-500" />
-              <div>
-                <p className="font-medium">Redo onboarding</p>
-                <p className="text-xs text-zinc-500">Clear profile baselines, redo the onboarding flow</p>
-              </div>
-            </button>
-
-            <button
-              onClick={handleResetEverything}
-              disabled={busy}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
-            >
-              <Trash2 size={16} className="flex-none text-zinc-500" />
-              <div>
-                <p className="font-medium">Reset everything</p>
-                <p className="text-xs text-zinc-500">Delete all data and start from scratch</p>
-              </div>
-            </button>
-
-            <div className="border-t border-zinc-800 mt-2 pt-2">
-              {!telegramLink ? (
                 <button
-                  onClick={handleConnectTelegram}
+                  onClick={() => setSettingsView("language")}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                >
+                  <Globe size={16} className="flex-none text-zinc-500" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium">Language</p>
+                    <p className="text-xs text-zinc-500">{getLanguageByCode(currentLanguage)?.native ?? "English"}</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => { setMenuOpen(false); router.push("/data"); }}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                >
+                  <Database size={16} className="flex-none text-zinc-500" />
+                  <div>
+                    <p className="font-medium">Your data</p>
+                    <p className="text-xs text-zinc-500">See and manage what the coach knows about you</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={handleRedoOnboarding}
                   disabled={busy}
                   className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
                 >
-                  <MessageCircle size={16} className="flex-none text-zinc-500" />
+                  <RotateCcw size={16} className="flex-none text-zinc-500" />
                   <div>
-                    <p className="font-medium">Connect Telegram</p>
-                    <p className="text-xs text-zinc-500">Chat with your coach on Telegram</p>
+                    <p className="font-medium">Redo onboarding</p>
+                    <p className="text-xs text-zinc-500">Clear profile baselines, redo the onboarding flow</p>
                   </div>
                 </button>
-              ) : (
-                <div className="rounded-xl px-3 py-3 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <MessageCircle size={16} className="flex-none text-cyan-400" />
-                    <p className="text-sm font-medium text-zinc-300">Connect Telegram</p>
-                  </div>
-                  <p className="text-xs text-zinc-500 ml-7">
-                    Open this link in Telegram to connect:
-                  </p>
-                  <div className="ml-7 flex items-center gap-2">
-                    <a
-                      href={telegramLink.botUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-cyan-400 underline truncate flex-1"
-                    >
-                      {telegramLink.botUrl}
-                    </a>
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 transition-colors"
-                    >
-                      {linkCopied ? <Check size={12} /> : <Copy size={12} />}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
 
-            <div className="border-t border-zinc-800 mt-2 pt-2">
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-400 hover:bg-zinc-800 transition-colors"
-              >
-                <LogOut size={16} className="flex-none text-zinc-500" />
-                <p className="font-medium">Sign out</p>
-              </button>
-            </div>
+                <button
+                  onClick={handleResetEverything}
+                  disabled={busy}
+                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
+                >
+                  <Trash2 size={16} className="flex-none text-zinc-500" />
+                  <div>
+                    <p className="font-medium">Reset everything</p>
+                    <p className="text-xs text-zinc-500">Delete all data and start from scratch</p>
+                  </div>
+                </button>
+
+                <div className="border-t border-zinc-800 mt-2 pt-2">
+                  {!telegramLink ? (
+                    <button
+                      onClick={handleConnectTelegram}
+                      disabled={busy}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
+                    >
+                      <MessageCircle size={16} className="flex-none text-zinc-500" />
+                      <div>
+                        <p className="font-medium">Connect Telegram</p>
+                        <p className="text-xs text-zinc-500">Chat with your coach on Telegram</p>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="rounded-xl px-3 py-3 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle size={16} className="flex-none text-cyan-400" />
+                        <p className="text-sm font-medium text-zinc-300">Connect Telegram</p>
+                      </div>
+                      <p className="text-xs text-zinc-500 ml-7">
+                        Open this link in Telegram to connect:
+                      </p>
+                      <div className="ml-7 flex items-center gap-2">
+                        <a
+                          href={telegramLink.botUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-cyan-400 underline truncate flex-1"
+                        >
+                          {telegramLink.botUrl}
+                        </a>
+                        <button
+                          onClick={handleCopyLink}
+                          className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          {linkCopied ? <Check size={12} /> : <Copy size={12} />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-zinc-800 mt-2 pt-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-400 hover:bg-zinc-800 transition-colors"
+                  >
+                    <LogOut size={16} className="flex-none text-zinc-500" />
+                    <p className="font-medium">Sign out</p>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

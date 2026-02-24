@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getTodayISO } from '@/lib/types';
 import type { ContextCategory, ContextScope } from '@/lib/types';
+import { generateObject } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
 
 export async function GET() {
   const supabase = await createClient();
@@ -45,31 +48,48 @@ export async function GET() {
   });
 }
 
+const classificationSchema = z.object({
+  category: z.enum(['physical', 'environment', 'equipment', 'schedule']),
+  scope: z.enum(['permanent', 'temporary']),
+  expiresAt: z.string().nullable().describe('ISO date (YYYY-MM-DD) when temporary items expire, null for permanent'),
+  content: z.string().describe('Cleaned-up version of the user input -- concise, coach-readable'),
+});
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const { content, category, scope, expiresAt } = body as {
-    content: string;
-    category: ContextCategory;
-    scope: ContextScope;
-    expiresAt?: string;
-  };
+  const rawContent = (body.content as string)?.trim();
 
-  if (!content?.trim() || !category || !scope) {
-    return NextResponse.json({ error: 'content, category, and scope are required' }, { status: 400 });
+  if (!rawContent) {
+    return NextResponse.json({ error: 'content is required' }, { status: 400 });
   }
+
+  const today = getTodayISO();
+  const { object: classified } = await generateObject({
+    model: anthropic('claude-sonnet-4-20250514'),
+    schema: classificationSchema,
+    prompt: `Classify this user-provided context about their fitness/health situation. Today is ${today}.
+
+Input: "${rawContent}"
+
+Rules:
+- category: physical (injuries, body limitations, medical), environment (where they train, travel), equipment (gear they have), schedule (availability, time constraints)
+- scope: permanent for chronic/ongoing things, temporary for time-bounded situations
+- expiresAt: for temporary items, estimate a reasonable expiry date. For "this week" use next Monday. For "2 weeks" add 14 days. Null for permanent.
+- content: rewrite concisely for a coach to read. Keep it short and specific. Don't add information the user didn't provide.`,
+  });
 
   const { data, error } = await supabase
     .from('user_context')
     .insert({
       user_id: user.id,
-      content: content.trim(),
-      category,
-      scope,
-      expires_at: expiresAt ?? null,
+      content: classified.content,
+      category: classified.category as ContextCategory,
+      scope: classified.scope as ContextScope,
+      expires_at: classified.expiresAt,
       source: 'conversation' as const,
     })
     .select()
