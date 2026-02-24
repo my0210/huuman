@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Dumbbell, Brain, ChevronDown, Check, Footprints, Flame, Beef, Moon } from "lucide-react";
+import { Heart, Dumbbell, Brain, ChevronDown, Check, Flame, Moon } from "lucide-react";
 import { SessionDetailInline } from "./SessionDetailCard";
 
 const domainIcons: Record<string, React.ReactNode> = {
@@ -109,24 +109,6 @@ function DailyTracking({ habits, trackingBriefs }: { habits: Habits | null; trac
       </div>
 
       <div className="divide-y divide-zinc-800/50">
-        {/* Steps */}
-        <div className="px-4 py-2.5 flex items-center gap-2.5">
-          <Footprints size={13} className="text-zinc-500 shrink-0" />
-          <div className="flex-1">
-            <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-zinc-400 transition-all"
-                style={{
-                  width: `${Math.min(100, ((habits?.steps_actual ?? 0) / (habits?.steps_target ?? 10000)) * 100)}%`,
-                }}
-              />
-            </div>
-          </div>
-          <span className="text-xs text-zinc-500 tabular-nums">
-            {(habits?.steps_actual ?? 0).toLocaleString()} / {((habits?.steps_target ?? 10000) / 1000).toFixed(0)}k
-          </span>
-        </div>
-
         {/* Nutrition */}
         <div className="px-4 py-2.5 flex items-center gap-2.5">
           <Flame size={13} className="text-green-500 shrink-0" />
