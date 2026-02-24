@@ -269,16 +269,20 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
             : null;
           const prevTime = prevTs ? new Date(prevTs) : null;
 
-          const showTimestamp = time && (
-            !prevTime ||
-            time.getTime() - prevTime.getTime() > 5 * 60 * 1000
-          );
+          const newDay = time && (!prevTime || time.toDateString() !== prevTime.toDateString());
+          const timeGap = time && prevTime && !newDay &&
+            time.getTime() - prevTime.getTime() > 5 * 60 * 1000;
 
           return (
             <div key={message.id}>
-              {showTimestamp && time && (
-                <p className="text-center text-[10px] text-zinc-600 py-2">
-                  {formatChatTimestamp(time)}
+              {newDay && time && (
+                <p className="text-center text-[11px] font-medium text-zinc-500 py-3">
+                  {formatDateLabel(time)}
+                </p>
+              )}
+              {timeGap && time && (
+                <p className="text-center text-[10px] text-zinc-600 py-1.5">
+                  {formatTime(time)}
                 </p>
               )}
               <div className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -336,25 +340,23 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   );
 }
 
-function formatChatTimestamp(date: Date): string {
+function formatDateLabel(date: Date): string {
   const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
+  if (date.toDateString() === now.toDateString()) return "Today";
 
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-
-  const time = date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-
-  if (isToday) return time;
-  if (isYesterday) return `Yesterday ${time}`;
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
 
   const sameYear = date.getFullYear() === now.getFullYear();
-  const dateStr = date.toLocaleDateString("en-US", {
-    weekday: "short",
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
     month: "short",
     day: "numeric",
     ...(sameYear ? {} : { year: "numeric" }),
   });
-  return `${dateStr} ${time}`;
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
