@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Dumbbell, Brain, ChevronDown, Check, Flame, Moon } from "lucide-react";
+import { Heart, Dumbbell, Brain, ChevronDown, Check, Flame, Moon, ChevronRight } from "lucide-react";
 import { SessionDetailInline } from "./SessionDetailCard";
 import { useChatSend } from "@/components/chat/ChatActions";
 
@@ -119,6 +119,14 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
 // Session Row
 // =============================================================================
 
+function sessionTapMessage(session: Session): string {
+  const type = session.detail?.type as string | undefined;
+  if (session.domain === "mindfulness" && type) {
+    return `I'm ready for my ${session.title} — ${type}`;
+  }
+  return `Let's do my ${session.title} session`;
+}
+
 function SessionRow({ session }: { session: Session }) {
   const [expanded, setExpanded] = useState(false);
   const send = useChatSend();
@@ -127,7 +135,7 @@ function SessionRow({ session }: { session: Session }) {
 
   const handleTap = () => {
     if (isCompleted || !send) return;
-    send({ text: `Let's do my ${session.title} session` });
+    send({ text: sessionTapMessage(session) });
   };
 
   return (
@@ -149,10 +157,15 @@ function SessionRow({ session }: { session: Session }) {
             </p>
             <p className="text-xs text-zinc-500 capitalize">{session.domain}</p>
           </div>
+          {!isCompleted && (
+            <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5 shrink-0">
+              Start <ChevronRight size={12} />
+            </span>
+          )}
         </button>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="px-3 py-3 text-zinc-600 hover:text-zinc-400 transition-colors self-stretch flex items-center"
+          className="px-3 py-3 text-zinc-600 hover:text-zinc-400 transition-colors self-stretch flex items-center border-l border-zinc-800/50"
         >
           <ChevronDown
             size={14}
@@ -214,7 +227,9 @@ function NutritionRow({ brief, habits }: { brief: NutritionBrief; habits: Habits
       </div>
       <div className="shrink-0">
         {!logged && (
-          <span className="text-xs text-zinc-600">—</span>
+          <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5">
+            Log <ChevronRight size={12} />
+          </span>
         )}
         {logged && onPlan && (
           <span className="text-xs font-medium text-green-400 flex items-center gap-1">
@@ -263,7 +278,9 @@ function SleepRow({ brief, habits }: { brief: SleepBrief; habits: Habits | null 
       </div>
       <div className="shrink-0">
         {!logged && (
-          <span className="text-xs text-zinc-600 tabular-nums">— / {brief.targetHours}h</span>
+          <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5">
+            Log <ChevronRight size={12} />
+          </span>
         )}
         {logged && (
           <span className={`text-xs font-medium tabular-nums ${
