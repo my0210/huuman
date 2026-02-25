@@ -44,10 +44,9 @@ export async function POST() {
     parts: [
       { type: 'text', text: introText },
       {
-        type: 'tool-invocation',
-        toolName: 'show_today_plan',
+        type: 'tool-show_today_plan',
         toolCallId,
-        args: {},
+        input: {},
         state: 'output-available',
         output: todayData,
       },
