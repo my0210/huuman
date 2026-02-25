@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function POST() {
   if (process.env.NODE_ENV === 'production' && !process.env.ENABLE_DEV_TOOLS) {
@@ -13,46 +14,26 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Delete chat messages (FK: must come before conversations)
-  const { data: convos } = await supabase
+  const admin = createAdminClient();
+  const uid = user.id;
+
+  const { data: convos } = await admin
     .from('conversations')
     .select('id')
-    .eq('user_id', user.id);
+    .eq('user_id', uid);
 
   if (convos && convos.length > 0) {
     const convoIds = convos.map((c) => c.id);
-    await supabase
-      .from('messages')
-      .delete()
-      .in('conversation_id', convoIds);
+    await admin.from('messages').delete().in('conversation_id', convoIds);
   }
 
-  // Delete conversations
-  await supabase
-    .from('conversations')
-    .delete()
-    .eq('user_id', user.id);
+  await admin.from('conversations').delete().eq('user_id', uid);
+  await admin.from('planned_sessions').delete().eq('user_id', uid);
+  await admin.from('weekly_plans').delete().eq('user_id', uid);
+  await admin.from('daily_habits').delete().eq('user_id', uid);
+  await admin.from('user_context').delete().eq('user_id', uid);
 
-  // Delete all planned sessions for this user
-  await supabase
-    .from('planned_sessions')
-    .delete()
-    .eq('user_id', user.id);
-
-  // Delete all weekly plans
-  await supabase
-    .from('weekly_plans')
-    .delete()
-    .eq('user_id', user.id);
-
-  // Delete daily habits
-  await supabase
-    .from('daily_habits')
-    .delete()
-    .eq('user_id', user.id);
-
-  // Reset profile to initial state
-  const { error } = await supabase
+  const { error } = await admin
     .from('user_profiles')
     .update({
       age: null,
@@ -67,7 +48,7 @@ export async function POST() {
       onboarding_completed: false,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', user.id);
+    .eq('id', uid);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
