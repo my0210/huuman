@@ -471,6 +471,85 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
     return;
   }
 
+  if (callbackData.startsWith('draft:')) {
+    const parts = callbackData.split(':');
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('id')
+      .eq('telegram_chat_id', chatId)
+      .maybeSingle();
+
+    if (!profile) {
+      await answerCallbackQuery(queryId, 'Account not found.');
+      return;
+    }
+
+    const userClient = await createUserScopedClient(profile.id);
+    const tools = createTools(profile.id, userClient);
+    type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
+    const execOpts = { toolCallId: 'draft', messages: [] as never[], abortSignal: new AbortController().signal };
+
+    if (parts[1] === 'confirm') {
+      const planId = parts[2];
+      const result = await (tools.confirm_plan as unknown as ToolExec).execute({ planId }, execOpts);
+      await sendFormatted(chatId, formatToolOutput('confirm_plan', result as Record<string, unknown>));
+      await answerCallbackQuery(queryId, 'Plan confirmed!');
+    } else if (parts[1] === 'move') {
+      const sessionId = parts[2];
+      await sendMessage(chatId, 'Which day? Pick one:', {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: 'Mon', callback_data: `draft:moveto:${sessionId}:1` },
+              { text: 'Tue', callback_data: `draft:moveto:${sessionId}:2` },
+              { text: 'Wed', callback_data: `draft:moveto:${sessionId}:3` },
+              { text: 'Thu', callback_data: `draft:moveto:${sessionId}:4` },
+            ],
+            [
+              { text: 'Fri', callback_data: `draft:moveto:${sessionId}:5` },
+              { text: 'Sat', callback_data: `draft:moveto:${sessionId}:6` },
+              { text: 'Sun', callback_data: `draft:moveto:${sessionId}:0` },
+            ],
+          ],
+        },
+      });
+      await answerCallbackQuery(queryId);
+    } else if (parts[1] === 'moveto') {
+      const sessionId = parts[2];
+      const targetDow = parseInt(parts[3], 10);
+      const { data: session } = await userClient
+        .from('planned_sessions')
+        .select('plan_id')
+        .eq('id', sessionId)
+        .eq('user_id', profile.id)
+        .single();
+
+      if (session) {
+        const { data: plan } = await userClient
+          .from('weekly_plans')
+          .select('week_start')
+          .eq('id', session.plan_id)
+          .single();
+
+        if (plan) {
+          const weekStart = new Date(plan.week_start + 'T00:00:00');
+          const daysFromMonday = targetDow === 0 ? 6 : targetDow - 1;
+          const targetDate = new Date(weekStart);
+          targetDate.setDate(weekStart.getDate() + daysFromMonday);
+          const newDate = targetDate.toISOString().slice(0, 10);
+
+          const result = await (tools.adapt_plan as unknown as ToolExec).execute(
+            { sessionId, action: 'reschedule', newDate, reason: 'Moved via draft review' },
+            execOpts,
+          );
+          await sendFormatted(chatId, formatToolOutput('adapt_plan', result as Record<string, unknown>));
+        }
+      }
+      await answerCallbackQuery(queryId, 'Moved!');
+    }
+    return;
+  }
+
   if (callbackData === 'cmd:today') {
     const { data: profile } = await admin
       .from('user_profiles')

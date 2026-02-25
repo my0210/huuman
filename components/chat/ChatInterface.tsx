@@ -4,7 +4,8 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, ImagePlus } from "lucide-react";
+import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, Plus, Camera } from "lucide-react";
+import { CommandMenu } from "./CommandMenu";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
@@ -26,6 +27,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [imageFiles, setImageFiles] = useState<FileUIPart[]>([]);
+  const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -435,6 +437,13 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
       </div>
       </ChatActionsProvider>
 
+      {/* Command menu panel */}
+      <CommandMenu
+        open={commandMenuOpen}
+        onSelect={(message) => sendMessage({ text: message })}
+        onClose={() => setCommandMenuOpen(false)}
+      />
+
       {/* Input */}
       <form
         onSubmit={handleSubmit}
@@ -469,6 +478,30 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
             onChange={handleImageSelect}
             className="hidden"
           />
+          {/* + button (WhatsApp pattern: left of input) */}
+          <button
+            type="button"
+            onClick={() => setCommandMenuOpen(!commandMenuOpen)}
+            className={`flex h-10 w-10 flex-none items-center justify-center rounded-xl transition-colors ${
+              commandMenuOpen
+                ? "bg-zinc-700 text-zinc-200"
+                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
+            }`}
+          >
+            {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
+          </button>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value);
+              if (commandMenuOpen) setCommandMenuOpen(false);
+            }}
+            onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
+            placeholder={imageFiles.length > 0 ? "Add a message or send the image..." : t("chat.placeholder", currentLanguage)}
+            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+          />
+          {/* Camera button (WhatsApp pattern: right of input) */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -476,15 +509,8 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
             className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             title="Upload image"
           >
-            <ImagePlus size={18} />
+            <Camera size={18} />
           </button>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={imageFiles.length > 0 ? "Add a message or send the image..." : t("chat.placeholder", currentLanguage)}
-            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
-          />
           <button
             type="submit"
             disabled={(!input.trim() && imageFiles.length === 0) || isLoading}

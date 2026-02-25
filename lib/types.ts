@@ -132,7 +132,7 @@ export interface UserContextItem {
 // Weekly Plan
 // =============================================================================
 
-export type PlanStatus = 'active' | 'completed' | 'archived';
+export type PlanStatus = 'draft' | 'active' | 'completed' | 'archived';
 
 export interface WeeklyPlan {
   id: string;

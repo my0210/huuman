@@ -283,10 +283,74 @@ export function formatAdapt(data: Record<string, unknown>): FormattedResponse[] 
   return messages;
 }
 
-export function formatPlanGenerated(data: Record<string, unknown>): FormattedResponse {
+export function formatPlanGenerated(data: Record<string, unknown>): FormattedResponse | FormattedResponse[] {
   if (data.error) return { text: `Plan generation failed: ${esc(String(data.error))}` };
+
+  if (data.isDraft && data.sessions) {
+    return formatDraftPlan(data);
+  }
+
   return {
     text: '✓ <b>Your weekly plan is ready.</b>',
+    replyMarkup: {
+      inline_keyboard: [[{ text: 'Show today', callback_data: 'cmd:today' }]],
+    },
+  };
+}
+
+export function formatDraftPlan(data: Record<string, unknown>): FormattedResponse[] {
+  const allSessions = data.sessions as Array<Record<string, unknown>>;
+  const sessions = (allSessions ?? []).filter(s => SESSION_DOMAINS.includes(s.domain as string));
+  const plan = data.plan as Record<string, unknown> | null;
+  const planId = plan?.id ?? data.planId;
+
+  const messages: FormattedResponse[] = [];
+
+  const lines: string[] = ['📋 <b>Draft plan — review before confirming</b>', ''];
+  if (plan?.intro_message) {
+    lines.push(`<i>${esc(String(plan.intro_message))}</i>`, '');
+  }
+
+  const byDay: Record<string, Array<Record<string, unknown>>> = {};
+  for (const s of sessions) {
+    const date = s.scheduled_date as string;
+    if (!byDay[date]) byDay[date] = [];
+    byDay[date].push(s);
+  }
+
+  for (const [date, daySessions] of Object.entries(byDay).sort()) {
+    const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
+    const items = daySessions
+      .map(s => `  ${domainIcon(s.domain as string)} ${esc(String(s.title))}`)
+      .join('\n');
+    lines.push(`<b>${esc(dayName)}</b>\n${items}`);
+  }
+
+  lines.push('', 'Tap a session to move it, or confirm the plan.');
+
+  const keyboard: InlineKeyboard = [];
+  for (const s of sessions) {
+    const dayName = s.scheduled_date
+      ? new Date((s.scheduled_date as string) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' })
+      : '';
+    keyboard.push([
+      { text: `↔ ${dayName} ${String(s.title).slice(0, 20)}`, callback_data: `draft:move:${s.id}` },
+    ]);
+  }
+  keyboard.push([{ text: '✓ Looks good', callback_data: `draft:confirm:${planId}` }]);
+
+  messages.push({
+    text: lines.join('\n'),
+    replyMarkup: { inline_keyboard: keyboard },
+  });
+
+  return messages;
+}
+
+export function formatPlanConfirmed(data: Record<string, unknown>): FormattedResponse {
+  if (data.error) return { text: `Error: ${esc(String(data.error))}` };
+  return {
+    text: '✓ <b>Plan locked in.</b>',
     replyMarkup: {
       inline_keyboard: [[{ text: 'Show today', callback_data: 'cmd:today' }]],
     },
@@ -307,6 +371,7 @@ export function formatToolOutput(toolName: string, output: Record<string, unknow
     case 'start_timer': return formatTimer(output);
     case 'adapt_plan': return formatAdapt(output);
     case 'generate_plan': return formatPlanGenerated(output);
+    case 'confirm_plan': return formatPlanConfirmed(output);
     default: return null;
   }
 }

@@ -24,6 +24,18 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('status', 'active')
         .maybeSingle();
 
+      let draftPlan: { id: string } | null = null;
+      if (!activePlan) {
+        const { data } = await supabase
+          .from('weekly_plans')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('week_start', weekStart)
+          .eq('status', 'draft')
+          .maybeSingle();
+        draftPlan = data;
+      }
+
       let sessions: Record<string, unknown>[] = [];
       if (activePlan) {
         const { data: allSessions } = await supabase
@@ -51,7 +63,9 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         trackingBriefs: activePlan?.tracking_briefs ?? null,
         hasPlan: sessions.length > 0,
         hasActivePlanForWeek: !!activePlan,
-        needsNewPlan: !activePlan,
+        hasDraftPlan: !!draftPlan,
+        draftPlanId: draftPlan?.id ?? null,
+        needsNewPlan: !activePlan && !draftPlan,
       };
     },
   });
@@ -314,13 +328,69 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
   const generate_plan = tool({
     description:
-      'Generate a new weekly plan. Use when the user has no plan, requests a new plan, or after onboarding.',
+      'Generate a new weekly plan. Use when the user has no plan, requests a new plan, wants to replan, or after onboarding. Set draft=true during the interactive planning flow so the user can review before confirming.',
     inputSchema: z.object({
       weekStart: z.string().optional().describe('Week start date (YYYY-MM-DD). Defaults to current week.'),
+      draft: z.boolean().optional().describe('If true, plan is saved as draft for user review before activation.'),
+      planningContext: z.string().optional().describe('Schedule/logistics context from the planning conversation (e.g. "traveling Mon-Wed, gym access Thu-Sun, prefer morning sessions").'),
     }),
-    execute: async ({ weekStart }: { weekStart?: string }) => {
-      const targetWeek = weekStart ?? getWeekStart();
-      return await generateWeeklyPlan(userId, supabase, targetWeek);
+    execute: async ({ weekStart, draft, planningContext }: { weekStart?: string; draft?: boolean; planningContext?: string }) => {
+      const result = await generateWeeklyPlan(userId, supabase, {
+        weekStart: weekStart ?? getWeekStart(),
+        draft,
+        planningContext,
+      });
+
+      if (!result.success || !result.planId) return result;
+
+      if (draft) {
+        const { data: plan } = await supabase
+          .from('weekly_plans')
+          .select('*')
+          .eq('id', result.planId)
+          .single();
+
+        const { data: sessions } = await supabase
+          .from('planned_sessions')
+          .select('*')
+          .eq('plan_id', result.planId)
+          .in('domain', SESSION_DOMAINS)
+          .order('scheduled_date')
+          .order('sort_order');
+
+        return {
+          ...result,
+          plan: plan ?? null,
+          sessions: sessions ?? [],
+          trackingBriefs: plan?.tracking_briefs ?? null,
+        };
+      }
+
+      return result;
+    },
+  });
+
+  const confirm_plan = tool({
+    description:
+      'Confirm and activate a draft weekly plan after the user has reviewed it and is happy with it.',
+    inputSchema: z.object({
+      planId: z.string().describe('The ID of the draft plan to confirm'),
+    }),
+    execute: async ({ planId }: { planId: string }) => {
+      const { data, error } = await supabase
+        .from('weekly_plans')
+        .update({ status: 'active' })
+        .eq('id', planId)
+        .eq('user_id', userId)
+        .eq('status', 'draft')
+        .select()
+        .single();
+
+      if (error || !data) {
+        return { error: error?.message ?? 'Plan not found or already active' };
+      }
+
+      return { confirmed: true, planId };
     },
   });
 
@@ -401,6 +471,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
     log_daily,
     adapt_plan,
     generate_plan,
+    confirm_plan,
     start_timer,
     save_context,
   };

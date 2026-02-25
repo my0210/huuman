@@ -4,6 +4,7 @@ import type { UIMessage } from "ai";
 import { isToolUIPart, isFileUIPart, getToolName } from "ai";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
+import { DraftPlanCard } from "@/components/cards/DraftPlanCard";
 import { SessionDetailCard } from "@/components/cards/SessionDetailCard";
 import { ProgressRings } from "@/components/cards/ProgressRings";
 import { CompletionWidget } from "@/components/cards/CompletionWidget";
@@ -91,7 +92,10 @@ function ToolPart({
     case "adapt_plan":
       return <AdaptConfirmation data={output} />;
     case "generate_plan":
+      if (output.isDraft && output.sessions) return <DraftPlanCard data={output} />;
       return <PlanGenerated data={output} />;
+    case "confirm_plan":
+      return <PlanConfirmed data={output} />;
     default:
       return null;
   }
@@ -107,6 +111,7 @@ function LoadingCard({ toolName }: { toolName: string }) {
     log_daily: "Logging...",
     adapt_plan: "Adapting plan...",
     generate_plan: "Generating your plan...",
+    confirm_plan: "Locking in your plan...",
     start_timer: "Starting timer...",
   };
 
@@ -158,6 +163,22 @@ function PlanGenerated({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
       Your weekly plan has been generated!
+    </div>
+  );
+}
+
+function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
+  if (data.error) {
+    return (
+      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
+        {String(data.error)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
+      Plan locked in. Let's go.
     </div>
   );
 }

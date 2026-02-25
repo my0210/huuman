@@ -29,8 +29,9 @@ async function generateDomainSessions(
   profile: UserProfile,
   weekStart: string,
   startFromDate?: string,
+  planningContext?: string,
 ): Promise<SessionOutput[]> {
-  const prompt = getDomainPlanPrompt(domain, profile, weekStart, startFromDate);
+  const prompt = getDomainPlanPrompt(domain, profile, weekStart, startFromDate, planningContext);
 
   const result = await generateObject({
     model,
@@ -94,18 +95,28 @@ async function generateIntroMessage(
 // Orchestrator
 // =============================================================================
 
+export interface GeneratePlanOptions {
+  weekStart?: string;
+  draft?: boolean;
+  planningContext?: string;
+}
+
 export async function generateWeeklyPlan(
   userId: string,
   supabase: AppSupabaseClient,
-  weekStartOverride?: string,
-): Promise<{ success: boolean; planId?: string; error?: string }> {
+  weekStartOrOptions?: string | GeneratePlanOptions,
+): Promise<{ success: boolean; planId?: string; isDraft?: boolean; error?: string }> {
+  const opts: GeneratePlanOptions = typeof weekStartOrOptions === 'string'
+    ? { weekStart: weekStartOrOptions }
+    : weekStartOrOptions ?? {};
+
   const profile = await loadUserProfile(userId, supabase);
 
   if (!profile) {
     return { success: false, error: 'User profile not found' };
   }
 
-  const weekStart = weekStartOverride ?? getWeekStart();
+  const weekStart = opts.weekStart ?? getWeekStart();
   const today = getTodayISO();
   const startFromDate = today > weekStart ? today : undefined;
 
@@ -115,7 +126,7 @@ export async function generateWeeklyPlan(
   try {
     const [domainResults, briefs] = await Promise.all([
       Promise.all(
-        SESSION_DOMAINS.map(domain => generateDomainSessions(domain, profile, weekStart, startFromDate)),
+        SESSION_DOMAINS.map(domain => generateDomainSessions(domain, profile, weekStart, startFromDate, opts.planningContext)),
       ),
       generateTrackingBriefs(profile),
     ]);
@@ -135,16 +146,18 @@ export async function generateWeeklyPlan(
     console.warn('[PlanGen] Validation issues:', validation.issues);
   }
 
+  const planStatus = opts.draft ? 'draft' : 'active';
+
   const { data: planRow, error: planError } = await supabase
     .from('weekly_plans')
     .upsert(
       {
         user_id: userId,
         week_start: weekStart,
-        status: 'active',
+        status: planStatus,
         intro_message: plan.introMessage,
         tracking_briefs: trackingBriefs,
-        generation_context: { validation: validation.issues },
+        generation_context: { validation: validation.issues, planningContext: opts.planningContext },
       },
       { onConflict: 'user_id,week_start' },
     )
@@ -155,10 +168,19 @@ export async function generateWeeklyPlan(
     return { success: false, error: planError?.message ?? 'Failed to create plan' };
   }
 
-  await supabase
-    .from('planned_sessions')
-    .delete()
-    .eq('plan_id', planRow.id);
+  if (startFromDate) {
+    await supabase
+      .from('planned_sessions')
+      .delete()
+      .eq('plan_id', planRow.id)
+      .gte('scheduled_date', startFromDate)
+      .eq('status', 'pending');
+  } else {
+    await supabase
+      .from('planned_sessions')
+      .delete()
+      .eq('plan_id', planRow.id);
+  }
 
   const weekStartDate = new Date(weekStart + 'T00:00:00');
   const sessionsToInsert = plan.sessions.map((s) => {
@@ -191,5 +213,5 @@ export async function generateWeeklyPlan(
     return { success: false, error: sessionsError.message };
   }
 
-  return { success: true, planId: planRow.id };
+  return { success: true, planId: planRow.id, isDraft: opts.draft ?? false };
 }
