@@ -88,7 +88,7 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
         <p className="text-sm font-semibold text-zinc-200">{dayName}</p>
         {total > 0 && (
           <p className={`text-xs font-medium ${completed === total ? "text-emerald-400" : "text-zinc-500"}`}>
-            {completed === total ? "All done" : `${completed} of ${total}`}
+            {completed === total ? "All done" : `${completed} of ${total} sessions`}
           </p>
         )}
       </div>

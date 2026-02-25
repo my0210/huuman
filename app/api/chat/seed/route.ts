@@ -33,7 +33,8 @@ export async function POST() {
     .eq('status', 'active')
     .maybeSingle();
 
-  const introText = plan?.intro_message || 'Your plan is ready. Here\'s what today looks like.';
+  const weekBrief = plan?.intro_message || '';
+  const welcome = `Here's your first week.${weekBrief ? ' ' + weekBrief : ''}`;
 
   const messageId = crypto.randomUUID();
   const toolCallId = `seed-${crypto.randomUUID()}`;
@@ -42,7 +43,7 @@ export async function POST() {
     id: messageId,
     role: 'assistant',
     parts: [
-      { type: 'text', text: introText },
+      { type: 'text', text: welcome },
       {
         type: 'tool-show_today_plan',
         toolCallId,
@@ -50,6 +51,7 @@ export async function POST() {
         state: 'output-available',
         output: todayData,
       },
+      { type: 'text', text: 'Tap any session when you\'re ready to start.' },
     ],
   }], supabase);
 
