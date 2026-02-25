@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META, SESSION_DOMAINS } from '@/lib/types';
+import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META, SESSION_DOMAINS, type SessionDomain } from '@/lib/types';
 import type { AppSupabaseClient } from '@/lib/types';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
@@ -38,15 +38,24 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
       let sessions: Record<string, unknown>[] = [];
       if (activePlan) {
-        const { data: allSessions } = await supabase
+        const { data: planSessions } = await supabase
           .from('planned_sessions')
           .select('*')
           .eq('plan_id', activePlan.id)
           .eq('scheduled_date', today)
           .in('domain', SESSION_DOMAINS)
           .order('sort_order');
-        sessions = allSessions ?? [];
+        sessions = planSessions ?? [];
       }
+
+      const { data: extraSessions } = await supabase
+        .from('planned_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('scheduled_date', today)
+        .eq('is_extra', true)
+        .in('domain', SESSION_DOMAINS);
+      if (extraSessions) sessions.push(...extraSessions);
 
       const { data: habits } = await supabase
         .from('daily_habits')
@@ -86,22 +95,38 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
       let sessions: Record<string, unknown>[] = [];
       if (plan) {
-        const { data: allSessions } = await supabase
+        const { data: planSessions } = await supabase
           .from('planned_sessions')
           .select('*')
           .eq('plan_id', plan.id)
           .in('domain', SESSION_DOMAINS)
           .order('scheduled_date')
           .order('sort_order');
-        sessions = allSessions ?? [];
+        sessions = planSessions ?? [];
       }
+
+      const weekEnd = (() => {
+        const d = new Date(weekStart + 'T00:00:00');
+        d.setDate(d.getDate() + 6);
+        return d.toISOString().slice(0, 10);
+      })();
+      const { data: extraSessions } = await supabase
+        .from('planned_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_extra', true)
+        .gte('scheduled_date', weekStart)
+        .lte('scheduled_date', weekEnd)
+        .in('domain', SESSION_DOMAINS)
+        .order('scheduled_date');
+      if (extraSessions) sessions.push(...extraSessions);
 
       return {
         weekStart,
         plan: plan ?? null,
         sessions,
         trackingBriefs: plan?.tracking_briefs ?? null,
-        hasPlan: plan !== null,
+        hasPlan: plan !== null || sessions.length > 0,
       };
     },
   });
@@ -161,17 +186,65 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('status', 'active')
         .maybeSingle();
 
-      let weekSessions: SessionRow[] = [];
-      if (activePlan) {
-        const { data } = await supabase
-          .from('planned_sessions')
-          .select('domain, status')
-          .eq('plan_id', activePlan.id)
-          .in('domain', SESSION_DOMAINS);
-        weekSessions = (data ?? []) as SessionRow[];
-      }
+      const weekSessions = await fetchWeekSessions(supabase, userId, weekStart, activePlan?.id ?? null);
 
       return { session, weekProgress: computeWeekProgress(weekSessions) };
+    },
+  });
+
+  const log_session = tool({
+    description:
+      'Log a session the user completed that is not in their plan. Use when the user reports an activity (run, workout, meditation, etc.) that doesn\'t match any pending planned session for today.',
+    inputSchema: z.object({
+      domain: z.enum(['cardio', 'strength', 'mindfulness']).describe('Session domain'),
+      title: z.string().describe('Short title for the session (e.g. "5K Run", "Yoga Class")'),
+      scheduledDate: z.string().optional().describe('Date the session was done (YYYY-MM-DD). Defaults to today.'),
+      detail: z.record(z.string(), z.unknown()).describe('Session detail (zone, duration, exercises, etc.)'),
+    }),
+    execute: async ({ domain, title, scheduledDate, detail }: {
+      domain: SessionDomain;
+      title: string;
+      scheduledDate?: string;
+      detail: Record<string, unknown>;
+    }) => {
+      const date = scheduledDate ?? getTodayISO();
+      const [y, m, d] = date.split('-').map(Number);
+      const dayOfWeek = new Date(y, m - 1, d).getDay();
+      const weekStart = getWeekStart(new Date(y, m - 1, d));
+
+      const { data: activePlan } = await supabase
+        .from('weekly_plans')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('week_start', weekStart)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      const { data: session, error } = await supabase
+        .from('planned_sessions')
+        .insert({
+          plan_id: activePlan?.id ?? null,
+          user_id: userId,
+          domain,
+          day_of_week: dayOfWeek,
+          scheduled_date: date,
+          title,
+          status: 'completed',
+          detail,
+          completed_at: new Date().toISOString(),
+          is_extra: true,
+          sort_order: 0,
+        })
+        .select()
+        .single();
+
+      if (error || !session) {
+        return { error: error?.message ?? 'Failed to log session' };
+      }
+
+      const weekSessions = await fetchWeekSessions(supabase, userId, weekStart, activePlan?.id ?? null);
+
+      return { session, weekProgress: computeWeekProgress(weekSessions), isExtra: true };
     },
   });
 
@@ -190,15 +263,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('status', 'active')
         .maybeSingle();
 
-      let sessionRows: SessionRow[] = [];
-      if (activePlan) {
-        const { data } = await supabase
-          .from('planned_sessions')
-          .select('domain, status')
-          .eq('plan_id', activePlan.id)
-          .in('domain', SESSION_DOMAINS);
-        sessionRows = (data ?? []) as SessionRow[];
-      }
+      const sessionRows = await fetchWeekSessions(supabase, userId, weekStart, activePlan?.id ?? null);
 
       const { data: habits } = await supabase
         .from('daily_habits')
@@ -467,6 +532,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
     show_week_plan,
     show_session,
     complete_session,
+    log_session,
     show_progress,
     log_daily,
     adapt_plan,
@@ -480,6 +546,42 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 // =============================================================================
 // Helpers
 // =============================================================================
+
+async function fetchWeekSessions(
+  supabase: AppSupabaseClient,
+  userId: string,
+  weekStart: string,
+  planId: string | null,
+): Promise<SessionRow[]> {
+  const rows: SessionRow[] = [];
+
+  if (planId) {
+    const { data } = await supabase
+      .from('planned_sessions')
+      .select('domain, status')
+      .eq('plan_id', planId)
+      .in('domain', SESSION_DOMAINS);
+    if (data) rows.push(...(data as SessionRow[]));
+  }
+
+  const weekEnd = (() => {
+    const d = new Date(weekStart + 'T00:00:00');
+    d.setDate(d.getDate() + 6);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const { data: extras } = await supabase
+    .from('planned_sessions')
+    .select('domain, status')
+    .eq('user_id', userId)
+    .eq('is_extra', true)
+    .gte('scheduled_date', weekStart)
+    .lte('scheduled_date', weekEnd)
+    .in('domain', SESSION_DOMAINS);
+  if (extras) rows.push(...(extras as SessionRow[]));
+
+  return rows;
+}
 
 function computeWeekProgress(sessions: SessionRow[]) {
   const byDomain: Record<string, { total: number; completed: number; skipped: number }> = {};

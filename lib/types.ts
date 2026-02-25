@@ -176,13 +176,14 @@ export const DAY_LABELS: Record<DayOfWeek, string> = {
 
 export interface PlannedSessionBase {
   id: string;
-  planId: string;
+  planId?: string;
   domain: Domain;
   dayOfWeek: DayOfWeek;
   scheduledDate: string; // ISO date
   title: string;
   status: SessionStatus;
   sortOrder: number;
+  isExtra?: boolean;
   completedAt?: string;
   completedDetail?: Record<string, unknown>;
 }

@@ -83,6 +83,8 @@ function ToolPart({
       return <SessionDetailCard data={output} />;
     case "complete_session":
       return <CompletionWidget data={output} />;
+    case "log_session":
+      return <CompletionWidget data={output} />;
     case "show_progress":
       return <ProgressRings data={output} />;
     case "log_daily":
@@ -107,6 +109,7 @@ function LoadingCard({ toolName }: { toolName: string }) {
     show_week_plan: "Loading week plan...",
     show_session: "Loading session...",
     complete_session: "Completing session...",
+    log_session: "Logging session...",
     show_progress: "Checking progress...",
     log_daily: "Logging...",
     adapt_plan: "Adapting plan...",

@@ -13,6 +13,7 @@ interface Session {
   status: string;
   day_of_week: number;
   scheduled_date: string;
+  is_extra?: boolean;
 }
 
 interface WeekPlanData {
@@ -108,6 +109,9 @@ export function WeekPlanCard({ data }: { data: Record<string, unknown> }) {
               <span className={`h-2 w-2 rounded-full ${domainDot[s.domain] ?? "bg-zinc-600"}`} />
               <span className={`text-sm flex-1 ${s.status === "completed" ? "text-zinc-500 line-through" : "text-zinc-300"}`}>
                 {s.title}
+                {s.is_extra && (
+                  <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px align-middle">Extra</span>
+                )}
               </span>
               {s.status === "completed" && <Check size={12} className="text-emerald-400" />}
             </div>

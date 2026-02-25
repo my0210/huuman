@@ -27,6 +27,7 @@ interface Session {
   status: string;
   detail: Record<string, unknown>;
   scheduled_date: string;
+  is_extra?: boolean;
 }
 
 interface NutritionBrief {
@@ -156,7 +157,12 @@ function SessionRow({ session }: { session: Session }) {
             <p className={`text-sm font-medium truncate ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-200"}`}>
               {session.title}
             </p>
-            <p className="text-xs text-zinc-500 capitalize">{session.domain}</p>
+            <p className="text-xs text-zinc-500 capitalize">
+              {session.domain}
+              {session.is_extra && (
+                <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px">Extra</span>
+              )}
+            </p>
           </div>
           {!isCompleted && (
             <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5 shrink-0">

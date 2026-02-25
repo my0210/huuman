@@ -16,6 +16,7 @@ interface CompletionData {
     total: number;
     completionRate: number;
   }[];
+  isExtra?: boolean;
 }
 
 export function CompletionWidget({ data }: { data: Record<string, unknown> }) {
@@ -27,7 +28,7 @@ export function CompletionWidget({ data }: { data: Record<string, unknown> }) {
     );
   }
 
-  const { session, weekProgress } = data as unknown as CompletionData;
+  const { session, weekProgress, isExtra } = data as unknown as CompletionData;
 
   return (
     <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 overflow-hidden">
@@ -35,9 +36,16 @@ export function CompletionWidget({ data }: { data: Record<string, unknown> }) {
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20">
           <Check size={12} className="text-emerald-400" />
         </div>
-        <div>
-          <p className="text-sm font-medium text-emerald-300">Done!</p>
-          <p className="text-xs text-zinc-400">{session?.title}</p>
+        <div className="flex items-center gap-2">
+          <div>
+            <p className="text-sm font-medium text-emerald-300">{isExtra ? 'Logged' : 'Done!'}</p>
+            <p className="text-xs text-zinc-400">{session?.title}</p>
+          </div>
+          {isExtra && (
+            <span className="text-[10px] font-medium text-zinc-500 bg-zinc-800 rounded px-1.5 py-0.5">
+              Extra
+            </span>
+          )}
         </div>
       </div>
 

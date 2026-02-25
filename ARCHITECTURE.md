@@ -74,7 +74,7 @@ Bidirectional linking:
 - `validatePlan()` validates cardio/strength session rules
 
 ### AI agent
-`ToolLoopAgent` with `stepCountIs(5)` stop condition. The agent has 10 tools that render interactive UI:
+`ToolLoopAgent` with `stepCountIs(5)` stop condition. The agent has 11 tools that render interactive UI:
 - Web: tools return JSON, `MessagePart.tsx` maps toolName -> React card component
 - Telegram: tools return JSON, `formatters.ts` maps toolName -> text + inline keyboards
 
@@ -89,7 +89,7 @@ Bidirectional linking:
 - `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints (legacy), onboarding_completed, telegram_chat_id
 - `user_context` -- user_id, category (physical/environment/equipment/schedule), content (text), scope (permanent/temporary), expires_at, active, source (onboarding/conversation). Categorized, time-scoped facts about the user that drive plan personalization.
 - `weekly_plans` -- user_id, week_start, status, intro_message, tracking_briefs (JSONB: personalized nutrition/sleep targets). Unique on (user_id, week_start).
-- `planned_sessions` -- plan_id, user_id, domain (cardio/strength/mindfulness), scheduled_date, title, status, detail (JSONB), completed_detail
+- `planned_sessions` -- plan_id (nullable), user_id, domain (cardio/strength/mindfulness), scheduled_date, title, status, detail (JSONB), completed_detail, is_extra (bool). Extra sessions (logged outside the plan) have is_extra=true and may have plan_id=null.
 - `daily_habits` -- user_id, date, steps, nutrition, sleep. Unique on (user_id, date).
 - `conversations` -- user_id, created_at
 - `messages` -- conversation_id, role, parts (JSONB), attachments

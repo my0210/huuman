@@ -29,7 +29,8 @@ export function formatTodayPlan(data: Record<string, unknown>): FormattedRespons
   const headerLines = [`<b>${esc(dayName)}</b> — ${sessions.length} session${sessions.length !== 1 ? 's' : ''}`];
   if (completed.length > 0) {
     for (const s of completed) {
-      headerLines.push(`✓ ${domainIcon(s.domain as string)} ${esc(String(s.title))}`);
+      const extra = s.is_extra ? ' (extra)' : '';
+      headerLines.push(`✓ ${domainIcon(s.domain as string)} ${esc(String(s.title))}${extra}`);
     }
   }
 
@@ -89,7 +90,8 @@ export function formatWeekPlan(data: Record<string, unknown>): FormattedResponse
     const items = daySessions
       .map((s) => {
         const done = s.status === 'completed' ? ' ✓' : '';
-        return `  ${domainIcon(s.domain as string)} ${esc(String(s.title))}${done}`;
+        const extra = s.is_extra ? ' (extra)' : '';
+        return `  ${domainIcon(s.domain as string)} ${esc(String(s.title))}${done}${extra}`;
       })
       .join('\n');
     lines.push(`<b>${esc(dayName)}</b>\n${items}`);
@@ -191,9 +193,11 @@ export function formatCompletion(data: Record<string, unknown>): FormattedRespon
   const session = data.session as Record<string, unknown> | undefined;
   const title = String(session?.title ?? 'Session');
   const domain = session?.domain as string | undefined;
+  const isExtra = !!data.isExtra;
 
   const note = domain ? COMPLETION_NOTES[domain] ?? '' : '';
-  const lines = [`✓ ${domain ? domainIcon(domain) + ' ' : ''}<b>${esc(title)}</b>`];
+  const prefix = isExtra ? '+ Extra: ' : '✓ ';
+  const lines = [`${prefix}${domain ? domainIcon(domain) + ' ' : ''}<b>${esc(title)}</b>`];
   if (note) lines.push(note);
 
   const weekProgress = data.weekProgress as Array<Record<string, unknown>> | undefined;
@@ -366,6 +370,7 @@ export function formatToolOutput(toolName: string, output: Record<string, unknow
     case 'show_week_plan': return formatWeekPlan(output);
     case 'show_session': return formatSession(output);
     case 'complete_session': return formatCompletion(output);
+    case 'log_session': return formatCompletion(output);
     case 'show_progress': return formatProgress(output);
     case 'log_daily': return formatDailyHabit(output);
     case 'start_timer': return formatTimer(output);
