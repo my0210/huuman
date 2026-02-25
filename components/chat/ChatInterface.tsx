@@ -110,7 +110,10 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
     if ((!hasText && !hasImages) || isLoading) return;
 
     if (hasImages) {
-      sendMessage({ text: hasText ? input : "What do you see in this image?", files: imageFiles });
+      const prompt = hasText
+        ? `What do you see in this image? Context from user: ${input}`
+        : "What do you see in this image?";
+      sendMessage({ text: prompt, files: imageFiles });
     } else {
       sendMessage({ text: input });
     }
@@ -165,7 +168,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   };
 
   const handleResetEverything = async () => {
-    if (!confirm("Reset everything? This deletes all data (plan, chat, habits, profile) and restarts from scratch.")) return;
+    if (!confirm("Reset everything? This deletes all data (plan, chat, tracking, profile) and restarts from scratch.")) return;
     setBusy(true);
     try {
       const res = await fetch("/api/dev/reset", { method: "POST" });
@@ -498,7 +501,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
               if (commandMenuOpen) setCommandMenuOpen(false);
             }}
             onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
-            placeholder={imageFiles.length > 0 ? "Add a message or send the image..." : t("chat.placeholder", currentLanguage)}
+            placeholder={imageFiles.length > 0 ? "Add a note, e.g. \"my lunch\" or \"home gym setup\"..." : t("chat.placeholder", currentLanguage)}
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
           />
           {/* Camera button (WhatsApp pattern: right of input) */}
