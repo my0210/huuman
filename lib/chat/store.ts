@@ -68,7 +68,11 @@ export async function saveMessages(
 }
 
 export function convertToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
-  const cleaned = trimOrphanedUserMessages(dbMessages);
+  const noEmpty = dbMessages.filter((msg) => {
+    const parts = msg.parts as unknown[];
+    return parts && parts.length > 0;
+  });
+  const cleaned = trimOrphanedUserMessages(noEmpty);
   return cleaned.map((msg) => ({
     id: msg.id,
     role: msg.role as UIMessage['role'],

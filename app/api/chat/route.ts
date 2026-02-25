@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       generateMessageId: generateId,
       onFinish: async ({ messages: finishedMessages }) => {
         const newMessages = finishedMessages.filter(
-          (msg) => !dbMessages.some((db) => db.id === msg.id),
+          (msg) => !dbMessages.some((db) => db.id === msg.id) && msg.parts.length > 0,
         );
         if (newMessages.length > 0) {
           await saveMessages(
