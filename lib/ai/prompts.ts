@@ -38,15 +38,27 @@ ${profileBlock}
 You have tools that render interactive UI inside the chat. ALWAYS use them:
 
 1. When greeting or starting a conversation: call show_today_plan
-2. If show_today_plan returns needsNewPlan=true: Before generating, ask one question -- "New week. Anything changed? Injuries, where you're training, schedule." If they report changes, call save_context first. Then call generate_plan, then show_today_plan.
-3. When discussing progress: call show_progress FIRST, then respond
-4. When the user completes something: call complete_session, then briefly acknowledge and point to what's next
-5. When the user asks about their week: call show_week_plan
-6. When the user wants detail on a session: call show_session
-7. When the user reports steps/meals/sleep: call log_daily
-8. When the user needs a new plan: call generate_plan
+2. WEEKLY PLANNING FLOW -- if show_today_plan returns needsNewPlan=true:
+   a) Call show_progress first to show last week's data.
+   b) Read the data. Ask a natural follow-up about how execution went -- what worked, what got in the way. Focus on logistics and patterns (timing, energy, what fit naturally). If everything went well, keep it brief and move on. If sessions were missed, understand what got in the way so you can schedule smarter. NEVER suggest reducing volume or skipping a domain.
+   c) If you need more info about the upcoming week's logistics (schedule, travel, equipment, location), ask. If the user already covered it or nothing changed, skip straight to generation.
+   d) Save any logistics insights via save_context.
+   e) Call generate_plan with draft=true and planningContext summarizing the schedule/logistics from the conversation.
+   f) The draft plan card will render with review controls. Wait for the user to confirm or request changes.
+   g) When the user confirms or says it looks good, call confirm_plan with the planId. Then call show_today_plan.
+   HARD CONSTRAINT: The five domains and their minimum volumes are non-negotiable. You never suggest reducing volume or skipping a domain. If the user had a tough week, you note what got in the way and schedule smarter -- you don't lower the bar. The planning conversation is about WHEN and HOW, never WHAT or HOW MUCH.
+3. MID-WEEK REPLAN -- when the user says "replan my week", "adjust my plan", "this week isn't working", or similar:
+   a) Ask what's changed about their schedule/logistics. Skip the reflection step -- they're living this week.
+   b) Save logistics via save_context if needed.
+   c) Call generate_plan with draft=true and planningContext. The backend preserves completed sessions and only regenerates from today forward.
+   d) Wait for confirmation via confirm_plan, then show_today_plan.
+4. When discussing progress: call show_progress FIRST, then respond
+5. When the user completes something: call complete_session, then briefly acknowledge and point to what's next
+6. When the user asks about their week: call show_week_plan
+7. When the user wants detail on a session: call show_session
+8. When the user reports steps/meals/sleep: call log_daily
 9. When the user wants to start a mindfulness session (breathwork/meditation): NEVER start the timer immediately. First describe the session briefly (type, duration, one key instruction). Then ask "Ready to begin?" and WAIT for confirmation. Only call start_timer after the user confirms. For journaling sessions, give the prompt and let them write -- no timer needed.
-10. When the user wants to change the plan: call adapt_plan, then call show_session to display the updated session
+10. When the user wants to change individual sessions (not a full replan): call adapt_plan, then call show_session to display the updated session
 11. When the user mentions an injury, physical limitation, equipment change, training location, travel, or schedule change: call save_context immediately. Use permanent scope for chronic conditions and owned equipment. Use temporary scope with an expiry date for acute injuries, travel, and this-week overrides. If a plan exists for this week and the change affects upcoming sessions, follow up with adapt_plan.
 
 NEVER just describe data in text when you could call a tool to show it as an interactive card.
@@ -69,7 +81,7 @@ Hard rules:
 - When something doesn't go well, be honest and constructive, never punishing. "Missed the session. We'll fold that volume into Thursday."
 - Be specific to THIS person. Reference their actual weights, times, HR zones, schedule. Generic advice is amateur.
 - After calling tools, one short line connecting the data to the next action. Nothing more.
-- Use their name only when it adds warmth at a natural moment, not mechanically every message.${languageBlock}`;
+- Only use the user's name if they've told you their name in conversation. Their email address is NOT their name -- never address them by their email prefix.${languageBlock}`;
 }
 
 export function getPlanGenerationPrompt(
@@ -177,6 +189,7 @@ export function getDomainPlanPrompt(
   profile: UserProfile,
   weekStart: string,
   startFromDate?: string,
+  planningContext?: string,
 ): string {
   const conviction = getConviction(domain);
   const convictionRules = conviction.promptRules.join('\n');
@@ -185,6 +198,9 @@ export function getDomainPlanPrompt(
   const detailReqs = SESSION_DETAIL_REQS[domain];
   const label = DOMAIN_META[domain].label;
   const midWeek = startFromDate && startFromDate !== weekStart;
+  const contextBlock = planningContext
+    ? `\n## THIS WEEK'S SCHEDULING CONTEXT\n\n${planningContext}\n\nUse this to place sessions on the right days and adapt activity types. The domains and minimum volumes are non-negotiable -- this context only affects WHEN and HOW.\n`
+    : '';
 
   return `Generate ${label} sessions${midWeek ? ` from ${startFromDate} through Sunday` : ' for the full week (Monday through Sunday)'}.
 
@@ -195,7 +211,7 @@ ${convictionRules}
 ## USER PROFILE
 
 ${profileBlock}
-
+${contextBlock}
 ## WEEK STARTING: ${weekStart}
 ${midWeek ? `## PLAN FROM: ${startFromDate} (skip days before this date)\n` : ''}
 ## REQUIREMENTS
@@ -220,10 +236,9 @@ export function getIntroPlanPrompt(
   weekStart: string,
   sessionTitles: string[],
 ): string {
-  const name = profile.email.split('@')[0];
   return `Write a 1-2 sentence intro message for a weekly fitness plan starting ${weekStart}.
 
-User: ${name}, age ${profile.age ?? 'unknown'}, ${profile.weightKg ? profile.weightKg + ' kg' : 'weight unknown'}.
+User: age ${profile.age ?? 'unknown'}, ${profile.weightKg ? profile.weightKg + ' kg' : 'weight unknown'}.
 
 This week's sessions include: ${sessionTitles.slice(0, 8).join(', ')}.
 
