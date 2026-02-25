@@ -180,7 +180,7 @@ export async function generateWeeklyPlan(
       .delete()
       .eq('plan_id', planRow.id)
       .gte('scheduled_date', startFromDate)
-      .eq('status', 'pending');
+      .in('status', ['pending', 'skipped']);
   } else {
     await supabase
       .from('planned_sessions')

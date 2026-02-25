@@ -44,6 +44,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
           .eq('plan_id', activePlan.id)
           .eq('scheduled_date', today)
           .in('domain', SESSION_DOMAINS)
+          .neq('status', 'skipped')
           .order('sort_order');
         sessions = planSessions ?? [];
       }
@@ -54,7 +55,8 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
         .eq('user_id', userId)
         .eq('scheduled_date', today)
         .eq('is_extra', true)
-        .in('domain', SESSION_DOMAINS);
+        .in('domain', SESSION_DOMAINS)
+        .neq('status', 'skipped');
       if (extraSessions) sessions.push(...extraSessions);
 
       const { data: habits } = await supabase
@@ -100,6 +102,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
           .select('*')
           .eq('plan_id', plan.id)
           .in('domain', SESSION_DOMAINS)
+          .neq('status', 'skipped')
           .order('scheduled_date')
           .order('sort_order');
         sessions = planSessions ?? [];
@@ -420,6 +423,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
           .select('*')
           .eq('plan_id', result.planId)
           .in('domain', SESSION_DOMAINS)
+          .neq('status', 'skipped')
           .order('scheduled_date')
           .order('sort_order');
 
