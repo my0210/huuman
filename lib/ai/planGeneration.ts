@@ -168,7 +168,13 @@ export async function generateWeeklyPlan(
     return { success: false, error: planError?.message ?? 'Failed to create plan' };
   }
 
-  if (startFromDate) {
+  const { count: completedCount } = await supabase
+    .from('planned_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('plan_id', planRow.id)
+    .eq('status', 'completed');
+
+  if (startFromDate && (completedCount ?? 0) > 0) {
     await supabase
       .from('planned_sessions')
       .delete()
