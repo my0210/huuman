@@ -106,21 +106,21 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
     return parts && parts.length > 0;
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
-  return cleaned
-    .map((msg) => {
-      const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
-        const t = (p as Record<string, unknown>).type as string;
-        return t === 'text' || t === 'file';
-      });
-      if (textParts.length === 0) return null;
-      return {
+  return cleaned.reduce<UIMessage[]>((acc, msg) => {
+    const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
+      const t = (p as Record<string, unknown>).type as string;
+      return t === 'text' || t === 'file';
+    });
+    if (textParts.length > 0) {
+      acc.push({
         id: msg.id,
         role: msg.role as UIMessage['role'],
         parts: textParts,
         createdAt: new Date(msg.created_at),
-      };
-    })
-    .filter((msg): msg is UIMessage => msg !== null);
+      } as UIMessage);
+    }
+    return acc;
+  }, []);
 }
 
 function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {
