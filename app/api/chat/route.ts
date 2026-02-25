@@ -26,7 +26,6 @@ export async function POST(req: Request) {
           id: message.id,
           role: 'user',
           parts: message.parts,
-          attachments: [],
         },
       ], supabase);
     }

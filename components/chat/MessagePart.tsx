@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIMessage } from "ai";
-import { isToolUIPart, getToolName } from "ai";
+import { isToolUIPart, isFileUIPart, getToolName } from "ai";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { SessionDetailCard } from "@/components/cards/SessionDetailCard";
@@ -20,6 +20,16 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
       }`}>
         {part.text}
       </p>
+    );
+  }
+
+  if (isFileUIPart(part) && part.mediaType.startsWith("image/")) {
+    return (
+      <img
+        src={part.url}
+        alt={part.filename ?? "Uploaded image"}
+        className="max-w-full rounded-xl max-h-64 object-contain"
+      />
     );
   }
 

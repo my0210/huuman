@@ -1,10 +1,10 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
+import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
-import { useState, useRef, useEffect, useMemo } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft } from "lucide-react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, ImagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
@@ -25,8 +25,10 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
   const [busy, setBusy] = useState(false);
   const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [imageFiles, setImageFiles] = useState<FileUIPart[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const transport = useMemo(
@@ -76,11 +78,42 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newParts: FileUIPart[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      newParts.push({ type: "file", mediaType: file.type, url: dataUrl, filename: file.name });
+    }
+
+    setImageFiles((prev) => [...prev, ...newParts]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  const removeImage = useCallback((index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
+    const hasText = input.trim().length > 0;
+    const hasImages = imageFiles.length > 0;
+    if ((!hasText && !hasImages) || isLoading) return;
+
+    if (hasImages) {
+      sendMessage({ text: hasText ? input : "What do you see in this image?", files: imageFiles });
+    } else {
+      sendMessage({ text: input });
+    }
     setInput("");
+    setImageFiles([]);
   };
 
   const handleLogout = async () => {
@@ -407,18 +440,55 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
         onSubmit={handleSubmit}
         className="flex-none border-t border-zinc-800 px-4 py-3"
       >
+        {imageFiles.length > 0 && (
+          <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+            {imageFiles.map((file, i) => (
+              <div key={i} className="relative flex-none group">
+                <img
+                  src={file.url}
+                  alt={file.filename ?? "Upload"}
+                  className="h-16 w-16 rounded-lg object-cover border border-zinc-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-700 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-600"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            multiple
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading}
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-30"
+            title="Upload image"
+          >
+            <ImagePlus size={18} />
+          </button>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={t("chat.placeholder", currentLanguage)}
+            placeholder={imageFiles.length > 0 ? "Add a message or send the image..." : t("chat.placeholder", currentLanguage)}
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
           />
           <button
             type="submit"
-            disabled={!input.trim() || isLoading}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
+            disabled={(!input.trim() && imageFiles.length === 0) || isLoading}
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
           >
             <Send size={16} />
           </button>
