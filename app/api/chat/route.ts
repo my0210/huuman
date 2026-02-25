@@ -1,7 +1,7 @@
 import { createAgentUIStreamResponse, generateId } from 'ai';
 import { createCoachAgent } from '@/lib/ai/agent';
 import { createClient } from '@/lib/supabase/server';
-import { loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
+import { loadMessages, saveMessages, convertToModelUIMessages } from '@/lib/chat/store';
 import { loadUserProfile } from '@/lib/core/user';
 import { getLanguageFromCookies } from '@/lib/languages';
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     const dbMessages = await loadMessages(chatId, supabase);
-    const uiMessages = convertToUIMessages(dbMessages);
+    const uiMessages = convertToModelUIMessages(dbMessages);
 
     const userProfile = await loadUserProfile(userId, supabase);
     const language = getLanguageFromCookies(req.headers.get('cookie'));

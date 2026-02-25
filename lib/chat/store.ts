@@ -94,6 +94,35 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
   });
 }
 
+/**
+ * Converts DB messages to UIMessages with only text/file parts,
+ * suitable for passing to the AI agent. Tool and step-start parts
+ * are stripped because legacy stored tool parts produce malformed
+ * tool_use/tool_result sequences that Claude rejects.
+ */
+export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
+  const noEmpty = dbMessages.filter((msg) => {
+    const parts = msg.parts as unknown[];
+    return parts && parts.length > 0;
+  });
+  const cleaned = trimOrphanedUserMessages(noEmpty);
+  return cleaned
+    .map((msg) => {
+      const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
+        const t = (p as Record<string, unknown>).type as string;
+        return t === 'text' || t === 'file';
+      });
+      if (textParts.length === 0) return null;
+      return {
+        id: msg.id,
+        role: msg.role as UIMessage['role'],
+        parts: textParts,
+        createdAt: new Date(msg.created_at),
+      };
+    })
+    .filter((msg): msg is UIMessage => msg !== null);
+}
+
 function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {
   const result: DBMessage[] = [];
   for (let i = 0; i < messages.length; i++) {

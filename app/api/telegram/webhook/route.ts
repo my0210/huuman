@@ -5,7 +5,7 @@ import { createUserScopedClient } from '@/lib/supabase/scoped';
 import { loadUserProfile } from '@/lib/core/user';
 import { createCoachAgent } from '@/lib/ai/agent';
 import { createTools } from '@/lib/ai/tools';
-import { getOrCreateConversation, loadMessages, saveMessages, convertToUIMessages } from '@/lib/chat/store';
+import { getOrCreateConversation, loadMessages, saveMessages, convertToModelUIMessages } from '@/lib/chat/store';
 import {
   verifyWebhookSecret,
   sendMessage,
@@ -295,7 +295,7 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
     const userClient = await createUserScopedClient(userId);
     const chatConvoId = await getOrCreateConversation(userId, userClient);
     const dbMessages = await loadMessages(chatConvoId, userClient);
-    const uiMessages = convertToUIMessages(dbMessages);
+    const uiMessages = convertToModelUIMessages(dbMessages);
 
     await saveMessages(chatConvoId, [{
       id: `tg-${Date.now()}`,
