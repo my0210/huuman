@@ -1,5 +1,6 @@
 import 'server-only';
 import type { UIMessage } from 'ai';
+import { generateId } from 'ai';
 import type { AppSupabaseClient, DBMessage } from '@/lib/types';
 
 export async function getOrCreateConversation(userId: string, supabase: AppSupabaseClient): Promise<string> {
@@ -80,6 +81,10 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
   return parts.map((p) => {
     if (p.type === 'tool-invocation' && !('args' in p && p.args != null)) {
       return { ...p, args: {} } as unknown as typeof p;
+    }
+    const raw = p as Record<string, unknown>;
+    if (typeof raw.type === 'string' && raw.type.startsWith('tool-') && !raw.toolCallId) {
+      return { ...raw, toolCallId: generateId() } as unknown as typeof p;
     }
     return p;
   });
