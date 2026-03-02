@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     const { text } = await generateText({
       model: anthropic('claude-sonnet-4-6'),
       prompt,
-      maxTokens: 120,
+      maxOutputTokens: 120,
     });
 
     const messageId = crypto.randomUUID();
