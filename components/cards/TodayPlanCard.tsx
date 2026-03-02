@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, Dumbbell, Brain, ChevronDown, Check, Flame, Moon, ChevronRight } from "lucide-react";
+import { Heart, Dumbbell, Brain, ChevronDown, Check, Flame, Moon, ChevronRight, Play, MessageCircle } from "lucide-react";
 import { SessionDetailInline } from "./SessionDetailCard";
 import { useChatSend } from "@/components/chat/ChatActions";
 
@@ -121,7 +121,7 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
 // Session Row
 // =============================================================================
 
-function sessionTapMessage(session: Session): string {
+function sessionStartMessage(session: Session): string {
   const type = session.detail?.type as string | undefined;
   if (session.domain === "mindfulness" && type) {
     return `I'm ready for my ${session.title} — ${type}`;
@@ -129,57 +129,48 @@ function sessionTapMessage(session: Session): string {
   return `Let's do my ${session.title} session`;
 }
 
+const domainButtonColors: Record<string, string> = {
+  cardio: "bg-red-900/60 text-red-300 hover:bg-red-900/80",
+  strength: "bg-orange-900/60 text-orange-300 hover:bg-orange-900/80",
+  mindfulness: "bg-cyan-900/60 text-cyan-300 hover:bg-cyan-900/80",
+};
+
 function SessionRow({ session }: { session: Session }) {
   const [expanded, setExpanded] = useState(false);
   const send = useChatSend();
   const colors = domainColors[session.domain] ?? "text-zinc-400 bg-zinc-900 border-zinc-800";
   const isCompleted = session.status === "completed";
 
-  const handleTap = () => {
-    if (isCompleted || !send) return;
-    send({ text: sessionTapMessage(session) });
-  };
-
   return (
     <div>
-      <div className="flex items-center">
-        <button
-          onClick={handleTap}
-          disabled={isCompleted}
-          className={`flex-1 flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-            isCompleted ? "opacity-60 cursor-default" : "hover:bg-zinc-800/30 active:bg-zinc-800/50"
-          }`}
-        >
-          <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${colors}`}>
-            {isCompleted ? <Check size={14} /> : domainIcons[session.domain]}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className={`text-sm font-medium truncate ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-200"}`}>
-              {session.title}
-            </p>
-            <p className="text-xs text-zinc-500 capitalize">
-              {session.domain}
-              {session.is_extra && (
-                <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px">Extra</span>
-              )}
-            </p>
-          </div>
-          {!isCompleted && (
-            <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5 shrink-0">
-              Start <ChevronRight size={12} />
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="px-3 py-3 text-zinc-600 hover:text-zinc-400 transition-colors self-stretch flex items-center border-l border-zinc-800/50"
-        >
+      <button
+        onClick={() => !isCompleted && setExpanded(!expanded)}
+        disabled={isCompleted}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+          isCompleted ? "opacity-60 cursor-default" : "hover:bg-zinc-800/30 active:bg-zinc-800/50"
+        }`}
+      >
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${colors}`}>
+          {isCompleted ? <Check size={14} /> : domainIcons[session.domain]}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-medium truncate ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-200"}`}>
+            {session.title}
+          </p>
+          <p className="text-xs text-zinc-500 capitalize">
+            {session.domain}
+            {session.is_extra && (
+              <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px">Extra</span>
+            )}
+          </p>
+        </div>
+        {!isCompleted && (
           <ChevronDown
             size={14}
-            className={`transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`text-zinc-600 transition-transform shrink-0 ${expanded ? "rotate-180" : ""}`}
           />
-        </button>
-      </div>
+        )}
+      </button>
 
       <AnimatePresence>
         {expanded && (
@@ -190,8 +181,28 @@ function SessionRow({ session }: { session: Session }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-3">
+            <div className="px-4 pb-3 space-y-3">
               <SessionDetailInline domain={session.domain} detail={session.detail} />
+              {send && (
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => send({ text: sessionStartMessage(session) })}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      domainButtonColors[session.domain] ?? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    }`}
+                  >
+                    <Play size={10} />
+                    Start
+                  </button>
+                  <button
+                    onClick={() => send({ text: `Tell me more about my ${session.title} session` })}
+                    className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
+                  >
+                    <MessageCircle size={10} />
+                    Ask coach
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
