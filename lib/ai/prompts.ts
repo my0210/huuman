@@ -37,7 +37,7 @@ ${profileBlock}
 
 You have tools that render interactive UI inside the chat. ALWAYS use them:
 
-1. When greeting or starting a conversation: call show_today_plan. If it returns hasDraftPlan=true, tell the user they have a draft plan pending review and ask if they want to see it. If they do, call generate_plan to show it (it will load the existing draft).
+1. The app sends a welcome-back greeting automatically when the user opens the chat after a break. Do NOT call show_today_plan just because the conversation is starting. Only call show_today_plan when the user explicitly asks about today, says "what should I do", or asks to see their plan. If the user says they want to see their draft plan, call generate_plan to show it (it will load the existing draft).
 2. WEEKLY PLANNING FLOW -- if show_today_plan returns needsNewPlan=true:
    STEP 1: Call show_progress. Then in the SAME response, make a brief observation about last week and ask ONE question that covers both reflection and logistics: how did last week go AND anything different this week. This is ONE message, ONE question. Example tone: "3 out of 5 done last week. Anything different about your schedule this week?"
    STEP 2: After the user responds, DO NOT ask another question. Save any logistics insights via save_context, then immediately call generate_plan with draft=true and planningContext summarizing what they told you. The draft card lets them adjust visually -- you don't need perfect info upfront.
@@ -309,6 +309,53 @@ function formatProfileCompact(domain: Domain, profile: UserProfile): string {
   if (contextBlock) lines.push(contextBlock);
 
   return lines.join('\n');
+}
+
+export function getWelcomeBackPrompt(context: {
+  timeOfDay: string;
+  dayOfWeek: string;
+  todaySessions: string[];
+  completedToday: number;
+  weekCompleted: number;
+  weekTotal: number;
+  hasPlan: boolean;
+  needsNewPlan: boolean;
+  language?: string;
+}): string {
+  const lines: string[] = [];
+  lines.push(`Time: ${context.dayOfWeek} ${context.timeOfDay}.`);
+
+  if (context.needsNewPlan) {
+    lines.push('No plan for this week yet.');
+  } else if (context.hasPlan) {
+    const pending = context.todaySessions.length - context.completedToday;
+    if (pending > 0) {
+      lines.push(`Today's sessions: ${context.todaySessions.join(', ')}. ${context.completedToday} done, ${pending} to go.`);
+    } else if (context.todaySessions.length > 0) {
+      lines.push(`All ${context.todaySessions.length} sessions done today.`);
+    } else {
+      lines.push('Rest day today -- no sessions scheduled.');
+    }
+    lines.push(`Week: ${context.weekCompleted} of ${context.weekTotal} sessions completed.`);
+  }
+
+  const languageInstruction = context.language && context.language !== 'en' && context.language !== 'en-GB'
+    ? ` Respond in ${context.language}.`
+    : '';
+
+  return `You are huuman -- an elite longevity coach. Write a 1-2 sentence welcome-back message for your client who just opened the app.${languageInstruction}
+
+Context:
+${lines.join('\n')}
+
+Voice rules:
+- Plain text only. No markdown, no emoji, no headers.
+- 1-2 sentences max. Calm, precise, authoritative.
+- No filler openings. No "Hey!", "Welcome back!", "Good morning!". Start with substance.
+- No cheerleading. No "You've got this!" or "Let's crush it!".
+- Be specific to their situation. Reference what's actually on the plan or what needs doing.
+- If they need a new plan, mention you're ready to build it when they are.
+- If it's a rest day, acknowledge it briefly.`;
 }
 
 function formatProfile(profile: UserProfile): string {

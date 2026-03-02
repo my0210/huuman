@@ -49,7 +49,7 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
     [chatId],
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, setMessages, status } = useChat({
     id: chatId,
     messages: initialMessages,
     transport,
@@ -69,15 +69,25 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
 
   useEffect(() => {
     if (autoSentRef.current || initialMessages.length === 0) return;
-    const last = initialMessages[initialMessages.length - 1];
-    const lastTime = (last as unknown as { createdAt?: Date | string }).createdAt;
-    if (!lastTime) return;
-    const ageMs = Date.now() - new Date(lastTime).getTime();
-    const EIGHT_HOURS = 8 * 60 * 60 * 1000;
-    if (ageMs > EIGHT_HOURS) {
-      autoSentRef.current = true;
-      sendMessage({ text: "Ready to go. Show me today's plan." });
-    }
+    autoSentRef.current = true;
+
+    fetch("/api/chat/seed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chatId }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.skip || !data.message) return;
+        setMessages((prev) => [
+          ...prev,
+          {
+            ...data.message,
+            createdAt: new Date(data.message.createdAt),
+          },
+        ]);
+      })
+      .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {

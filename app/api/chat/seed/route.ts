@@ -1,59 +1,131 @@
+import { generateText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
-import { getOrCreateConversation, loadMessages, saveMessages } from '@/lib/chat/store';
-import { createTools } from '@/lib/ai/tools';
-import { getWeekStart } from '@/lib/types';
+import { loadMessages, saveMessages } from '@/lib/chat/store';
+import { getWeekStart, getTodayISO, SESSION_DOMAINS } from '@/lib/types';
+import { getWelcomeBackPrompt } from '@/lib/ai/prompts';
+import { getLanguageFromCookies } from '@/lib/languages';
 
-export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+const EIGHT_HOURS = 8 * 60 * 60 * 1000;
 
-  if (!user) {
-    return new Response('Unauthorized', { status: 401 });
-  }
+export async function POST(req: Request) {
+  try {
+    const { chatId } = await req.json();
+    if (!chatId) {
+      return Response.json({ skip: true });
+    }
 
-  const userId = user.id;
-  const conversationId = await getOrCreateConversation(userId, supabase);
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return Response.json({ skip: true });
+    }
 
-  const existing = await loadMessages(conversationId, supabase);
-  if (existing.length > 0) {
-    return Response.json({ seeded: false, reason: 'conversation_has_messages' });
-  }
+    const userId = user.id;
+    const dbMessages = await loadMessages(chatId, supabase);
 
-  const tools = createTools(userId, supabase);
-  type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
-  const execOpts = { toolCallId: 'seed', messages: [] as never[], abortSignal: new AbortController().signal };
-  const todayData = await (tools.show_today_plan as unknown as ToolExec).execute({}, execOpts);
+    if (dbMessages.length === 0) {
+      return Response.json({ skip: true });
+    }
 
-  const weekStart = getWeekStart();
-  const { data: plan } = await supabase
-    .from('weekly_plans')
-    .select('intro_message')
-    .eq('user_id', userId)
-    .eq('week_start', weekStart)
-    .eq('status', 'active')
-    .maybeSingle();
+    const lastMsg = dbMessages[dbMessages.length - 1];
+    const lastTime = new Date(lastMsg.created_at).getTime();
+    if (Date.now() - lastTime < EIGHT_HOURS) {
+      return Response.json({ skip: true });
+    }
 
-  const weekBrief = plan?.intro_message || '';
-  const welcome = `Here's your first week.${weekBrief ? ' ' + weekBrief : ''}`;
+    const today = getTodayISO();
+    const weekStart = getWeekStart();
+    const now = new Date();
+    const hour = now.getHours();
+    const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+    const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
 
-  const messageId = crypto.randomUUID();
-  const toolCallId = `seed-${crypto.randomUUID()}`;
+    const { data: activePlan } = await supabase
+      .from('weekly_plans')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('week_start', weekStart)
+      .eq('status', 'active')
+      .maybeSingle();
 
-  await saveMessages(conversationId, [{
-    id: messageId,
-    role: 'assistant',
-    parts: [
-      { type: 'text', text: welcome },
-      {
-        type: 'tool-show_today_plan',
-        toolCallId,
-        input: {},
-        state: 'output-available',
-        output: todayData,
+    let needsNewPlan = false;
+    if (!activePlan) {
+      const { data: draft } = await supabase
+        .from('weekly_plans')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('week_start', weekStart)
+        .eq('status', 'draft')
+        .maybeSingle();
+      needsNewPlan = !draft;
+    }
+
+    let todaySessions: string[] = [];
+    let completedToday = 0;
+    let weekCompleted = 0;
+    let weekTotal = 0;
+
+    if (activePlan) {
+      const { data: todayRows } = await supabase
+        .from('planned_sessions')
+        .select('title, status')
+        .eq('plan_id', activePlan.id)
+        .eq('scheduled_date', today)
+        .in('domain', SESSION_DOMAINS)
+        .neq('status', 'skipped');
+
+      todaySessions = (todayRows ?? []).map((s: { title: string }) => s.title);
+      completedToday = (todayRows ?? []).filter((s: { status: string }) => s.status === 'completed').length;
+
+      const { data: weekRows } = await supabase
+        .from('planned_sessions')
+        .select('status')
+        .eq('plan_id', activePlan.id)
+        .in('domain', SESSION_DOMAINS);
+
+      weekTotal = (weekRows ?? []).length;
+      weekCompleted = (weekRows ?? []).filter((s: { status: string }) => s.status === 'completed').length;
+    }
+
+    const language = getLanguageFromCookies(req.headers.get('cookie'));
+
+    const prompt = getWelcomeBackPrompt({
+      timeOfDay,
+      dayOfWeek,
+      todaySessions,
+      completedToday,
+      weekCompleted,
+      weekTotal,
+      hasPlan: !!activePlan,
+      needsNewPlan,
+      language,
+    });
+
+    const { text } = await generateText({
+      model: anthropic('claude-sonnet-4-6'),
+      prompt,
+      maxTokens: 120,
+    });
+
+    const messageId = crypto.randomUUID();
+    await saveMessages(chatId, [{
+      id: messageId,
+      role: 'assistant',
+      parts: [{ type: 'text', text: text.trim() }],
+    }], supabase);
+
+    return Response.json({
+      skip: false,
+      message: {
+        id: messageId,
+        role: 'assistant',
+        parts: [{ type: 'text', text: text.trim() }],
+        createdAt: new Date().toISOString(),
       },
-      { type: 'text', text: 'Tap any session when you\'re ready to start.' },
-    ],
-  }], supabase);
-
-  return Response.json({ seeded: true });
+    });
+  } catch (error) {
+    console.error('[Chat Seed] Error:', error);
+    return Response.json({ skip: true });
+  }
 }
