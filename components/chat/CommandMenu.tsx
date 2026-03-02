@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, CalendarDays, Sliders, TrendingUp, ClipboardList } from "lucide-react";
+import { Calendar, CalendarDays, Sliders, TrendingUp, ClipboardList, MessageSquarePlus } from "lucide-react";
 
 interface CommandMenuProps {
   open: boolean;
@@ -41,8 +41,15 @@ const commands = [
   {
     id: "log",
     label: "Log",
-    message: "I want to log my habits",
+    message: "I want to log my day",
     icon: ClipboardList,
+    color: "text-zinc-300",
+  },
+  {
+    id: "feedback",
+    label: "Feedback",
+    message: "I want to give feedback about huuman",
+    icon: MessageSquarePlus,
     color: "text-zinc-300",
   },
 ];

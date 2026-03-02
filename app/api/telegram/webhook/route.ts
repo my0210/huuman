@@ -304,7 +304,7 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
     }], userClient);
 
     const profile = await loadUserProfile(userId, userClient);
-    const agent = createCoachAgent(userId, profile, userClient);
+    const agent = createCoachAgent(userId, profile, userClient, undefined, chatConvoId);
 
     const modelMessages = await convertToModelMessages(uiMessages);
     const result = await agent.generate({

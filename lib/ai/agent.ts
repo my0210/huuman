@@ -4,8 +4,8 @@ import { createTools } from './tools';
 import { getSystemPrompt } from './prompts';
 import type { UserProfile, AppSupabaseClient } from '@/lib/types';
 
-export function createCoachAgent(userId: string, profile: UserProfile | null, supabase: AppSupabaseClient, language?: string) {
-  const tools = createTools(userId, supabase);
+export function createCoachAgent(userId: string, profile: UserProfile | null, supabase: AppSupabaseClient, language?: string, conversationId?: string) {
+  const tools = createTools(userId, supabase, conversationId);
   const instructions = getSystemPrompt(profile, language);
 
   return new ToolLoopAgent({

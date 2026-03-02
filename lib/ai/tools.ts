@@ -6,7 +6,7 @@ import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
 interface SessionRow { domain: string; status: string }
 
-export function createTools(userId: string, supabase: AppSupabaseClient) {
+export function createTools(userId: string, supabase: AppSupabaseClient, conversationId?: string) {
 
   const show_today_plan = tool({
     description:
@@ -288,7 +288,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
 
   const log_daily = tool({
     description:
-      'Log daily habits: steps, nutrition on-plan, sleep hours/quality. Use when the user reports steps, meals, or sleep.',
+      'Log daily tracking: steps, nutrition on-plan, sleep hours/quality. Use when the user reports steps, meals, or sleep.',
     inputSchema: z.object({
       steps: z.number().optional().describe('Number of steps today'),
       nutritionOnPlan: z.boolean().optional().describe('Whether nutrition was on-plan'),
@@ -531,6 +531,32 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
     },
   });
 
+  const save_feedback = tool({
+    description:
+      'Save user feedback about the huuman app or coaching experience. Use when the user reports a bug, requests a feature, or shares feedback about the experience.',
+    inputSchema: z.object({
+      category: z.enum(['bug', 'feature_request', 'experience']),
+      content: z.string().describe('Clear summary of the feedback'),
+      rawQuotes: z.array(z.string()).describe(
+        "The user's exact words -- copy their messages verbatim, no paraphrasing",
+      ),
+    }),
+    execute: async ({ category, content, rawQuotes }: {
+      category: 'bug' | 'feature_request' | 'experience';
+      content: string;
+      rawQuotes: string[];
+    }) => {
+      await supabase.from('user_feedback').insert({
+        user_id: userId,
+        category,
+        content,
+        raw_quotes: rawQuotes,
+        conversation_id: conversationId ?? null,
+      });
+      return { saved: true };
+    },
+  });
+
   return {
     show_today_plan,
     show_week_plan,
@@ -544,6 +570,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient) {
     confirm_plan,
     start_timer,
     save_context,
+    save_feedback,
   };
 }
 

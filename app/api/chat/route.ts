@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
     const userProfile = await loadUserProfile(userId, supabase);
     const language = getLanguageFromCookies(req.headers.get('cookie'));
-    const agent = createCoachAgent(userId, userProfile, supabase, language);
+    const agent = createCoachAgent(userId, userProfile, supabase, language, chatId);
 
     return createAgentUIStreamResponse({
       agent,
