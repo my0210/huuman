@@ -5,7 +5,8 @@ import { getSystemPrompt } from './prompts';
 import type { UserProfile, AppSupabaseClient } from '@/lib/types';
 
 export function createCoachAgent(userId: string, profile: UserProfile | null, supabase: AppSupabaseClient, language?: string, conversationId?: string) {
-  const tools = createTools(userId, supabase, conversationId);
+  const tz = profile?.timezone ?? 'UTC';
+  const tools = createTools(userId, supabase, conversationId, tz);
   const instructions = getSystemPrompt(profile, language);
 
   return new ToolLoopAgent({

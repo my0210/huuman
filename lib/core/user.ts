@@ -44,6 +44,7 @@ export async function loadUserProfile(
     constraints: profile.constraints as UserProfile['constraints'],
     context,
     onboardingCompleted: profile.onboarding_completed,
+    timezone: (profile.timezone as string) ?? 'UTC',
     createdAt: profile.created_at,
     updatedAt: profile.updated_at,
   };

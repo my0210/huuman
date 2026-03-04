@@ -86,7 +86,7 @@ Bidirectional linking:
 ## Database Schema (Supabase)
 
 8 tables, all with RLS:
-- `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints (legacy), onboarding_completed, telegram_chat_id
+- `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints (legacy), onboarding_completed, telegram_chat_id, timezone (IANA, default 'UTC')
 - `user_context` -- user_id, category (physical/environment/equipment/schedule), content (text), scope (permanent/temporary), expires_at, active, source (onboarding/conversation). Categorized, time-scoped facts about the user that drive plan personalization.
 - `weekly_plans` -- user_id, week_start, status, intro_message, tracking_briefs (JSONB: personalized nutrition/sleep targets). Unique on (user_id, week_start).
 - `planned_sessions` -- plan_id (nullable), user_id, domain (cardio/strength/mindfulness), scheduled_date, title, status, detail (JSONB), completed_detail, is_extra (bool). Extra sessions (logged outside the plan) have is_extra=true and may have plan_id=null.

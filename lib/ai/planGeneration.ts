@@ -99,6 +99,7 @@ export interface GeneratePlanOptions {
   weekStart?: string;
   draft?: boolean;
   planningContext?: string;
+  timezone?: string;
 }
 
 export async function generateWeeklyPlan(
@@ -116,8 +117,9 @@ export async function generateWeeklyPlan(
     return { success: false, error: 'User profile not found' };
   }
 
-  const weekStart = opts.weekStart ?? getWeekStart();
-  const today = getTodayISO();
+  const tz = opts.timezone ?? 'UTC';
+  const weekStart = opts.weekStart ?? getWeekStart(tz);
+  const today = getTodayISO(tz);
   const startFromDate = today > weekStart ? today : undefined;
 
   let allSessions: SessionOutput[];

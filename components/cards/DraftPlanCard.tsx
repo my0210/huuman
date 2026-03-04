@@ -64,7 +64,7 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
     byDay[s.day_of_week].push(s);
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
   const filteredSessions = selectedDay !== null
     ? (byDay[selectedDay] ?? [])
     : allSessions.filter(s => s.scheduled_date === today);

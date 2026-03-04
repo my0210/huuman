@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const admin = createAdminClient();
   const { data: users } = await admin
     .from('user_profiles')
-    .select('id, telegram_chat_id')
+    .select('id, telegram_chat_id, timezone')
     .not('telegram_chat_id', 'is', null)
     .eq('onboarding_completed', true);
 
@@ -33,8 +33,9 @@ export async function GET(req: Request) {
   for (const user of users) {
     try {
       const chatId = Number(user.telegram_chat_id);
+      const tz = (user.timezone as string) ?? 'UTC';
       const userClient = await createUserScopedClient(user.id);
-      const tools = createTools(user.id, userClient);
+      const tools = createTools(user.id, userClient, undefined, tz);
 
       type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
       const execOpts = { toolCallId: 'nudge', messages: [] as never[], abortSignal: new AbortController().signal };

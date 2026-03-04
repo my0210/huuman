@@ -1,12 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createUserScopedClient } from '@/lib/supabase/scoped';
 import { sendMessage } from '@/lib/telegram/api';
+import { getTodayISO } from '@/lib/types';
 
 export const maxDuration = 60;
-
-function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0];
-}
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization');
@@ -17,7 +14,7 @@ export async function GET(req: Request) {
   const admin = createAdminClient();
   const { data: users } = await admin
     .from('user_profiles')
-    .select('id, telegram_chat_id')
+    .select('id, telegram_chat_id, timezone')
     .not('telegram_chat_id', 'is', null)
     .eq('onboarding_completed', true);
 
@@ -25,12 +22,13 @@ export async function GET(req: Request) {
     return Response.json({ sent: 0 });
   }
 
-  const today = getTodayISO();
   let sent = 0;
 
   for (const user of users) {
     try {
       const chatId = Number(user.telegram_chat_id);
+      const tz = (user.timezone as string) ?? 'UTC';
+      const today = getTodayISO(tz);
       const userClient = await createUserScopedClient(user.id);
 
       const { data: habits } = await userClient

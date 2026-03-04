@@ -6,15 +6,15 @@ import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 
 interface SessionRow { domain: string; status: string }
 
-export function createTools(userId: string, supabase: AppSupabaseClient, conversationId?: string) {
+export function createTools(userId: string, supabase: AppSupabaseClient, conversationId?: string, timezone: string = 'UTC') {
 
   const show_today_plan = tool({
     description:
       'Show the user their planned sessions for today plus daily tracking targets. Call this when greeting the user, when they ask "what should I do today", or at the start of any conversation.',
     inputSchema: z.object({}),
     execute: async () => {
-      const today = getTodayISO();
-      const weekStart = getWeekStart();
+      const today = getTodayISO(timezone);
+      const weekStart = getWeekStart(timezone);
 
       const { data: activePlan } = await supabase
         .from('weekly_plans')
@@ -86,7 +86,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       'Show the full weekly plan. Use when the user asks about their week, wants an overview, or says "show my plan".',
     inputSchema: z.object({}),
     execute: async () => {
-      const weekStart = getWeekStart();
+      const weekStart = getWeekStart(timezone);
 
       const { data: plan } = await supabase
         .from('weekly_plans')
@@ -180,7 +180,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         return { error: error?.message ?? 'Session not found' };
       }
 
-      const weekStart = getWeekStart();
+      const weekStart = getWeekStart(timezone);
       const { data: activePlan } = await supabase
         .from('weekly_plans')
         .select('id')
@@ -210,10 +210,10 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       scheduledDate?: string;
       detail: Record<string, unknown>;
     }) => {
-      const date = scheduledDate ?? getTodayISO();
+      const date = scheduledDate ?? getTodayISO(timezone);
       const [y, m, d] = date.split('-').map(Number);
       const dayOfWeek = new Date(y, m - 1, d).getDay();
-      const weekStart = getWeekStart(new Date(y, m - 1, d));
+      const weekStart = getWeekStart(timezone);
 
       const { data: activePlan } = await supabase
         .from('weekly_plans')
@@ -256,7 +256,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       'Show weekly progress across session domains. Use when the user asks about progress or wants a status check.',
     inputSchema: z.object({}),
     execute: async () => {
-      const weekStart = getWeekStart();
+      const weekStart = getWeekStart(timezone);
 
       const { data: activePlan } = await supabase
         .from('weekly_plans')
@@ -301,7 +301,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       sleepHours?: number;
       sleepQuality?: number;
     }) => {
-      const today = getTodayISO();
+      const today = getTodayISO(timezone);
 
       const updates: Record<string, unknown> = {};
       if (steps !== undefined) updates.steps_actual = steps;
@@ -404,7 +404,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     }),
     execute: async ({ weekStart, draft, planningContext }: { weekStart?: string; draft?: boolean; planningContext?: string }) => {
       const result = await generateWeeklyPlan(userId, supabase, {
-        weekStart: weekStart ?? getWeekStart(),
+        weekStart: weekStart ?? getWeekStart(timezone),
         draft,
         planningContext,
       });
@@ -450,7 +450,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       let targetId = planId && UUID_RE.test(planId) ? planId : undefined;
 
       if (!targetId) {
-        const weekStart = getWeekStart();
+        const weekStart = getWeekStart(timezone);
         const { data: draft } = await supabase
           .from('weekly_plans')
           .select('id')
@@ -534,7 +534,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         await supabase.from('user_context').insert(rows);
       }
 
-      const today = getTodayISO();
+      const today = getTodayISO(timezone);
       const { data: active } = await supabase
         .from('user_context')
         .select('id, category, content, scope, expires_at')

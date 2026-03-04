@@ -28,6 +28,7 @@ export async function PUT(req: Request) {
   if (body.constraints !== undefined) updatePayload.constraints = body.constraints;
   if (body.domainBaselines !== undefined) updatePayload.domain_baselines = body.domainBaselines;
   if (body.onboardingCompleted !== undefined) updatePayload.onboarding_completed = body.onboardingCompleted;
+  if (body.timezone !== undefined) updatePayload.timezone = body.timezone;
 
   updatePayload.updated_at = new Date().toISOString();
 

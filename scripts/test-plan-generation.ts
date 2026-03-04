@@ -52,6 +52,7 @@ const MOCK_PROFILE: UserProfile = {
     { id: 'test-2', category: 'physical', content: 'Injury: knee', scope: 'permanent', active: true, source: 'onboarding', createdAt: new Date().toISOString() },
   ],
   onboardingCompleted: true,
+  timezone: 'UTC',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };

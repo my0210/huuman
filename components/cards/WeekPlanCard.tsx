@@ -44,7 +44,7 @@ export function WeekPlanCard({ data }: { data: Record<string, unknown> }) {
     );
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE');
 
   // Group sessions by day
   const byDay: Record<number, Session[]> = {};

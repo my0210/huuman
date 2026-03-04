@@ -5,6 +5,7 @@ import { createUserScopedClient } from '@/lib/supabase/scoped';
 import { loadUserProfile } from '@/lib/core/user';
 import { createCoachAgent } from '@/lib/ai/agent';
 import { createTools } from '@/lib/ai/tools';
+import { getTodayISO } from '@/lib/types';
 import { getOrCreateConversation, loadMessages, saveMessages, convertToModelUIMessages } from '@/lib/chat/store';
 import {
   verifyWebhookSecret,
@@ -211,9 +212,10 @@ async function handleStartCommand(chatId: number, text: string, admin: ReturnTyp
 
 // ─── Quick commands (/today, /week, /progress) ───────────────────────────────
 
-async function handleQuickCommand(chatId: number, userId: string, toolName: string): Promise<void> {
+async function handleQuickCommand(chatId: number, userId: string, toolName: string, timezone?: string): Promise<void> {
   const userClient = await createUserScopedClient(userId);
-  const tools = createTools(userId, userClient);
+  const tz = timezone ?? (await loadUserTimezone(userId)) ?? 'UTC';
+  const tools = createTools(userId, userClient, undefined, tz);
 
   const toolFn = tools[toolName as keyof typeof tools];
   if (!toolFn || !('execute' in toolFn)) return;
@@ -239,7 +241,8 @@ async function handleLogCommand(chatId: number, userId: string, text: string): P
   }
 
   const userClient = await createUserScopedClient(userId);
-  const tools = createTools(userId, userClient);
+  const tz = (await loadUserTimezone(userId)) ?? 'UTC';
+  const tools = createTools(userId, userClient, undefined, tz);
   type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
   const execOpts = { toolCallId: 'log', messages: [] as never[], abortSignal: new AbortController().signal };
 
@@ -402,7 +405,8 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
     }
 
     const userClient = await createUserScopedClient(profile.id);
-    const tools = createTools(profile.id, userClient);
+    const tz = (await loadUserTimezone(profile.id)) ?? 'UTC';
+    const tools = createTools(profile.id, userClient, undefined, tz);
 
     const execOpts = { toolCallId: 'cb', messages: [] as never[], abortSignal: new AbortController().signal };
     type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
@@ -422,9 +426,10 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
       await sendFormatted(chatId, formatToolOutput('adapt_plan', skipData));
       await answerCallbackQuery(queryId, 'Skipped');
     } else if (action === 'tomorrow') {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const newDate = tomorrow.toISOString().split('T')[0];
+      const todayStr = getTodayISO(tz);
+      const todayDate = new Date(todayStr + 'T12:00:00Z');
+      todayDate.setUTCDate(todayDate.getUTCDate() + 1);
+      const newDate = todayDate.toISOString().slice(0, 10);
       const result = await (tools.adapt_plan as unknown as ToolExec).execute(
         { sessionId, action: 'reschedule', newDate, reason: 'Moved to tomorrow' },
         execOpts,
@@ -453,7 +458,8 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
     }
 
     const userClient = await createUserScopedClient(profile.id);
-    const tools = createTools(profile.id, userClient);
+    const tz = (await loadUserTimezone(profile.id)) ?? 'UTC';
+    const tools = createTools(profile.id, userClient, undefined, tz);
     type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
     const execOpts = { toolCallId: 'checkin', messages: [] as never[], abortSignal: new AbortController().signal };
 
@@ -485,7 +491,8 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
     }
 
     const userClient = await createUserScopedClient(profile.id);
-    const tools = createTools(profile.id, userClient);
+    const tz = (await loadUserTimezone(profile.id)) ?? 'UTC';
+    const tools = createTools(profile.id, userClient, undefined, tz);
     type ToolExec = { execute: (args: Record<string, unknown>, opts: Record<string, unknown>) => Promise<unknown> };
     const execOpts = { toolCallId: 'draft', messages: [] as never[], abortSignal: new AbortController().signal };
 
@@ -553,15 +560,25 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
   if (callbackData === 'cmd:today') {
     const { data: profile } = await admin
       .from('user_profiles')
-      .select('id')
+      .select('id, timezone')
       .eq('telegram_chat_id', chatId)
       .maybeSingle();
     if (profile) {
-      await handleQuickCommand(chatId, profile.id, 'show_today_plan');
+      await handleQuickCommand(chatId, profile.id, 'show_today_plan', (profile.timezone as string) ?? 'UTC');
     }
     await answerCallbackQuery(queryId);
     return;
   }
 
   await answerCallbackQuery(queryId);
+}
+
+async function loadUserTimezone(userId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('user_profiles')
+    .select('timezone')
+    .eq('id', userId)
+    .maybeSingle();
+  return (data?.timezone as string) ?? null;
 }

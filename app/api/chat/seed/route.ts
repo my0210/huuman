@@ -2,7 +2,8 @@ import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages } from '@/lib/chat/store';
-import { getWeekStart, getTodayISO, SESSION_DOMAINS } from '@/lib/types';
+import { loadUserProfile } from '@/lib/core/user';
+import { getWeekStart, getTodayISO, getDayOfWeekName, SESSION_DOMAINS } from '@/lib/types';
 import { getWelcomeBackPrompt } from '@/lib/ai/prompts';
 import { getLanguageFromCookies } from '@/lib/languages';
 
@@ -34,12 +35,13 @@ export async function POST(req: Request) {
       return Response.json({ skip: true });
     }
 
-    const today = getTodayISO();
-    const weekStart = getWeekStart();
-    const now = new Date();
-    const hour = now.getHours();
+    const userProfile = await loadUserProfile(userId, supabase);
+    const tz = userProfile?.timezone ?? 'UTC';
+    const today = getTodayISO(tz);
+    const weekStart = getWeekStart(tz);
+    const hour = parseInt(new Date().toLocaleTimeString('en-US', { hour: 'numeric', hour12: false, timeZone: tz }), 10);
     const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-    const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayOfWeek = getDayOfWeekName(tz);
 
     const { data: activePlan } = await supabase
       .from('weekly_plans')

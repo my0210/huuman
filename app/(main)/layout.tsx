@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { TimezoneSync } from '@/components/TimezoneSync';
 
 export default async function MainLayout({
   children,
@@ -23,6 +24,7 @@ export default async function MainLayout({
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <TimezoneSync />
       {children}
     </div>
   );

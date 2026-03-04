@@ -76,6 +76,7 @@ export interface UserProfile {
   constraints: UserConstraints;
   context: UserContextItem[];
   onboardingCompleted: boolean;
+  timezone: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -360,14 +361,24 @@ export interface DomainConviction {
 // Helpers
 // =============================================================================
 
-export function getWeekStart(date: Date = new Date()): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
+export function getTodayISO(timezone: string = 'UTC'): string {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: timezone });
+}
+
+export function getWeekStart(timezoneOrDate?: string | Date): string {
+  let todayStr: string;
+  if (timezoneOrDate instanceof Date) {
+    todayStr = timezoneOrDate.toISOString().slice(0, 10);
+  } else {
+    todayStr = getTodayISO(timezoneOrDate ?? 'UTC');
+  }
+  const d = new Date(todayStr + 'T12:00:00Z');
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
   return d.toISOString().slice(0, 10);
 }
 
-export function getTodayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+export function getDayOfWeekName(timezone: string = 'UTC'): string {
+  return new Date().toLocaleDateString('en-US', { weekday: 'long', timeZone: timezone });
 }
