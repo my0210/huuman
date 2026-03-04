@@ -446,7 +446,8 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       planId: z.string().optional().describe('The ID of the draft plan to confirm. If omitted, confirms the current week\'s draft.'),
     }),
     execute: async ({ planId }: { planId?: string }) => {
-      let targetId = planId;
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      let targetId = planId && UUID_RE.test(planId) ? planId : undefined;
 
       if (!targetId) {
         const weekStart = getWeekStart();
