@@ -11,5 +11,5 @@ export default async function MainPage() {
   const dbMessages = await loadMessages(chatId, supabase);
   const initialMessages = convertToUIMessages(dbMessages);
 
-  return <ChatInterface chatId={chatId} initialMessages={initialMessages} />;
+  return <ChatInterface chatId={chatId} initialMessages={initialMessages} userEmail={user!.email ?? ''} />;
 }

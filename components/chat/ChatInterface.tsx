@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, Plus, Camera } from "lucide-react";
+import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, Plus, Camera, MessageSquarePlus } from "lucide-react";
 import { CommandMenu } from "./CommandMenu";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -16,9 +16,12 @@ import { t } from "@/lib/translations";
 interface ChatInterfaceProps {
   chatId: string;
   initialMessages: UIMessage[];
+  userEmail?: string;
 }
 
-export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
+const FEEDBACK_EMAILS = ['yilmazym@gmail.com', 'joshuaklint@gmail.com'];
+
+export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsView, setSettingsView] = useState<"main" | "language">("main");
@@ -287,6 +290,19 @@ export function ChatInterface({ chatId, initialMessages }: ChatInterfaceProps) {
                     <p className="text-xs text-zinc-500">{t("settings.dataDesc", currentLanguage)}</p>
                   </div>
                 </button>
+
+                {userEmail && FEEDBACK_EMAILS.includes(userEmail) && (
+                  <button
+                    onClick={() => { setMenuOpen(false); router.push("/feedback"); }}
+                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  >
+                    <MessageSquarePlus size={16} className="flex-none text-zinc-500" />
+                    <div>
+                      <p className="font-medium">Feedback board</p>
+                      <p className="text-xs text-zinc-500">View all user feedback</p>
+                    </div>
+                  </button>
+                )}
 
                 <button
                   onClick={handleRedoOnboarding}
