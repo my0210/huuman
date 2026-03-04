@@ -55,7 +55,7 @@ ${quotes ? `## User's Exact Words\n\n${quotes}\n` : ''}
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Basic ${Buffer.from(CURSOR_API_KEY + ':').toString('base64')}`,
+      'Authorization': `Bearer ${CURSOR_API_KEY}`,
     },
     body: JSON.stringify({
       prompt: { text: prompt },
@@ -67,13 +67,7 @@ ${quotes ? `## User's Exact Words\n\n${quotes}\n` : ''}
   if (!res.ok) {
     const body = await res.text();
     console.error('[Feedback Agent] Cursor API error:', res.status, body);
-    return Response.json({
-      error: 'Failed to launch agent',
-      detail: body,
-      status: res.status,
-      hasKey: !!CURSOR_API_KEY,
-      keyPrefix: CURSOR_API_KEY?.slice(0, 8),
-    }, { status: 502 });
+    return Response.json({ error: 'Failed to launch agent' }, { status: 502 });
   }
 
   const agent = await res.json();
