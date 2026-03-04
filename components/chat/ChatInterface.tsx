@@ -65,9 +65,14 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
   }, []);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const scrollEl = scrollRef.current;
+    if (!scrollEl) return;
+
+    const raf = requestAnimationFrame(() => {
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+    });
+
+    return () => cancelAnimationFrame(raf);
   }, [messages]);
 
   useEffect(() => {
