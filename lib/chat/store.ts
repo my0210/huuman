@@ -95,10 +95,15 @@ function stripLargeFiles(parts: UIMessage['parts']): UIMessage['parts'] {
 
 function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
   return parts.map((p) => {
-    if (p.type === 'tool-invocation' && !('args' in p && p.args != null)) {
-      return { ...p, args: {} } as unknown as typeof p;
-    }
     const raw = p as Record<string, unknown>;
+
+    if (raw.type === 'tool-invocation' && typeof raw.toolName === 'string') {
+      raw.type = `tool-${raw.toolName}`;
+      if (!('args' in raw && raw.args != null)) raw.args = {};
+      if (!raw.toolCallId) raw.toolCallId = generateId();
+      return raw as unknown as typeof p;
+    }
+
     if (typeof raw.type === 'string' && raw.type.startsWith('tool-') && !raw.toolCallId) {
       return { ...raw, toolCallId: generateId() } as unknown as typeof p;
     }

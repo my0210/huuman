@@ -331,7 +331,7 @@ async function handleAgentMessage(chatId: number, userId: string, text: string):
       for (const toolResult of step.toolResults ?? []) {
         const tr = toolResult as unknown as { toolName: string; input: unknown; output: unknown; toolCallId: string };
         assistantParts.push({
-          type: 'tool-invocation',
+          type: `tool-${tr.toolName}`,
           toolName: tr.toolName,
           toolCallId: tr.toolCallId,
           args: tr.input ?? {},
