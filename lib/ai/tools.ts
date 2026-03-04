@@ -399,30 +399,31 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
   const delete_session = tool({
     description:
-      'Delete a session from the plan entirely. Use when the user explicitly asks to remove or delete a specific session -- not just skip it. Prefer adapt_plan with action "skip" for sessions the user wants to pass on this week. Only delete when the session should not exist at all (e.g. duplicates, sessions logged by mistake, or the user insists on removal).',
+      'Delete one or more sessions from the plan entirely. Accepts a single ID or an array of IDs -- always batch into ONE call. Use when the user asks to remove/delete sessions, or to clean up duplicates. Prefer adapt_plan with "skip" when the user just wants to pass on a session.',
     inputSchema: z.object({
-      sessionId: z.string().describe('The ID of the session to delete'),
-      reason: z.string().describe('Why the session is being deleted'),
+      sessionIds: z.union([z.string(), z.array(z.string())]).describe('Session ID or array of IDs to delete'),
+      reason: z.string().describe('Why the sessions are being deleted'),
     }),
-    execute: async ({ sessionId, reason }: { sessionId: string; reason: string }) => {
+    execute: async ({ sessionIds, reason }: { sessionIds: string | string[]; reason: string }) => {
+      const ids = Array.isArray(sessionIds) ? sessionIds : [sessionIds];
+
       const { data: existing } = await supabase
         .from('planned_sessions')
         .select('id, title, domain, status')
-        .eq('id', sessionId)
-        .eq('user_id', userId)
-        .single();
+        .in('id', ids)
+        .eq('user_id', userId);
 
-      if (!existing) return { error: 'Session not found' };
+      if (!existing || existing.length === 0) return { error: 'No sessions found' };
 
       const { error } = await supabase
         .from('planned_sessions')
         .delete()
-        .eq('id', sessionId)
+        .in('id', existing.map(s => s.id))
         .eq('user_id', userId);
 
       if (error) return { error: error.message };
 
-      return { deleted: true, session: existing, reason };
+      return { deleted: existing.length, sessions: existing, reason };
     },
   });
 
