@@ -113,22 +113,27 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
 
 /**
  * Converts DB messages to UIMessages suitable for passing to the AI agent.
- * Keeps text, file, and tool parts (so the agent sees its own tool history).
- * Strips step-start and other non-standard parts that convertToModelMessages
- * would reject with an exhaustive-check error.
+ * Recent messages (last TOOL_WINDOW) keep tool parts so the agent sees its
+ * own tool history. Older messages keep only text/file to stay within the
+ * context window -- tool outputs (especially generate_plan) are large.
  */
+const TOOL_WINDOW = 20;
+
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   const noEmpty = dbMessages.filter((msg) => {
     const parts = msg.parts as unknown[];
     return parts && parts.length > 0;
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
-  return cleaned.reduce<UIMessage[]>((acc, msg) => {
-    const modelParts = sanitizeParts(
+  const toolCutoff = Math.max(0, cleaned.length - TOOL_WINDOW);
+
+  return cleaned.reduce<UIMessage[]>((acc, msg, idx) => {
+    const includeTools = idx >= toolCutoff;
+    const modelParts = (includeTools ? sanitizeParts : (x: UIMessage['parts']) => x)(
       (msg.parts as UIMessage['parts']).filter((p) => {
         const t = (p as Record<string, unknown>).type as string;
         if (t === 'text' || t === 'file') return true;
-        if (t.startsWith('tool-')) return true;
+        if (includeTools && t.startsWith('tool-')) return true;
         return false;
       }),
     );
