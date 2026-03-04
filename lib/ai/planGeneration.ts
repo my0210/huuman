@@ -177,17 +177,23 @@ export async function generateWeeklyPlan(
     .eq('status', 'completed');
 
   if (startFromDate && (completedCount ?? 0) > 0) {
-    await supabase
+    const { error: deleteError } = await supabase
       .from('planned_sessions')
       .delete()
       .eq('plan_id', planRow.id)
       .gte('scheduled_date', startFromDate)
       .in('status', ['pending', 'skipped']);
+    if (deleteError) {
+      return { success: false, error: `Failed to clear old sessions: ${deleteError.message}` };
+    }
   } else {
-    await supabase
+    const { error: deleteError } = await supabase
       .from('planned_sessions')
       .delete()
       .eq('plan_id', planRow.id);
+    if (deleteError) {
+      return { success: false, error: `Failed to clear old sessions: ${deleteError.message}` };
+    }
   }
 
   const weekStartDate = new Date(weekStart + 'T00:00:00');

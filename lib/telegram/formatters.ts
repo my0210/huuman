@@ -114,7 +114,7 @@ export function formatWeekPlan(data: Record<string, unknown>): FormattedResponse
 
 export function formatSession(data: Record<string, unknown>): FormattedResponse {
   const session = data.session as Record<string, unknown>;
-  if (!session) return { text: 'Session not found.' };
+  if (!session) return { text: "Couldn't load this session. Ask me to show your plan instead." };
 
   const domain = session.domain as string;
   const detail = (typeof session.detail === 'string' ? JSON.parse(session.detail) : session.detail) as Record<string, unknown>;
@@ -188,7 +188,7 @@ export function formatSession(data: Record<string, unknown>): FormattedResponse 
 }
 
 export function formatCompletion(data: Record<string, unknown>): FormattedResponse[] {
-  if (data.error) return [{ text: `Error: ${esc(String(data.error))}` }];
+  if (data.error) return [{ text: "Couldn't record that session. Try again in a moment." }];
 
   const session = data.session as Record<string, unknown> | undefined;
   const title = String(session?.title ?? 'Session');
@@ -237,7 +237,7 @@ export function formatProgress(data: Record<string, unknown>): FormattedResponse
 }
 
 export function formatDailyHabit(data: Record<string, unknown>): FormattedResponse {
-  if (data.error) return { text: `Error: ${esc(String(data.error))}` };
+  if (data.error) return { text: "Couldn't log that right now. Try again in a moment." };
 
   const logged = data.logged as Record<string, unknown> | undefined;
   if (!logged) return { text: '✓ Logged.' };
@@ -258,7 +258,7 @@ export function formatTimer(data: Record<string, unknown>): FormattedResponse {
 }
 
 export function formatAdapt(data: Record<string, unknown>): FormattedResponse[] {
-  if (data.error) return [{ text: `Error: ${esc(String(data.error))}` }];
+  if (data.error) return [{ text: "Couldn't update that session right now. Try again in a moment." }];
   const action = data.action as string;
   const session = data.session as Record<string, unknown> | null;
   const domain = session?.domain as string | undefined;
@@ -288,7 +288,7 @@ export function formatAdapt(data: Record<string, unknown>): FormattedResponse[] 
 }
 
 export function formatPlanGenerated(data: Record<string, unknown>): FormattedResponse | FormattedResponse[] {
-  if (data.error) return { text: `Plan generation failed: ${esc(String(data.error))}` };
+  if (data.error) return { text: "Couldn't build the plan this time. Ask me to try again." };
 
   if (data.isDraft && data.sessions) {
     return formatDraftPlan(data);
@@ -352,7 +352,7 @@ export function formatDraftPlan(data: Record<string, unknown>): FormattedRespons
 }
 
 export function formatPlanConfirmed(data: Record<string, unknown>): FormattedResponse {
-  if (data.error) return { text: `Error: ${esc(String(data.error))}` };
+  if (data.error) return { text: "Couldn't lock in the plan. Ask me to confirm again." };
   return {
     text: '✓ <b>Plan locked in.</b>',
     replyMarkup: {

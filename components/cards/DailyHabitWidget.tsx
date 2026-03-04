@@ -5,8 +5,8 @@ import { Footprints, Leaf, Moon } from "lucide-react";
 export function DailyHabitWidget({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
-        {String(data.error)}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t log that right now. Try again in a moment.
       </div>
     );
   }

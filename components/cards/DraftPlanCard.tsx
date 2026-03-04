@@ -52,7 +52,7 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
   if (allSessions.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 px-4 py-4 space-y-2">
-        <p className="text-sm font-medium text-zinc-300">Plan generation failed</p>
+        <p className="text-sm font-medium text-zinc-300">Couldn&apos;t build the plan this time</p>
         <p className="text-xs text-zinc-500">Ask me to try again.</p>
       </div>
     );

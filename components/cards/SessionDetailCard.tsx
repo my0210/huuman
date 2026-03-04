@@ -21,8 +21,8 @@ export function SessionDetailCard({ data }: { data: Record<string, unknown> }) {
 
   if (!session) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-500">
-        Session not found
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t load this session. Ask me to show your plan instead.
       </div>
     );
   }

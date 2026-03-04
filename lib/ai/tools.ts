@@ -45,6 +45,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
           .eq('scheduled_date', today)
           .in('domain', SESSION_DOMAINS)
           .neq('status', 'skipped')
+          .eq('is_extra', false)
           .order('sort_order');
         sessions = planSessions ?? [];
       }
@@ -103,6 +104,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
           .eq('plan_id', plan.id)
           .in('domain', SESSION_DOMAINS)
           .neq('status', 'skipped')
+          .eq('is_extra', false)
           .order('scheduled_date')
           .order('sort_order');
         sessions = planSessions ?? [];

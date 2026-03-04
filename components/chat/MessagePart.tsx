@@ -128,8 +128,8 @@ function LoadingCard({ toolName }: { toolName: string }) {
 function AdaptConfirmation({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
-        {String(data.error)}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t update that session right now. Try again in a moment.
       </div>
     );
   }
@@ -157,8 +157,8 @@ function AdaptConfirmation({ data }: { data: Record<string, unknown> }) {
 function PlanGenerated({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
-        {String(data.error)}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Plan couldn&apos;t be generated right now. Ask me to try again.
       </div>
     );
   }
@@ -173,8 +173,8 @@ function PlanGenerated({ data }: { data: Record<string, unknown> }) {
 function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
-        {String(data.error)}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t lock in the plan. Ask me to confirm again.
       </div>
     );
   }
