@@ -17,6 +17,8 @@ export interface FeedbackItem {
   raw_quotes: string[];
   created_at: string;
   user_email: string | null;
+  agent_id: string | null;
+  agent_url: string | null;
 }
 
 export default async function FeedbackPage() {
@@ -24,7 +26,7 @@ export default async function FeedbackPage() {
 
   const { data: feedback, error } = await supabase
     .from('user_feedback')
-    .select('id, category, status, content, raw_quotes, created_at, user_id')
+    .select('id, category, status, content, raw_quotes, created_at, user_id, agent_id, agent_url')
     .order('created_at', { ascending: false });
 
   const rows = (feedback ?? []) as Array<{
@@ -35,6 +37,8 @@ export default async function FeedbackPage() {
     raw_quotes: string[];
     created_at: string;
     user_id: string;
+    agent_id?: string | null;
+    agent_url?: string | null;
   }>;
 
   const userIds = [...new Set(rows.map(r => r.user_id))];
@@ -59,6 +63,8 @@ export default async function FeedbackPage() {
     raw_quotes: r.raw_quotes,
     created_at: r.created_at,
     user_email: emailMap.get(r.user_id) ?? null,
+    agent_id: r.agent_id ?? null,
+    agent_url: r.agent_url ?? null,
   }));
 
   return (

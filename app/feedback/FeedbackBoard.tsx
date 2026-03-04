@@ -22,6 +22,7 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
   const [items, setItems] = useState(initialItems);
   const [filter, setFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [launching, setLaunching] = useState<string | null>(null);
 
   const filtered = filter === "all" ? items : items.filter(i => i.status === filter);
 
@@ -45,6 +46,25 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
       }
     } finally {
       setUpdating(null);
+    }
+  }
+
+  async function launchAgent(id: string) {
+    setLaunching(id);
+    try {
+      const res = await fetch("/api/feedback/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        const { agentUrl, agentId } = await res.json();
+        setItems(prev => prev.map(i =>
+          i.id === id ? { ...i, agent_id: agentId, agent_url: agentUrl, status: "in_progress" } : i,
+        ));
+      }
+    } finally {
+      setLaunching(null);
     }
   }
 
@@ -135,8 +155,8 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
                   </div>
                 )}
 
-                {/* Status controls */}
-                <div className="flex gap-1.5 mt-3 pt-3 border-t border-zinc-800/50">
+                {/* Status controls + agent button */}
+                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-zinc-800/50">
                   {STATUSES.map(s => {
                     const meta = STATUS_META[s];
                     const isActive = item.status === s;
@@ -155,6 +175,25 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
                       </button>
                     );
                   })}
+                  <span className="flex-1" />
+                  {item.agent_url ? (
+                    <a
+                      href={item.agent_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-violet-950/60 border border-violet-900/40 text-violet-400 hover:bg-violet-900/40 transition-colors"
+                    >
+                      View agent
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => launchAgent(item.id)}
+                      disabled={launching === item.id}
+                      className="px-2.5 py-1 rounded-md text-[11px] font-medium text-violet-500 hover:text-violet-400 hover:bg-violet-950/40 transition-colors disabled:opacity-50"
+                    >
+                      {launching === item.id ? "Launching..." : "Fix with Cursor"}
+                    </button>
+                  )}
                 </div>
               </div>
             );
