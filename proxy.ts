@@ -12,6 +12,7 @@ const PUBLIC_ROUTES = [
   '/api/auth/telegram-register',
   '/api/auth/telegram-complete',
   '/api/cron/',
+  '/feedback',
 ];
 
 export async function proxy(request: NextRequest) {
