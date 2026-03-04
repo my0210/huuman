@@ -60,6 +60,17 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
 
   const isLoading = status === "streaming" || status === "submitted";
 
+  const shouldShowThinking = useMemo(() => {
+    if (!isLoading) return false;
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg || lastMsg.role === "user") return true;
+
+    return !lastMsg.parts.some(part =>
+      (part.type === "text" && part.text.trim()) ||
+      part.type === "tool-invocation"
+    );
+  }, [isLoading, messages]);
+
   useEffect(() => {
     setCurrentLanguage(getSavedLanguage());
   }, []);
@@ -459,7 +470,7 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
           );
         })}
 
-        {isLoading && messages[messages.length - 1]?.role === "user" && (
+        {shouldShowThinking && (
           <div className="flex justify-start">
             <div className="flex items-center gap-1 px-3 py-2">
               <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse" />

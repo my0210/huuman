@@ -126,6 +126,9 @@ function LoadingCard({ toolName }: { toolName: string }) {
     generate_plan: "Generating your plan...",
     confirm_plan: "Locking in your plan...",
     start_timer: "Starting timer...",
+    save_context: "Saving context...",
+    save_feedback: "Saving feedback...",
+    delete_session: "Removing session...",
   };
 
   return (
