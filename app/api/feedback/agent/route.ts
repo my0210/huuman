@@ -46,10 +46,12 @@ ${item.content}
 ${quotes ? `## User's Exact Words\n\n${quotes}\n` : ''}
 ## Instructions
 
+IMPORTANT: Do NOT implement anything. Do NOT write code or make changes. Your job is ONLY to produce a plan.
+
 1. Read ARCHITECTURE.md at the repo root first to understand the codebase structure.
 2. Analyze this feedback and identify the root cause or relevant area in the codebase.
-3. Create a plan to address it, then implement the fix.
-4. Create a pull request with the changes.`;
+3. Produce a detailed plan describing what files need to change, what the fix looks like, and any trade-offs. Cite specific file paths and code.
+4. Stop after presenting the plan. Do not implement it.`;
 
   const res = await fetch('https://api.cursor.com/v0/agents', {
     method: 'POST',
@@ -60,7 +62,7 @@ ${quotes ? `## User's Exact Words\n\n${quotes}\n` : ''}
     body: JSON.stringify({
       prompt: { text: prompt },
       source: { repository: REPO_URL, ref: 'main' },
-      target: { autoCreatePr: true },
+      target: { autoCreatePr: false },
     }),
   });
 
