@@ -441,15 +441,33 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
   const confirm_plan = tool({
     description:
-      'Confirm and activate a draft weekly plan after the user has reviewed it and is happy with it.',
+      'Confirm and activate a draft weekly plan after the user has reviewed it and is happy with it. The planId is optional -- if omitted, the current week\'s draft is confirmed automatically.',
     inputSchema: z.object({
-      planId: z.string().describe('The ID of the draft plan to confirm'),
+      planId: z.string().optional().describe('The ID of the draft plan to confirm. If omitted, confirms the current week\'s draft.'),
     }),
-    execute: async ({ planId }: { planId: string }) => {
+    execute: async ({ planId }: { planId?: string }) => {
+      let targetId = planId;
+
+      if (!targetId) {
+        const weekStart = getWeekStart();
+        const { data: draft } = await supabase
+          .from('weekly_plans')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('week_start', weekStart)
+          .eq('status', 'draft')
+          .maybeSingle();
+        targetId = draft?.id;
+      }
+
+      if (!targetId) {
+        return { error: 'No draft plan found to confirm' };
+      }
+
       const { data, error } = await supabase
         .from('weekly_plans')
         .update({ status: 'active' })
-        .eq('id', planId)
+        .eq('id', targetId)
         .eq('user_id', userId)
         .eq('status', 'draft')
         .select()
@@ -459,7 +477,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         return { error: error?.message ?? 'Plan not found or already active' };
       }
 
-      return { confirmed: true, planId };
+      return { confirmed: true, planId: targetId };
     },
   });
 
