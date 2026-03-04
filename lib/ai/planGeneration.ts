@@ -122,6 +122,8 @@ export async function generateWeeklyPlan(
   const today = getTodayISO(tz);
   const startFromDate = today > weekStart ? today : undefined;
 
+  await archiveStalePlans(userId, supabase, weekStart);
+
   let allSessions: SessionOutput[];
   let introMessage: string;
   let trackingBriefs: TrackingBriefs;
@@ -228,4 +230,31 @@ export async function generateWeeklyPlan(
   }
 
   return { success: true, planId: planRow.id, isDraft: opts.draft ?? false };
+}
+
+// =============================================================================
+// Housekeeping
+// =============================================================================
+
+async function archiveStalePlans(
+  userId: string,
+  supabase: AppSupabaseClient,
+  currentWeekStart: string,
+): Promise<void> {
+  const { data: stalePlans } = await supabase
+    .from('weekly_plans')
+    .select('id, week_start')
+    .eq('user_id', userId)
+    .in('status', ['active', 'draft'])
+    .neq('week_start', currentWeekStart);
+
+  if (!stalePlans || stalePlans.length === 0) return;
+
+  const ids = stalePlans.map(p => p.id);
+  await supabase
+    .from('weekly_plans')
+    .update({ status: 'archived' })
+    .in('id', ids);
+
+  console.log(`[PlanGen] Archived ${ids.length} stale plan(s) for user ${userId.slice(0, 8)}`);
 }
