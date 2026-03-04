@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Circle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, Circle, ChevronDown, Play, MessageCircle } from "lucide-react";
 import { DAY_LABELS, DayOfWeek } from "@/lib/types";
+import { SessionDetailInline } from "./SessionDetailCard";
+import { useChatSend } from "@/components/chat/ChatActions";
 
 const SESSION_DOMAINS = ["cardio", "strength", "mindfulness"];
 
@@ -14,6 +17,7 @@ interface Session {
   day_of_week: number;
   scheduled_date: string;
   is_extra?: boolean;
+  detail: Record<string, unknown>;
 }
 
 interface WeekPlanData {
@@ -105,19 +109,85 @@ export function WeekPlanCard({ data }: { data: Record<string, unknown> }) {
           </div>
         ) : (
           filteredSessions.map((s) => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-              <span className={`h-2 w-2 rounded-full ${domainDot[s.domain] ?? "bg-zinc-600"}`} />
-              <span className={`text-sm flex-1 ${s.status === "completed" ? "text-zinc-500 line-through" : "text-zinc-300"}`}>
-                {s.title}
-                {s.is_extra && (
-                  <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px align-middle">Extra</span>
-                )}
-              </span>
-              {s.status === "completed" && <Check size={12} className="text-emerald-400" />}
-            </div>
+            <SessionRow key={s.id} session={s} />
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+const domainButtonColors: Record<string, string> = {
+  cardio: "bg-red-900/60 text-red-300 hover:bg-red-900/80",
+  strength: "bg-orange-900/60 text-orange-300 hover:bg-orange-900/80",
+  mindfulness: "bg-cyan-900/60 text-cyan-300 hover:bg-cyan-900/80",
+};
+
+function SessionRow({ session }: { session: Session }) {
+  const [expanded, setExpanded] = useState(false);
+  const send = useChatSend();
+  const isCompleted = session.status === "completed";
+
+  return (
+    <div>
+      <button
+        onClick={() => !isCompleted && setExpanded(!expanded)}
+        disabled={isCompleted}
+        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+          isCompleted ? "opacity-60 cursor-default" : "hover:bg-zinc-800/30 active:bg-zinc-800/50"
+        }`}
+      >
+        <span className={`h-2 w-2 rounded-full shrink-0 ${domainDot[session.domain] ?? "bg-zinc-600"}`} />
+        <span className={`text-sm flex-1 ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-300"}`}>
+          {session.title}
+          {session.is_extra && (
+            <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px align-middle">Extra</span>
+          )}
+        </span>
+        {isCompleted && <Check size={12} className="text-emerald-400 shrink-0" />}
+        {!isCompleted && (
+          <ChevronDown
+            size={12}
+            className={`text-zinc-600 transition-transform shrink-0 ${expanded ? "rotate-180" : ""}`}
+          />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3 space-y-3">
+              <SessionDetailInline domain={session.domain} detail={session.detail} />
+              {send && (
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => send({ text: `Let's do my ${session.title} session` })}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      domainButtonColors[session.domain] ?? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    }`}
+                  >
+                    <Play size={10} />
+                    Start
+                  </button>
+                  <button
+                    onClick={() => send({ text: `Tell me more about my ${session.title} session` })}
+                    className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
+                  >
+                    <MessageCircle size={10} />
+                    Ask coach
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
