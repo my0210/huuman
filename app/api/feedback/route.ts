@@ -7,7 +7,7 @@ export async function PATCH(req: Request) {
     return Response.json({ error: 'id and status required' }, { status: 400 });
   }
 
-  const valid = ['new', 'in_progress', 'done', 'wont_fix'];
+  const valid = ['new', 'in_progress', 'done', 'wont_fix', 'archived'];
   if (!valid.includes(status)) {
     return Response.json({ error: `status must be one of: ${valid.join(', ')}` }, { status: 400 });
   }

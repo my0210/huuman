@@ -9,6 +9,14 @@ export const metadata: Metadata = {
 
 export const dynamic = 'force-dynamic';
 
+export interface FeedbackComment {
+  id: string;
+  feedback_id: string;
+  author: string;
+  content: string;
+  created_at: string;
+}
+
 export interface FeedbackItem {
   id: string;
   category: string;
@@ -19,6 +27,7 @@ export interface FeedbackItem {
   user_email: string | null;
   agent_id: string | null;
   agent_url: string | null;
+  comments: FeedbackComment[];
 }
 
 export default async function FeedbackPage() {
@@ -55,6 +64,23 @@ export default async function FeedbackPage() {
     }
   }
 
+  const feedbackIds = rows.map(r => r.id);
+  const commentsMap = new Map<string, FeedbackComment[]>();
+
+  if (feedbackIds.length > 0) {
+    const { data: comments } = await supabase
+      .from('feedback_comments')
+      .select('id, feedback_id, author, content, created_at')
+      .in('feedback_id', feedbackIds)
+      .order('created_at', { ascending: true });
+
+    for (const c of (comments ?? []) as FeedbackComment[]) {
+      const list = commentsMap.get(c.feedback_id) ?? [];
+      list.push(c);
+      commentsMap.set(c.feedback_id, list);
+    }
+  }
+
   const items: FeedbackItem[] = rows.map(r => ({
     id: r.id,
     category: r.category,
@@ -65,6 +91,7 @@ export default async function FeedbackPage() {
     user_email: emailMap.get(r.user_id) ?? null,
     agent_id: r.agent_id ?? null,
     agent_url: r.agent_url ?? null,
+    comments: commentsMap.get(r.id) ?? [],
   }));
 
   return (
