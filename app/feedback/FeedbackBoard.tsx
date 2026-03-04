@@ -9,15 +9,14 @@ const CATEGORY_META: Record<string, { label: string; color: string; bg: string }
   experience: { label: "Experience", color: "text-amber-400", bg: "bg-amber-950/60 border-amber-900/40" },
 };
 
-const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
-  new: { label: "New", color: "text-zinc-400", bg: "bg-zinc-800 border-zinc-700" },
-  in_progress: { label: "In Progress", color: "text-blue-400", bg: "bg-blue-950/60 border-blue-900/40" },
-  done: { label: "Done", color: "text-emerald-400", bg: "bg-emerald-950/60 border-emerald-900/40" },
-  wont_fix: { label: "Won't Fix", color: "text-zinc-500", bg: "bg-zinc-900 border-zinc-800" },
+const STATUS_META: Record<string, { label: string; color: string; bg: string; accent: string }> = {
+  new: { label: "New", color: "text-zinc-300", bg: "bg-zinc-800 border-zinc-700", accent: "border-zinc-500" },
+  in_progress: { label: "In Progress", color: "text-blue-400", bg: "bg-blue-950/60 border-blue-900/40", accent: "border-blue-500" },
+  done: { label: "Done", color: "text-emerald-400", bg: "bg-emerald-950/60 border-emerald-900/40", accent: "border-emerald-500" },
+  wont_fix: { label: "Won't Fix", color: "text-zinc-500", bg: "bg-zinc-900 border-zinc-800", accent: "border-zinc-600" },
 };
 
 const STATUSES = ["new", "in_progress", "done", "wont_fix"] as const;
-const FILTERS = ["all", "new", "in_progress", "done", "wont_fix"] as const;
 
 export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }) {
   const [items, setItems] = useState(initialItems);
@@ -26,11 +25,11 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
 
   const filtered = filter === "all" ? items : items.filter(i => i.status === filter);
 
-  const counts = {
-    total: items.length,
-    bug: items.filter(f => f.category === "bug").length,
-    feature_request: items.filter(f => f.category === "feature_request").length,
-    experience: items.filter(f => f.category === "experience").length,
+  const statusCounts = {
+    new: items.filter(i => i.status === "new").length,
+    in_progress: items.filter(i => i.status === "in_progress").length,
+    done: items.filter(i => i.status === "done").length,
+    wont_fix: items.filter(i => i.status === "wont_fix").length,
   };
 
   async function updateStatus(id: string, status: string) {
@@ -51,35 +50,24 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
 
   return (
     <>
-      {/* Stats */}
+      {/* Status cards -- click to filter */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <StatCard label="Total" count={counts.total} color="text-zinc-300" />
-        <StatCard label="Bugs" count={counts.bug} color="text-red-400" />
-        <StatCard label="Features" count={counts.feature_request} color="text-cyan-400" />
-        <StatCard label="Experience" count={counts.experience} color="text-amber-400" />
-      </div>
-
-      {/* Filter bar */}
-      <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
-        {FILTERS.map(f => {
-          const isActive = filter === f;
-          const label = f === "all" ? "All" : (STATUS_META[f]?.label ?? f);
+        {STATUSES.map(s => {
+          const meta = STATUS_META[s];
+          const count = statusCounts[s];
+          const isActive = filter === s;
           return (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              key={s}
+              onClick={() => setFilter(isActive ? "all" : s)}
+              className={`rounded-lg border px-3 py-2.5 text-center transition-all ${
                 isActive
-                  ? "bg-zinc-700 text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50"
+                  ? `${meta.accent} border-2 bg-zinc-900`
+                  : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700"
               }`}
             >
-              {label}
-              {f !== "all" && (
-                <span className="ml-1.5 tabular-nums">
-                  {items.filter(i => i.status === f).length}
-                </span>
-              )}
+              <p className={`text-lg font-bold tabular-nums ${meta.color}`}>{count}</p>
+              <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wide">{meta.label}</p>
             </button>
           );
         })}
@@ -174,15 +162,6 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
         </div>
       )}
     </>
-  );
-}
-
-function StatCard({ label, count, color }: { label: string; count: number; color: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 px-3 py-2.5 text-center">
-      <p className={`text-lg font-bold tabular-nums ${color}`}>{count}</p>
-      <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-wide">{label}</p>
-    </div>
   );
 }
 
