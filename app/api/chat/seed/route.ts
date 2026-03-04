@@ -74,6 +74,7 @@ export async function POST(req: Request) {
         .select('title, status')
         .eq('plan_id', activePlan.id)
         .eq('scheduled_date', today)
+        .eq('is_extra', false)
         .in('domain', SESSION_DOMAINS)
         .neq('status', 'skipped');
 
@@ -84,6 +85,7 @@ export async function POST(req: Request) {
         .from('planned_sessions')
         .select('status')
         .eq('plan_id', activePlan.id)
+        .eq('is_extra', false)
         .in('domain', SESSION_DOMAINS);
 
       weekTotal = (weekRows ?? []).length;

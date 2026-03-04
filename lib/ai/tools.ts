@@ -123,6 +123,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         .gte('scheduled_date', weekStart)
         .lte('scheduled_date', weekEnd)
         .in('domain', SESSION_DOMAINS)
+        .neq('status', 'skipped')
         .order('scheduled_date');
       if (extraSessions) sessions.push(...extraSessions);
 
@@ -228,7 +229,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       const { data: session, error } = await supabase
         .from('planned_sessions')
         .insert({
-          plan_id: activePlan?.id ?? null,
+          plan_id: null,
           user_id: userId,
           domain,
           day_of_week: dayOfWeek,
@@ -393,6 +394,35 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       }
 
       return { error: 'Invalid action or missing parameters' };
+    },
+  });
+
+  const delete_session = tool({
+    description:
+      'Delete a session from the plan entirely. Use when the user explicitly asks to remove or delete a specific session -- not just skip it. Prefer adapt_plan with action "skip" for sessions the user wants to pass on this week. Only delete when the session should not exist at all (e.g. duplicates, sessions logged by mistake, or the user insists on removal).',
+    inputSchema: z.object({
+      sessionId: z.string().describe('The ID of the session to delete'),
+      reason: z.string().describe('Why the session is being deleted'),
+    }),
+    execute: async ({ sessionId, reason }: { sessionId: string; reason: string }) => {
+      const { data: existing } = await supabase
+        .from('planned_sessions')
+        .select('id, title, domain, status')
+        .eq('id', sessionId)
+        .eq('user_id', userId)
+        .single();
+
+      if (!existing) return { error: 'Session not found' };
+
+      const { error } = await supabase
+        .from('planned_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', userId);
+
+      if (error) return { error: error.message };
+
+      return { deleted: true, session: existing, reason };
     },
   });
 
@@ -587,6 +617,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     show_progress,
     log_daily,
     adapt_plan,
+    delete_session,
     generate_plan,
     confirm_plan,
     start_timer,
@@ -612,6 +643,7 @@ async function fetchWeekSessions(
       .from('planned_sessions')
       .select('domain, status')
       .eq('plan_id', planId)
+      .eq('is_extra', false)
       .in('domain', SESSION_DOMAINS);
     if (data) rows.push(...(data as SessionRow[]));
   }

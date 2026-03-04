@@ -76,9 +76,21 @@ export function convertToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   return cleaned.map((msg) => ({
     id: msg.id,
     role: msg.role as UIMessage['role'],
-    parts: sanitizeParts(msg.parts as UIMessage['parts']),
+    parts: sanitizeParts(stripLargeFiles(msg.parts as UIMessage['parts'])),
     createdAt: new Date(msg.created_at),
   }));
+}
+
+const BASE64_THRESHOLD = 50_000;
+
+function stripLargeFiles(parts: UIMessage['parts']): UIMessage['parts'] {
+  return parts.map((p) => {
+    const raw = p as Record<string, unknown>;
+    if (raw.type === 'file' && typeof raw.url === 'string' && raw.url.length > BASE64_THRESHOLD) {
+      return { ...raw, url: '', stripped: true } as unknown as typeof p;
+    }
+    return p;
+  });
 }
 
 function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {

@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "ai";
 import { isToolUIPart, isFileUIPart, getToolName } from "ai";
+import { Camera } from "lucide-react";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { DraftPlanCard } from "@/components/cards/DraftPlanCard";
@@ -25,6 +26,15 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
   }
 
   if (isFileUIPart(part) && part.mediaType.startsWith("image/")) {
+    const stripped = (part as Record<string, unknown>).stripped === true;
+    if (stripped || !part.url) {
+      return (
+        <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-500">
+          <Camera size={14} className="flex-none" />
+          <span>{part.filename ?? "Photo"}</span>
+        </div>
+      );
+    }
     return (
       <img
         src={part.url}
