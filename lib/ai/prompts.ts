@@ -14,7 +14,7 @@ export function getSystemPrompt(profile?: UserProfile | null, language?: string)
   const profileBlock = profile ? formatProfile(profile) : 'No user profile available yet. Start onboarding.';
   const languageBlock = language && language !== 'en' && language !== 'en-GB'
     ? `\n\n## LANGUAGE\n\nThe user's preferred language is "${language}". You MUST respond in this language. All conversational text, session descriptions, coaching cues, and feedback must be in the user's language. Tool calls (JSON) remain in English for system compatibility, but any text the user reads must be in their language.`
-    : '';
+    : `\n\n## LANGUAGE\n\nYou MUST respond in English. If the conversation history contains messages in other languages, that indicates a recent language switch — always use English regardless of prior message languages.`;
   const tz = profile?.timezone ?? 'UTC';
   const today = getTodayISO(tz);
   const dayName = getDayOfWeekName(tz);
@@ -355,7 +355,7 @@ export function getWelcomeBackPrompt(context: {
 
   const languageInstruction = context.language && context.language !== 'en' && context.language !== 'en-GB'
     ? ` Respond in ${context.language}.`
-    : '';
+    : ' Respond in English.';
 
   return `You are huuman -- an elite longevity coach. Write a 1-2 sentence welcome-back message for your client who just opened the app.${languageInstruction}
 
