@@ -150,7 +150,14 @@ export async function generateWeeklyPlan(
     console.warn('[PlanGen] Validation issues:', validation.issues);
   }
 
-  const planStatus = opts.draft ? 'draft' : 'active';
+  const { data: existingPlan } = await supabase
+    .from('weekly_plans')
+    .select('id, status')
+    .eq('user_id', userId)
+    .eq('week_start', weekStart)
+    .maybeSingle();
+
+  const planStatus = existingPlan ? 'draft' : (opts.draft ? 'draft' : 'active');
 
   const { data: planRow, error: planError } = await supabase
     .from('weekly_plans')

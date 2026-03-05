@@ -133,6 +133,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         sessions,
         trackingBriefs: plan?.tracking_briefs ?? null,
         hasPlan: plan !== null || sessions.length > 0,
+        isDraft: plan?.status === 'draft',
       };
     },
   });

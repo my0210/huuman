@@ -545,11 +545,12 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
           targetDate.setDate(weekStart.getDate() + daysFromMonday);
           const newDate = targetDate.toISOString().slice(0, 10);
 
-          const result = await (tools.adapt_plan as unknown as ToolExec).execute(
+          await (tools.adapt_plan as unknown as ToolExec).execute(
             { sessionId, action: 'reschedule', newDate, reason: 'Moved via draft review' },
             execOpts,
           );
-          await sendFormatted(chatId, formatToolOutput('adapt_plan', result as Record<string, unknown>));
+          const weekResult = await (tools.show_week_plan as unknown as ToolExec).execute({}, execOpts);
+          await sendFormatted(chatId, formatToolOutput('show_week_plan', weekResult as Record<string, unknown>));
         }
       }
       await answerCallbackQuery(queryId, 'Moved!');
