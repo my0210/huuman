@@ -31,7 +31,16 @@ export async function POST(req: Request) {
     }
 
     const dbMessages = await loadMessages(chatId, supabase);
-    const uiMessages = convertToModelUIMessages(dbMessages);
+    let uiMessages: Awaited<ReturnType<typeof convertToModelUIMessages>>;
+    try {
+      uiMessages = convertToModelUIMessages(dbMessages);
+    } catch (e) {
+      console.error('[Chat API] convertToModelUIMessages failed, falling back to text-only:', e);
+      uiMessages = convertToModelUIMessages(dbMessages.map(m => ({
+        ...m,
+        parts: (m.parts as unknown[]).filter((p: Record<string, unknown>) => p.type === 'text' || p.type === 'file'),
+      })));
+    }
 
     const userProfile = await loadUserProfile(userId, supabase);
     const language = getLanguageFromCookies(req.headers.get('cookie'));

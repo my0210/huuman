@@ -112,26 +112,35 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
 }
 
 /**
- * Converts DB messages to UIMessages with only text/file parts,
- * suitable for passing to the AI agent. Tool and step-start parts
- * are stripped to avoid context-window bloat and SDK conversion issues.
+ * Converts DB messages to UIMessages for the AI agent.
+ * Recent messages (last TOOL_WINDOW) include tool parts so the agent sees
+ * its own tool history and reliably calls tools. Older messages keep only
+ * text/file to stay within the context window.
  */
+const TOOL_WINDOW = 12;
+
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   const noEmpty = dbMessages.filter((msg) => {
     const parts = msg.parts as unknown[];
     return parts && parts.length > 0;
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
-  return cleaned.reduce<UIMessage[]>((acc, msg) => {
-    const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
+  const toolCutoff = Math.max(0, cleaned.length - TOOL_WINDOW);
+
+  return cleaned.reduce<UIMessage[]>((acc, msg, idx) => {
+    const includeTools = idx >= toolCutoff;
+    const filtered = (msg.parts as UIMessage['parts']).filter((p) => {
       const t = (p as Record<string, unknown>).type as string;
-      return t === 'text' || t === 'file';
+      if (t === 'text' || t === 'file') return true;
+      if (includeTools && t.startsWith('tool-')) return true;
+      return false;
     });
-    if (textParts.length > 0) {
+    const parts = includeTools ? sanitizeParts(filtered) : filtered;
+    if (parts.length > 0) {
       acc.push({
         id: msg.id,
         role: msg.role as UIMessage['role'],
-        parts: textParts,
+        parts,
         createdAt: new Date(msg.created_at),
       } as UIMessage);
     }
