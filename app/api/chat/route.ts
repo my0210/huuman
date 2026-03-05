@@ -61,6 +61,7 @@ export async function POST(req: Request) {
       },
       onError: (error) => {
         console.error('[Chat API] Stream error:', error);
+        return error instanceof Error ? error.message : 'Internal error';
       },
     });
   } catch (error) {
