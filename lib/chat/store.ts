@@ -112,10 +112,9 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
 }
 
 /**
- * Converts DB messages to UIMessages suitable for passing to the AI agent.
- * Text and file parts are kept as-is. Tool parts are converted to short text
- * summaries so the agent knows which tools it called (and key results) without
- * the full output payloads that would blow the context window.
+ * Converts DB messages to UIMessages with only text/file parts,
+ * suitable for passing to the AI agent. Tool and step-start parts
+ * are stripped to avoid context-window bloat and SDK conversion issues.
  */
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   const noEmpty = dbMessages.filter((msg) => {
@@ -124,56 +123,20 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
   return cleaned.reduce<UIMessage[]>((acc, msg) => {
-    const modelParts: UIMessage['parts'] = [];
-    for (const p of msg.parts as UIMessage['parts']) {
-      const raw = p as Record<string, unknown>;
-      const t = raw.type as string;
-      if (t === 'text' || t === 'file') {
-        modelParts.push(p);
-      } else if (typeof t === 'string' && t.startsWith('tool-')) {
-        const summary = summarizeToolPart(raw);
-        if (summary) {
-          modelParts.push({ type: 'text', text: summary } as UIMessage['parts'][number]);
-        }
-      }
-    }
-    if (modelParts.length > 0) {
+    const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
+      const t = (p as Record<string, unknown>).type as string;
+      return t === 'text' || t === 'file';
+    });
+    if (textParts.length > 0) {
       acc.push({
         id: msg.id,
         role: msg.role as UIMessage['role'],
-        parts: modelParts,
+        parts: textParts,
         createdAt: new Date(msg.created_at),
       } as UIMessage);
     }
     return acc;
   }, []);
-}
-
-function summarizeToolPart(raw: Record<string, unknown>): string | null {
-  const toolName = (raw.type as string).replace('tool-', '');
-  const output = raw.output as Record<string, unknown> | undefined;
-  if (!output) return `[Called ${toolName}]`;
-
-  switch (toolName) {
-    case 'generate_plan':
-      return `[Called generate_plan → ${output.isDraft ? 'draft' : 'active'} plan created, ${Array.isArray(output.sessions) ? output.sessions.length : '?'} sessions]`;
-    case 'show_today_plan':
-      return output.needsNewPlan
-        ? '[Called show_today_plan → no plan for this week]'
-        : `[Called show_today_plan → ${output.hasPlan ? 'plan shown' : 'no plan'}]`;
-    case 'show_week_plan':
-      return `[Called show_week_plan → ${output.hasPlan ? 'plan shown' : 'no plan'}]`;
-    case 'show_progress':
-      return '[Called show_progress → progress shown]';
-    case 'confirm_plan':
-      return `[Called confirm_plan → ${output.confirmed ? 'confirmed' : output.error ?? 'failed'}]`;
-    case 'save_context':
-      return '[Called save_context → saved]';
-    case 'save_feedback':
-      return '[Called save_feedback → saved]';
-    default:
-      return `[Called ${toolName}]`;
-  }
 }
 
 function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {
