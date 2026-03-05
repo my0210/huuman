@@ -128,8 +128,10 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
  * generating separate role:'tool' messages that the Anthropic provider
  * doesn't map to role:'user' tool_result blocks (vercel/ai #11855).
  * Unrecognized part types (step-start etc.) are filtered out.
+ * Tool parts for tools not in registeredToolNames are dropped to prevent
+ * validateUIMessages from rejecting renamed/removed tools in history.
  */
-export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
+export function convertToModelUIMessages(dbMessages: DBMessage[], registeredToolNames?: Set<string>): UIMessage[] {
   const noEmpty = dbMessages.filter((msg) => {
     const parts = msg.parts as unknown[];
     return parts && parts.length > 0;
@@ -144,6 +146,8 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
         if (t === 'text' || t === 'file' || t === 'reasoning') return p;
 
         if (typeof t === 'string' && t.startsWith('tool-')) {
+          const toolName = t.slice(5);
+          if (registeredToolNames && !registeredToolNames.has(toolName)) return null;
           if (!raw.toolCallId) raw.toolCallId = generateId();
           if (raw.args !== undefined && raw.input === undefined) {
             raw.input = raw.args;

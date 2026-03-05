@@ -30,14 +30,13 @@ export async function POST(req: Request) {
       ], supabase);
     }
 
-    const dbMessages = await loadMessages(chatId, supabase);
-    const uiMessages = convertToModelUIMessages(dbMessages);
-
     const userProfile = await loadUserProfile(userId, supabase);
     const language = getLanguageFromCookies(req.headers.get('cookie'));
     const agent = createCoachAgent(userId, userProfile, supabase, language, chatId);
+    const toolNames = new Set(Object.keys(agent.tools));
 
-    console.log('[Chat API] uiMessages:', uiMessages.length, 'parts:', uiMessages.map(m => m.parts.map(p => (p as Record<string, unknown>).type)));
+    const dbMessages = await loadMessages(chatId, supabase);
+    const uiMessages = convertToModelUIMessages(dbMessages, toolNames);
 
     return createAgentUIStreamResponse({
       agent,
