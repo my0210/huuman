@@ -123,7 +123,10 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
 /**
  * Converts DB messages to UIMessages for the AI agent.
  * Text and file parts pass through. Completed tool parts are passed through
- * in SDK-native format (type 'tool-${name}', state, input, output, toolCallId).
+ * in SDK-native format with providerExecuted=true so the SDK inlines both
+ * tool-call and tool-result in the same assistant message. This avoids
+ * generating separate role:'tool' messages that the Anthropic provider
+ * doesn't map to role:'user' tool_result blocks.
  * Unrecognized part types (step-start etc.) are filtered out.
  */
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
@@ -133,15 +136,31 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
   return cleaned.reduce<UIMessage[]>((acc, msg) => {
-    const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
-      const t = (p as Record<string, unknown>).type as string;
-      return t === 'text' || t === 'file';
-    });
-    if (textParts.length > 0) {
+    const modelParts = (msg.parts as UIMessage['parts'])
+      .map((p) => {
+        const raw = p as Record<string, unknown>;
+        const t = raw.type as string;
+
+        if (t === 'text' || t === 'file' || t === 'reasoning') return p;
+
+        if (typeof t === 'string' && t.startsWith('tool-')) {
+          if (!raw.toolCallId) raw.toolCallId = generateId();
+          if (raw.args !== undefined && raw.input === undefined) {
+            raw.input = raw.args;
+          }
+          raw.providerExecuted = true;
+          return p;
+        }
+
+        return null;
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+
+    if (modelParts.length > 0) {
       acc.push({
         id: msg.id,
         role: msg.role as UIMessage['role'],
-        parts: textParts,
+        parts: modelParts,
         createdAt: new Date(msg.created_at),
       } as UIMessage);
     }

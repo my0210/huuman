@@ -1,0 +1,1 @@
+push and commit to production, test if you have to, log in to vercel via cli and confirm if the build is successful, if not, get the logs and fix and repeat until build is successful.
