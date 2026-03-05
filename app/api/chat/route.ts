@@ -38,7 +38,10 @@ export async function POST(req: Request) {
       console.error('[Chat API] convertToModelUIMessages failed, falling back to text-only:', e);
       uiMessages = convertToModelUIMessages(dbMessages.map(m => ({
         ...m,
-        parts: (m.parts as unknown[]).filter((p: Record<string, unknown>) => p.type === 'text' || p.type === 'file'),
+        parts: (m.parts as unknown[]).filter((p) => {
+          const raw = p as Record<string, unknown>;
+          return raw.type === 'text' || raw.type === 'file';
+        }),
       })));
     }
 
