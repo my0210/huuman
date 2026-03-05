@@ -219,21 +219,40 @@ export function formatProgress(data: Record<string, unknown>): FormattedResponse
   const progress = data.progress as Array<Record<string, unknown>>;
   if (!progress) return { text: 'No progress data.' };
 
+  const hasPlan = data.hasPlan as boolean;
+  const hasAnyData = progress.some(d => Number(d.total ?? 0) > 0 || Number(d.completed ?? 0) > 0);
+
+  if (!hasPlan && !hasAnyData) {
+    return { text: 'No active plan this week.' };
+  }
+
   const lines = ['<b>This week</b>', ''];
   for (const d of progress) {
     const pct = Number(d.completionRate ?? 0);
     const bar = progressBar(pct);
-    lines.push(`${domainIcon(d.domain as string)} ${esc(String(d.label))}  ${bar}  ${d.completed}/${d.total}`);
+    const skipped = Number(d.skipped ?? 0);
+    const skippedSuffix = skipped > 0 ? `  <i>(${skipped} skipped)</i>` : '';
+    lines.push(`${domainIcon(d.domain as string)} ${esc(String(d.label))}  ${bar}  ${d.completed}/${d.total}${skippedSuffix}`);
+  }
+
+  const avgSleepHours = data.avgSleepHours as number | null;
+  if (avgSleepHours != null) {
+    lines.push(`\n😴 Avg sleep: ${avgSleepHours}h`);
   }
 
   const steps = data.steps as Array<Record<string, unknown>>;
   if (steps && steps.length > 0) {
     const total = steps.reduce((s, d) => s + Number(d.steps ?? 0), 0);
     const avg = Math.round(total / steps.length);
-    lines.push(`\nSteps avg: ${avg.toLocaleString()}/day`);
+    lines.push(`👣 Steps avg: ${avg.toLocaleString()}/day`);
   }
 
-  return { text: lines.join('\n') };
+  return {
+    text: lines.join('\n'),
+    replyMarkup: {
+      inline_keyboard: [[{ text: '📅 Show plan', callback_data: 'cmd:week' }]],
+    },
+  };
 }
 
 export function formatDailyHabit(data: Record<string, unknown>): FormattedResponse {

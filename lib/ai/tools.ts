@@ -257,14 +257,15 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
   const show_progress = tool({
     description:
-      'Show weekly progress across session domains. Use when the user asks about progress or wants a status check.',
+      'Show weekly progress across all five domains. Use when the user asks about progress or wants a status check.',
     inputSchema: z.object({}),
     execute: async () => {
       const weekStart = getWeekStart(timezone);
+      const today = getTodayISO(timezone);
 
       const { data: activePlan } = await supabase
         .from('weekly_plans')
-        .select('id')
+        .select('id, tracking_briefs')
         .eq('user_id', userId)
         .eq('week_start', weekStart)
         .eq('status', 'active')
@@ -278,10 +279,47 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         .eq('user_id', userId)
         .gte('date', weekStart);
 
+      const habitsArr = (habits ?? []) as Record<string, unknown>[];
+
+      const daysSoFar = Math.min(7, Math.max(1,
+        Math.floor((new Date(today + 'T12:00:00Z').getTime() - new Date(weekStart + 'T12:00:00Z').getTime()) / 86400000) + 1
+      ));
+
+      const nutritionLogged = habitsArr.filter(h => h.nutrition_on_plan != null);
+      const daysOnPlan = nutritionLogged.filter(h => h.nutrition_on_plan === true).length;
+
+      const briefs = activePlan?.tracking_briefs as { sleep?: { targetHours?: number } } | null;
+      const sleepTarget = briefs?.sleep?.targetHours ?? 7;
+      const sleepLogged = habitsArr.filter(h => h.sleep_hours != null);
+      const daysOnSleepTarget = sleepLogged.filter(h => Number(h.sleep_hours) >= sleepTarget).length;
+      const avgSleepHours = sleepLogged.length > 0
+        ? Math.round(sleepLogged.reduce((s, h) => s + Number(h.sleep_hours), 0) / sleepLogged.length * 10) / 10
+        : null;
+
       return {
         weekStart,
-        progress: computeWeekProgress(sessionRows),
-        steps: (habits ?? []).map((h: Record<string, unknown>) => ({
+        hasPlan: !!activePlan,
+        progress: [
+          ...computeWeekProgress(sessionRows),
+          {
+            domain: 'nutrition',
+            label: DOMAIN_META.nutrition.label,
+            total: daysSoFar,
+            completed: daysOnPlan,
+            skipped: 0,
+            completionRate: daysSoFar > 0 ? Math.round((daysOnPlan / daysSoFar) * 100) : 0,
+          },
+          {
+            domain: 'sleep',
+            label: DOMAIN_META.sleep.label,
+            total: daysSoFar,
+            completed: daysOnSleepTarget,
+            skipped: 0,
+            completionRate: daysSoFar > 0 ? Math.round((daysOnSleepTarget / daysSoFar) * 100) : 0,
+          },
+        ],
+        avgSleepHours,
+        steps: habitsArr.map(h => ({
           date: h.date,
           steps: h.steps_actual ?? 0,
           target: h.steps_target ?? 10000,

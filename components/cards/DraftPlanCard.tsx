@@ -98,15 +98,13 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="rounded-xl border border-dashed border-zinc-600 bg-zinc-900/50 overflow-hidden">
       {/* Draft header */}
-      <div className="px-4 py-2.5 border-b border-zinc-800/50 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
-            Draft
-          </span>
-          {introMessage && (
-            <p className="text-xs text-zinc-500 truncate max-w-[200px]">{introMessage}</p>
-          )}
-        </div>
+      <div className="px-4 py-2.5 border-b border-zinc-800/50 space-y-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
+          Draft
+        </span>
+        {introMessage && (
+          <p className="text-xs text-zinc-500">{introMessage}</p>
+        )}
       </div>
 
       {/* Day strip */}

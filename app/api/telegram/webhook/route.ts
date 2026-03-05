@@ -558,14 +558,15 @@ async function handleCallbackQuery(query: Record<string, unknown>): Promise<void
     return;
   }
 
-  if (callbackData === 'cmd:today') {
+  if (callbackData === 'cmd:today' || callbackData === 'cmd:week') {
+    const toolName = callbackData === 'cmd:today' ? 'show_today_plan' : 'show_week_plan';
     const { data: profile } = await admin
       .from('user_profiles')
       .select('id, timezone')
       .eq('telegram_chat_id', chatId)
       .maybeSingle();
     if (profile) {
-      await handleQuickCommand(chatId, profile.id, 'show_today_plan', (profile.timezone as string) ?? 'UTC');
+      await handleQuickCommand(chatId, profile.id, toolName, (profile.timezone as string) ?? 'UTC');
     }
     await answerCallbackQuery(queryId);
     return;
