@@ -16,11 +16,13 @@ type Part = UIMessage["parts"][number];
 
 export function MessagePart({ part, role }: { part: Part; role: string }) {
   if (part.type === "text") {
+    const displayText = part.text.replace(/\n?\[sessionId:[^\]]+\]/g, '');
+    if (!displayText.trim()) return null;
     return (
       <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
         role === "user" ? "text-zinc-100" : "text-zinc-300"
       }`}>
-        {part.text}
+        {displayText}
       </p>
     );
   }
