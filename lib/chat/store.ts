@@ -121,12 +121,10 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
 }
 
 /**
- * Converts DB messages to UIMessages suitable for passing to the AI agent.
- * Passes text, file, and completed tool parts through so the model retains
- * tool results across turns. The SDK's convertToModelMessages expects tool
- * parts with: type 'tool-${name}', state 'output-available', input, output,
- * toolCallId. Parts that don't match a recognized type (e.g. step-start)
- * are filtered out to avoid the SDK's exhaustive-check throw.
+ * Converts DB messages to UIMessages for the AI agent.
+ * Text and file parts pass through. Completed tool parts are passed through
+ * in SDK-native format (type 'tool-${name}', state, input, output, toolCallId).
+ * Unrecognized part types (step-start etc.) are filtered out.
  */
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   const noEmpty = dbMessages.filter((msg) => {
@@ -135,30 +133,15 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
   return cleaned.reduce<UIMessage[]>((acc, msg) => {
-    const modelParts = (msg.parts as UIMessage['parts'])
-      .map((p) => {
-        const raw = p as Record<string, unknown>;
-        const t = raw.type as string;
-
-        if (t === 'text' || t === 'file' || t === 'reasoning') return p;
-
-        if (typeof t === 'string' && t.startsWith('tool-')) {
-          if (!raw.toolCallId) raw.toolCallId = generateId();
-          if (raw.args !== undefined && raw.input === undefined) {
-            raw.input = raw.args;
-          }
-          return p;
-        }
-
-        return null;
-      })
-      .filter((p): p is NonNullable<typeof p> => p !== null);
-
-    if (modelParts.length > 0) {
+    const textParts = (msg.parts as UIMessage['parts']).filter((p) => {
+      const t = (p as Record<string, unknown>).type as string;
+      return t === 'text' || t === 'file';
+    });
+    if (textParts.length > 0) {
       acc.push({
         id: msg.id,
         role: msg.role as UIMessage['role'],
-        parts: modelParts,
+        parts: textParts,
         createdAt: new Date(msg.created_at),
       } as UIMessage);
     }
