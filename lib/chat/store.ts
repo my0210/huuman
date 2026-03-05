@@ -122,11 +122,11 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
 
 /**
  * Converts DB messages to UIMessages suitable for passing to the AI agent.
- * Text and file parts pass through directly. Completed tool parts are
- * converted to a compact text summary so the model retains cross-turn
- * knowledge of tool results. Raw tool-invocation parts are NOT passed
- * through because createAgentUIStreamResponse cannot reliably convert
- * them to model messages.
+ * Passes text, file, and completed tool parts through so the model retains
+ * tool results across turns. The SDK's convertToModelMessages expects tool
+ * parts with: type 'tool-${name}', state 'output-available', input, output,
+ * toolCallId. Parts that don't match a recognized type (e.g. step-start)
+ * are filtered out to avoid the SDK's exhaustive-check throw.
  */
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   const noEmpty = dbMessages.filter((msg) => {
@@ -135,25 +135,24 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
   });
   const cleaned = trimOrphanedUserMessages(noEmpty);
   return cleaned.reduce<UIMessage[]>((acc, msg) => {
-    const modelParts: UIMessage['parts'] = [];
+    const modelParts = (msg.parts as UIMessage['parts'])
+      .map((p) => {
+        const raw = p as Record<string, unknown>;
+        const t = raw.type as string;
 
-    for (const p of msg.parts as UIMessage['parts']) {
-      const raw = p as Record<string, unknown>;
-      const t = raw.type as string;
+        if (t === 'text' || t === 'file' || t === 'reasoning') return p;
 
-      if (t === 'text' || t === 'file') {
-        modelParts.push(p);
-        continue;
-      }
-
-      if (typeof t === 'string' && t.startsWith('tool-') && raw.state === 'output-available' && raw.output) {
-        const toolName = (raw.toolName ?? t.slice(5)) as string;
-        const summary = summarizeToolOutput(toolName, raw.output as Record<string, unknown>);
-        if (summary) {
-          modelParts.push({ type: 'text', text: summary } as unknown as typeof p);
+        if (typeof t === 'string' && t.startsWith('tool-')) {
+          if (!raw.toolCallId) raw.toolCallId = generateId();
+          if (raw.args !== undefined && raw.input === undefined) {
+            raw.input = raw.args;
+          }
+          return p;
         }
-      }
-    }
+
+        return null;
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null);
 
     if (modelParts.length > 0) {
       acc.push({
@@ -165,58 +164,6 @@ export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {
     }
     return acc;
   }, []);
-}
-
-function summarizeToolOutput(toolName: string, output: Record<string, unknown>): string | null {
-  if (output.error) return `[${toolName} error: ${output.error}]`;
-
-  switch (toolName) {
-    case 'show_today_plan': {
-      const sessions = output.sessions as Record<string, unknown>[] | undefined;
-      const count = sessions?.length ?? 0;
-      const completed = sessions?.filter(s => s.status === 'completed').length ?? 0;
-      return `[show_today_plan: ${output.date}, ${count} sessions (${completed} done), needsNewPlan=${output.needsNewPlan}, hasDraftPlan=${output.hasDraftPlan}]`;
-    }
-    case 'show_week_plan': {
-      const sessions = output.sessions as Record<string, unknown>[] | undefined;
-      return `[show_week_plan: ${output.weekStart}, ${sessions?.length ?? 0} sessions, isDraft=${output.isDraft}, hasPlan=${output.hasPlan}]`;
-    }
-    case 'show_progress': {
-      const progress = output.progress as Record<string, unknown>[] | undefined;
-      const summary = progress?.map(p => `${p.domain}:${p.completed}/${p.total}`).join(', ') ?? '';
-      return `[show_progress: ${output.weekStart}, ${summary}]`;
-    }
-    case 'show_session':
-      return `[show_session: ${JSON.stringify(output.session ?? output).slice(0, 300)}]`;
-    case 'complete_session':
-      return `[complete_session: done]`;
-    case 'log_session':
-      return `[log_session: logged extra session]`;
-    case 'log_daily':
-      return `[log_daily: logged]`;
-    case 'adapt_plan':
-      return `[adapt_plan: ${output.action}]`;
-    case 'delete_session':
-      return `[delete_session: deleted ${output.deleted} session(s)]`;
-    case 'generate_plan':
-      return `[generate_plan: success=${output.success}, isDraft=${output.isDraft}]`;
-    case 'confirm_plan':
-      return `[confirm_plan: confirmed=${output.confirmed}]`;
-    case 'save_context':
-      return `[save_context: saved ${output.saved}, removed ${output.removed}]`;
-    case 'save_feedback':
-      return `[save_feedback: saved]`;
-    case 'validate_plan':
-      return `[validate_plan: ${JSON.stringify(output.validation ?? output).slice(0, 400)}]`;
-    case 'get_sessions':
-      return `[get_sessions: ${output.count} results: ${JSON.stringify(output.sessions ?? []).slice(0, 400)}]`;
-    case 'get_habits':
-      return `[get_habits: ${JSON.stringify(output.summary ?? output).slice(0, 300)}]`;
-    case 'get_context':
-      return `[get_context: ${output.count} items: ${JSON.stringify(output.context ?? []).slice(0, 300)}]`;
-    default:
-      return `[${toolName}: done]`;
-  }
 }
 
 function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {
