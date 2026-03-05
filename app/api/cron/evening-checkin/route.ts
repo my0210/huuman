@@ -44,7 +44,7 @@ export async function GET(req: Request) {
       if (!needsNutrition && !needsSteps) continue;
 
       if (needsNutrition) {
-        await sendMessage(chatId, '<b>End of day</b>\n\nHow was nutrition today?', {
+        await sendMessage(chatId, '<b>Quick check-in</b>\n\nNutrition today?', {
           reply_markup: {
             inline_keyboard: [[
               { text: '✓ On plan', callback_data: 'checkin:nutrition:on' },
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
       }
 
       if (needsSteps) {
-        await sendMessage(chatId, 'Steps today? Type a number or tap one.', {
+        await sendMessage(chatId, 'How many steps today? Tap or type.', {
           reply_markup: {
             inline_keyboard: [[
               { text: '5k', callback_data: 'checkin:steps:5000' },

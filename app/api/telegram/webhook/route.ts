@@ -167,9 +167,9 @@ async function handleStartCommand(chatId: number, text: string, admin: ReturnTyp
 
       const profile = await loadUserProfile(linkCode.user_id, admin);
       if (profile?.onboardingCompleted) {
-        await sendMessage(chatId, 'Connected! You can chat with your coach here now. Send a message or try /today.');
+        await sendMessage(chatId, 'You\'re in. Send me a message or try /today to see your plan.');
       } else {
-        await sendMessage(chatId, 'Connected! Let\'s finish setting up your plan.');
+        await sendMessage(chatId, 'Connected. Let\'s finish setting up your plan.');
         await startOnboarding(chatId, linkCode.user_id, admin);
       }
       return;
@@ -203,7 +203,7 @@ async function handleStartCommand(chatId: number, text: string, admin: ReturnTyp
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huuman.vercel.app';
   const registerUrl = `${siteUrl}/auth/register?token=${token}`;
 
-  await sendMessage(chatId, 'Welcome to huuman -- your AI longevity coach.\n\nTap below to create your account.', {
+  await sendMessage(chatId, 'Welcome to huuman.\n\nI\'ll build your weekly program, adapt it to your life, and coach you through it. Tap below to get started.', {
     reply_markup: {
       inline_keyboard: [[{ text: 'Create Account', url: registerUrl }]],
     },

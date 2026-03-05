@@ -252,17 +252,17 @@ function StepRenderer({
           {generating ? (
             <div className="flex flex-col items-center justify-center space-y-4 py-12">
               <Loader2 size={32} className="animate-spin text-zinc-400" />
-              <p className="text-zinc-400">Building your personalized weekly plan...</p>
-              <p className="text-xs text-zinc-600">This takes about 15-30 seconds</p>
+              <p className="text-zinc-400">Building your plan...</p>
+              <p className="text-xs text-zinc-600">Give me about 15-30 seconds</p>
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-bold text-zinc-100">Ready to build your plan</h2>
+              <h2 className="text-xl font-bold text-zinc-100">Ready when you are</h2>
               <p className="text-zinc-400 leading-relaxed">
-                We have everything we need. Hit &quot;Build My Plan&quot; and we&apos;ll create your first personalized week across all 5 domains.
+                I&apos;ve got what I need. Hit &quot;Build My Plan&quot; and I&apos;ll put together your first week across all 5 domains.
               </p>
               <p className="text-sm text-zinc-500">
-                You can always refine your plan later through the coach.
+                You can always adjust things later -- just tell me what&apos;s working and what isn&apos;t.
               </p>
               {error && (
                 <div className="rounded-lg border border-red-800 bg-red-900/20 px-4 py-3">

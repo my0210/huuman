@@ -166,7 +166,7 @@ async function advanceOnboarding(
 
     if (step.type === 'welcome') {
       await sendMessage(state.chat_id,
-        `<b>huuman</b>\n\nI'm going to build your weekly program across 5 domains: cardio, strength, mindfulness, nutrition, and sleep. First I need to know where you stand.\n\nTakes about 2 minutes.`,
+        `<b>huuman</b>\n\nI'll build your weekly program across 5 domains: cardio, strength, mindfulness, nutrition, and sleep. I'll adapt it around your life, push you when it counts, and adjust when things change.\n\nFirst, I need to know where you stand. Takes about 2 minutes.`,
       );
       state.step_index++;
       await saveState(state, supabase);
@@ -252,7 +252,7 @@ async function handleBuild(
   state: OnboardingState,
   supabase: AppSupabaseClient,
 ): Promise<void> {
-  await sendMessage(state.chat_id, '<b>Building your plan...</b>\nThis takes about 15-30 seconds.');
+  await sendMessage(state.chat_id, '<b>Building your plan...</b>\nGive me about 15-30 seconds.');
 
   const { data } = state;
   const domainBaselines = {
@@ -320,7 +320,7 @@ async function handleBuild(
       await sendMessage(state.chat_id, msg.text, { reply_markup: msg.replyMarkup });
     }
   } else {
-    await sendMessage(state.chat_id, `Plan generated, but had an issue: ${result.error ?? 'unknown'}. Send me a message and I'll sort it out.`);
+    await sendMessage(state.chat_id, `Hit a snag building your plan: ${result.error ?? 'something unexpected'}. Send me a message and I'll sort it out.`);
   }
 }
 

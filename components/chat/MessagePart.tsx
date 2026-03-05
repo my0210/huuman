@@ -181,7 +181,7 @@ function PlanGenerated({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
-      Your weekly plan has been generated!
+      Your plan is ready.
     </div>
   );
 }

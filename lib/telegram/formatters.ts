@@ -418,9 +418,9 @@ function nextSessionCard(session: Record<string, unknown>): FormattedResponse {
 }
 
 const COMPLETION_NOTES: Record<string, string> = {
-  cardio: 'Aerobic work in the bank.',
-  strength: 'Strength work done.',
-  mindfulness: 'Good practice.',
+  cardio: 'Aerobic base building.',
+  strength: 'Strength in the books.',
+  mindfulness: 'Good reset.',
 };
 
 function sessionBrief(session: Record<string, unknown>): string {

@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       const pending = sessions.filter(s => s.status !== 'completed' && s.status !== 'skipped');
       if (pending.length === 0) continue;
 
-      await sendMessage(chatId, '☀️ <b>Good morning</b>\nHere\'s your day.');
+      await sendMessage(chatId, '☀️ <b>Morning</b>\nHere\'s what\'s on today.');
 
       const messages = formatTodayPlan(data);
       for (const msg of messages) {
