@@ -37,6 +37,8 @@ export async function POST(req: Request) {
     const language = getLanguageFromCookies(req.headers.get('cookie'));
     const agent = createCoachAgent(userId, userProfile, supabase, language, chatId);
 
+    console.log('[Chat API] uiMessages:', uiMessages.length, 'parts:', uiMessages.map(m => m.parts.map(p => (p as Record<string, unknown>).type)));
+
     return createAgentUIStreamResponse({
       agent,
       uiMessages,
@@ -56,6 +58,9 @@ export async function POST(req: Request) {
             supabase,
           );
         }
+      },
+      onError: (error) => {
+        console.error('[Chat API] Stream error:', error);
       },
     });
   } catch (error) {
