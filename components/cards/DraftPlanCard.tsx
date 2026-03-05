@@ -85,13 +85,13 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
   const handleMoveSession = (session: Session, targetDate: string, targetDow: number) => {
     if (!send) return;
     const dayLabel = DAY_LABELS[targetDow as DayOfWeek];
-    send({ text: `Move "${session.title}" to ${dayLabel} (${targetDate})` });
+    send({ text: `Move session ${session.id} ("${session.title}") to ${dayLabel} (${targetDate})` });
     setActionSession(null);
   };
 
   const handleSwapActivity = (session: Session) => {
     if (!send) return;
-    send({ text: `I'd like a different ${session.domain} activity instead of "${session.title}"` });
+    send({ text: `I'd like a different ${session.domain} activity instead of session ${session.id} ("${session.title}")` });
     setActionSession(null);
   };
 
