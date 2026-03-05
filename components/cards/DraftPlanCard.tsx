@@ -144,81 +144,78 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
         {displaySessions.length === 0 ? (
           <div className="px-4 py-3 text-xs text-zinc-500">No sessions this day</div>
         ) : (
-          displaySessions.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => setActionSession(actionSession?.id === s.id ? null : s)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-zinc-800/30 transition-colors"
-            >
-              <span className={`h-2 w-2 rounded-full shrink-0 ${domainDot[s.domain] ?? "bg-zinc-600"}`} />
-              <span className="text-sm text-zinc-300 flex-1 truncate">{s.title}</span>
-              <span className="text-[10px] text-zinc-600">
-                {DAY_LABELS[s.day_of_week as DayOfWeek]}
-              </span>
-              <ChevronDown
-                size={12}
-                className={`text-zinc-600 transition-transform ${actionSession?.id === s.id ? "rotate-180" : ""}`}
-              />
-            </button>
-          ))
+          displaySessions.map((s) => {
+            const isExpanded = actionSession?.id === s.id;
+            return (
+              <div key={s.id}>
+                <button
+                  onClick={() => setActionSession(isExpanded ? null : s)}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-zinc-800/30 transition-colors"
+                >
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${domainDot[s.domain] ?? "bg-zinc-600"}`} />
+                  <span className="text-sm text-zinc-300 flex-1 truncate">{s.title}</span>
+                  <span className="text-[10px] text-zinc-600">
+                    {DAY_LABELS[s.day_of_week as DayOfWeek]}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    className={`text-zinc-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 py-3 space-y-2 bg-zinc-900/80">
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
+                          {s.title}
+                        </p>
+                        <div className="flex gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-zinc-500 self-center mr-1">Move to</span>
+                          {DAYS.filter(d => d !== s.day_of_week).map(dow => {
+                            const weekStart = raw.plan?.week_start;
+                            const daysFromMonday = dow === 0 ? 6 : dow - 1;
+                            const targetDate = weekStart
+                              ? (() => {
+                                  const d = new Date(weekStart + 'T00:00:00');
+                                  d.setDate(d.getDate() + daysFromMonday);
+                                  return d.toISOString().slice(0, 10);
+                                })()
+                              : '';
+                            return (
+                              <button
+                                key={dow}
+                                onClick={() => handleMoveSession(s, targetDate, dow)}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors hover:bg-zinc-700/50 ${
+                                  domainBorder[s.domain] ?? "border-zinc-700"
+                                } text-zinc-400`}
+                              >
+                                {DAY_LABELS[dow]}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={() => handleSwapActivity(s)}
+                          className="flex items-center gap-2 text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors py-1"
+                        >
+                          <Repeat size={11} />
+                          <span>Different activity</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })
         )}
       </div>
-
-      {/* Inline action panel for selected session */}
-      <AnimatePresence>
-        {actionSession && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="overflow-hidden border-t border-zinc-800/50"
-          >
-            <div className="px-4 py-3 space-y-2 bg-zinc-900/80">
-              <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                {actionSession.title}
-              </p>
-
-              {/* Move to day picker */}
-              <div className="flex gap-1.5 flex-wrap">
-                <span className="text-[10px] text-zinc-500 self-center mr-1">Move to</span>
-                {DAYS.filter(d => d !== actionSession.day_of_week).map(dow => {
-                  const weekStart = raw.plan?.week_start;
-                  const daysFromMonday = dow === 0 ? 6 : dow - 1;
-                  const targetDate = weekStart
-                    ? (() => {
-                        const d = new Date(weekStart + 'T00:00:00');
-                        d.setDate(d.getDate() + daysFromMonday);
-                        return d.toISOString().slice(0, 10);
-                      })()
-                    : '';
-
-                  return (
-                    <button
-                      key={dow}
-                      onClick={() => handleMoveSession(actionSession, targetDate, dow)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors hover:bg-zinc-700/50 ${
-                        domainBorder[actionSession.domain] ?? "border-zinc-700"
-                      } text-zinc-400`}
-                    >
-                      {DAY_LABELS[dow]}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Swap activity */}
-              <button
-                onClick={() => handleSwapActivity(actionSession)}
-                className="flex items-center gap-2 text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors py-1"
-              >
-                <Repeat size={11} />
-                <span>Different activity</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Confirm / Rebuild footer */}
       <div className="border-t border-zinc-800/50 px-4 py-3 flex items-center gap-3">
