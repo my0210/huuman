@@ -13,7 +13,10 @@ export function createCoachAgent(userId: string, profile: UserProfile | null, su
     id: 'huuman-coach',
     model: anthropic('claude-sonnet-4-6'),
     instructions,
-    tools,
+    tools: {
+      ...tools,
+      web_search: anthropic.tools.webSearch_20250305({ maxUses: 3 }),
+    },
     stopWhen: stepCountIs(10),
   });
 }

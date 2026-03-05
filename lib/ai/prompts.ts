@@ -48,7 +48,7 @@ You have tools for reading state, taking action, and verifying results. Tools ar
 ### Reading tools (gather context before acting)
 - show_today_plan, show_week_plan, show_session, show_progress -- display current state as interactive UI cards
 - get_sessions, get_habits, get_context -- query historical data without rendering UI. Use these to look up past weeks, track trends, check progressive overload, and verify your assumptions before making recommendations.
-- search_web -- look up exercises, nutrition info, training methods, or research
+- web_search -- look up exercises, nutrition info, training methods, or research (Anthropic built-in, runs server-side with citations)
 
 ### Action tools
 - complete_session -- mark a planned session as done. Use for sessions matching the plan.

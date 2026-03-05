@@ -25,11 +25,11 @@ The Anthropic provider emits warnings ("provider executed tool call for tool X i
 
 When vercel/ai #11855 is fixed, remove the `raw.providerExecuted = true` line in `convertToModelUIMessages` and test that tool history still works with Anthropic.
 
-## Tool naming: avoid Anthropic built-in names
+## Tool naming: avoid Anthropic built-in names for custom tools
 
-The Anthropic provider has special handling for tool names that match Anthropic's built-in tools (`web_search`, `code_execution`, `web_fetch`, `text_editor`). When `providerExecuted: true` is set and the tool name matches a built-in, the provider tries to validate the output against the built-in tool's schema -- which our tool outputs don't match.
+The Anthropic provider has special handling for tool names that match Anthropic's built-in tools (`web_search`, `code_execution`, `web_fetch`, `text_editor`). When `providerExecuted: true` is set and the tool name matches a built-in, the provider validates the output against the built-in tool's schema.
 
-Our search tool is named `search_web` (not `web_search`) to avoid this collision. NEVER name a tool with an Anthropic built-in name.
+We use Anthropic's built-in `web_search` via `anthropic.tools.webSearch_20250305()` in `lib/ai/agent.ts`. If you add custom tools, NEVER name them `web_search`, `code_execution`, `web_fetch`, or `text_editor`.
 
 ## Do NOT
 

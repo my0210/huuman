@@ -828,44 +828,6 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     },
   });
 
-  const search_web = tool({
-    description:
-      'Search the web for information about exercises, training methods, nutrition, recovery, or health research. Use when you need specific exercise variations, form guidance, or evidence-based recommendations.',
-    inputSchema: z.object({
-      query: z.string().describe('Search query'),
-    }),
-    execute: async ({ query }: { query: string }) => {
-      const apiKey = process.env.TAVILY_API_KEY;
-      if (!apiKey) {
-        return { error: 'Web search is not configured. Answer based on your training knowledge.' };
-      }
-      try {
-        const response = await fetch('https://api.tavily.com/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            api_key: apiKey,
-            query,
-            max_results: 5,
-            include_answer: true,
-          }),
-        });
-        if (!response.ok) return { error: `Search failed (${response.status})` };
-        const data = await response.json();
-        return {
-          answer: data.answer ?? null,
-          results: (data.results ?? []).slice(0, 5).map((r: Record<string, unknown>) => ({
-            title: r.title,
-            url: r.url,
-            content: typeof r.content === 'string' ? r.content.slice(0, 500) : '',
-          })),
-        };
-      } catch {
-        return { error: 'Web search request failed.' };
-      }
-    },
-  });
-
   return {
     show_today_plan,
     show_week_plan,
@@ -885,7 +847,6 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     get_habits,
     get_context,
     validate_plan,
-    search_web,
   };
 }
 
