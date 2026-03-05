@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, Plus, Camera, MessageSquarePlus } from "lucide-react";
+import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, Plus, Camera, MessageSquarePlus, Loader2 } from "lucide-react";
 import { CommandMenu } from "./CommandMenu";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,12 @@ import { MessagePart } from "./MessagePart";
 import { ChatActionsProvider } from "./ChatActions";
 import { LANGUAGES, getSavedLanguage, saveLanguage, getLanguageByCode, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
+import { compressImage, uploadChatImage } from "@/lib/images";
+
+interface PendingImage {
+  file: File;
+  previewUrl: string;
+}
 
 interface ChatInterfaceProps {
   chatId: string;
@@ -29,7 +35,9 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
   const [busy, setBusy] = useState(false);
   const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [imageFiles, setImageFiles] = useState<FileUIPart[]>([]);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef(false);
@@ -56,6 +64,7 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
     id: chatId,
     messages: initialMessages,
     transport,
+    onError: () => setError("Something went wrong. Please try again."),
   });
 
   const isLoading = status === "streaming" || status === "submitted";
@@ -109,45 +118,64 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleImageSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
+    setError(null);
 
-    const newParts: FileUIPart[] = [];
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-      newParts.push({ type: "file", mediaType: file.type, url: dataUrl, filename: file.name });
-    }
+    const newItems: PendingImage[] = Array.from(files)
+      .filter((f) => f.type.startsWith("image/"))
+      .map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
 
-    setImageFiles((prev) => [...prev, ...newParts]);
+    setPendingImages((prev) => [...prev, ...newItems]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
   const removeImage = useCallback((index: number) => {
-    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setPendingImages((prev) => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const hasText = input.trim().length > 0;
-    const hasImages = imageFiles.length > 0;
-    if ((!hasText && !hasImages) || isLoading) return;
+    const hasImages = pendingImages.length > 0;
+    if ((!hasText && !hasImages) || isLoading || uploading) return;
+
+    setError(null);
+    let fileParts: FileUIPart[] = [];
 
     if (hasImages) {
-      const prompt = hasText
-        ? `What do you see in this image? Context from user: ${input}`
-        : "What do you see in this image?";
-      sendMessage({ text: prompt, files: imageFiles });
-    } else {
-      sendMessage({ text: input });
+      setUploading(true);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        fileParts = await Promise.all(
+          pendingImages.map(async ({ file }) => {
+            const compressed = await compressImage(file);
+            const url = await uploadChatImage(supabase, user.id, compressed, file.name);
+            return { type: "file" as const, mediaType: "image/jpeg", url, filename: file.name };
+          }),
+        );
+      } catch {
+        setError("Failed to upload image. Please try again.");
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
     }
+
+    const text = hasText ? input : "Sent a photo";
+    sendMessage(fileParts.length > 0 ? { text, files: fileParts } : { text });
+
     setInput("");
-    setImageFiles([]);
+    pendingImages.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
+    setPendingImages([]);
   };
 
   const handleLogout = async () => {
@@ -494,19 +522,25 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
         onSubmit={handleSubmit}
         className="flex-none border-t border-zinc-800 px-4 py-3"
       >
-        {imageFiles.length > 0 && (
+        {error && (
+          <div className="mb-2 rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs text-red-400">
+            {error}
+          </div>
+        )}
+        {pendingImages.length > 0 && (
           <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
-            {imageFiles.map((file, i) => (
+            {pendingImages.map((img, i) => (
               <div key={i} className="relative flex-none group">
                 <img
-                  src={file.url}
-                  alt={file.filename ?? "Upload"}
+                  src={img.previewUrl}
+                  alt={img.file.name}
                   className="h-16 w-16 rounded-lg object-cover border border-zinc-700"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(i)}
-                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-700 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-600"
+                  disabled={uploading}
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-700 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-600 disabled:opacity-30"
                 >
                   <X size={10} />
                 </button>
@@ -543,14 +577,14 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
               if (commandMenuOpen) setCommandMenuOpen(false);
             }}
             onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
-            placeholder={imageFiles.length > 0 ? "Add a note, e.g. \"my lunch\" or \"home gym setup\"..." : t("chat.placeholder", currentLanguage)}
+            placeholder={pendingImages.length > 0 ? "Add a note, e.g. \"my lunch\" or \"home gym setup\"..." : t("chat.placeholder", currentLanguage)}
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
           />
           {/* Camera button (WhatsApp pattern: right of input) */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
+            disabled={isLoading || uploading}
             className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-30"
             title="Upload image"
           >
@@ -558,10 +592,10 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
           </button>
           <button
             type="submit"
-            disabled={(!input.trim() && imageFiles.length === 0) || isLoading}
+            disabled={(!input.trim() && pendingImages.length === 0) || isLoading || uploading}
             className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
           >
-            <Send size={16} />
+            {uploading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
           </button>
         </div>
       </form>

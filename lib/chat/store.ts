@@ -83,10 +83,19 @@ export function convertToUIMessages(dbMessages: DBMessage[]): UIMessage[] {
 
 const BASE64_THRESHOLD = 50_000;
 
+/**
+ * Strip legacy base64 data URLs that are too large for the UI.
+ * Storage URLs (https://) pass through regardless of length.
+ */
 function stripLargeFiles(parts: UIMessage['parts']): UIMessage['parts'] {
   return parts.map((p) => {
     const raw = p as Record<string, unknown>;
-    if (raw.type === 'file' && typeof raw.url === 'string' && raw.url.length > BASE64_THRESHOLD) {
+    if (
+      raw.type === 'file' &&
+      typeof raw.url === 'string' &&
+      raw.url.startsWith('data:') &&
+      raw.url.length > BASE64_THRESHOLD
+    ) {
       return { ...raw, url: '', stripped: true } as unknown as typeof p;
     }
     return p;
