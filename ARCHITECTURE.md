@@ -78,6 +78,8 @@ Bidirectional linking:
 - Web: tools return JSON, `MessagePart.tsx` maps toolName -> React card component
 - Telegram: tools return JSON, `formatters.ts` maps toolName -> text + inline keyboards
 
+Tool results persist across turns: `convertToModelUIMessages` in `lib/chat/store.ts` passes completed tool parts back to the SDK so the model retains cross-turn memory. A workaround for Anthropic compatibility sets `providerExecuted=true` on historical tool parts (see `.cursor/rules/ai-sdk-tool-history.mdc` and vercel/ai #11855).
+
 ### Onboarding state machine
 `lib/onboarding/steps.ts` defines 14 steps as pure data (no React). Includes 5 domain methodology/baseline pairs, a "Good to know" step (injuries + home equipment), basics (age/weight), and build. Two renderers:
 - Web: `app/(onboarding)/onboarding/page.tsx` renders as cards/buttons/inputs

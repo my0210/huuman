@@ -126,7 +126,7 @@ function sanitizeParts(parts: UIMessage['parts']): UIMessage['parts'] {
  * in SDK-native format with providerExecuted=true so the SDK inlines both
  * tool-call and tool-result in the same assistant message. This avoids
  * generating separate role:'tool' messages that the Anthropic provider
- * doesn't map to role:'user' tool_result blocks.
+ * doesn't map to role:'user' tool_result blocks (vercel/ai #11855).
  * Unrecognized part types (step-start etc.) are filtered out.
  */
 export function convertToModelUIMessages(dbMessages: DBMessage[]): UIMessage[] {

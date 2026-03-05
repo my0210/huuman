@@ -1,0 +1,39 @@
+---
+description: Known Vercel AI SDK bug with tool history and Anthropic -- explains the providerExecuted workaround
+globs: lib/chat/store.ts, app/api/chat/route.ts, lib/ai/agent.ts
+---
+
+# Tool History + Anthropic: providerExecuted Workaround
+
+## The bug (vercel/ai #11855, open as of March 2026)
+
+When UIMessages with completed tool parts (state: 'output-available') are passed to `createAgentUIStreamResponse`, the SDK's `convertToModelMessages` creates:
+- `role: 'assistant'` message with `tool-call` content
+- `role: 'tool'` message with `tool-result` content
+
+The Anthropic provider does NOT convert `role: 'tool'` messages to `role: 'user'` with `tool_result` content blocks. The Anthropic API rejects this with:
+
+> "tool_use ids were found without tool_result blocks immediately after"
+
+## Our fix (lib/chat/store.ts → convertToModelUIMessages)
+
+We set `providerExecuted = true` on all historical tool parts before passing them to the SDK. This makes `convertToModelMessages` inline both `tool-call` AND `tool-result` in the same assistant message, avoiding the separate `role: 'tool'` message entirely.
+
+The Anthropic provider emits warnings ("provider executed tool call for tool X is not supported") but handles it correctly -- it strips the flag and sends normal tool_use + tool_result pairs.
+
+## When to remove
+
+When vercel/ai #11855 is fixed, remove the `raw.providerExecuted = true` line in `convertToModelUIMessages` and test that tool history still works with Anthropic.
+
+## Tool naming: avoid Anthropic built-in names
+
+The Anthropic provider has special handling for tool names that match Anthropic's built-in tools (`web_search`, `code_execution`, `web_fetch`, `text_editor`). When `providerExecuted: true` is set and the tool name matches a built-in, the provider tries to validate the output against the built-in tool's schema -- which our tool outputs don't match.
+
+Our search tool is named `search_web` (not `web_search`) to avoid this collision. NEVER name a tool with an Anthropic built-in name.
+
+## Do NOT
+
+- Strip tool parts from message history (the old approach). The model needs cross-turn tool memory.
+- Convert tool results to text summaries. That loses structured data.
+- Use `type: 'tool-invocation'` with `state: 'result'`. That format doesn't exist in SDK v6. The correct format is `type: 'tool-${name}'` with `state: 'output-available'`, `input`, `output`, `toolCallId`.
+- Name tools `web_search`, `code_execution`, `web_fetch`, or `text_editor` -- these collide with Anthropic built-ins when using `providerExecuted: true`.

@@ -828,7 +828,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     },
   });
 
-  const web_search = tool({
+  const search_web = tool({
     description:
       'Search the web for information about exercises, training methods, nutrition, recovery, or health research. Use when you need specific exercise variations, form guidance, or evidence-based recommendations.',
     inputSchema: z.object({
@@ -885,7 +885,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     get_habits,
     get_context,
     validate_plan,
-    web_search,
+    search_web,
   };
 }
 
