@@ -24,6 +24,7 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
   const [filter, setFilter] = useState<string>("all");
   const [updating, setUpdating] = useState<string | null>(null);
   const [launching, setLaunching] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
   const [commentsMap, setCommentsMap] = useState<Record<string, FeedbackComment[]>>(() => {
@@ -75,6 +76,31 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
     } finally {
       setUpdating(null);
     }
+  }
+
+  function copyPrompt(item: FeedbackItem) {
+    const catLabel = CATEGORY_META[item.category]?.label ?? item.category;
+    const date = new Date(item.created_at).toISOString().split("T")[0];
+    const quotes = item.raw_quotes.map(q => `> ${q}`).join("\n");
+
+    const prompt = [
+      `## Feedback: ${catLabel}`,
+      `**Reported by:** ${item.user_email ?? "unknown"} | **Date:** ${date}`,
+      "",
+      "### Summary",
+      item.content,
+      ...(quotes ? ["", "### User's exact words", quotes] : []),
+      "",
+      "---",
+      "",
+      "Read ARCHITECTURE.md first, then analyze this feedback.",
+      "Identify the root cause, propose a fix with specific file paths and code,",
+      "and wait for my approval before implementing.",
+    ].join("\n");
+
+    navigator.clipboard.writeText(prompt);
+    setCopied(item.id);
+    setTimeout(() => setCopied(prev => (prev === item.id ? null : prev)), 2000);
   }
 
   async function launchAgent(id: string) {
@@ -242,6 +268,12 @@ export function FeedbackBoard({ initialItems }: { initialItems: FeedbackItem[] }
                       Unarchive
                     </button>
                   )}
+                  <button
+                    onClick={() => copyPrompt(item)}
+                    className="px-2.5 py-1 rounded-md text-[11px] font-medium text-teal-500 hover:text-teal-400 hover:bg-teal-950/40 transition-colors"
+                  >
+                    {copied === item.id ? "Copied!" : "Copy to Cursor"}
+                  </button>
                   {item.agent_url ? (
                     <a
                       href={item.agent_url}
