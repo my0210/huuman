@@ -12,6 +12,7 @@ import {
   validatePlan,
   type PlanOutput,
   type SessionOutput,
+  type ValidationResult,
 } from './planSchema';
 import { addDays, format } from 'date-fns';
 
@@ -106,7 +107,7 @@ export async function generateWeeklyPlan(
   userId: string,
   supabase: AppSupabaseClient,
   weekStartOrOptions?: string | GeneratePlanOptions,
-): Promise<{ success: boolean; planId?: string; isDraft?: boolean; error?: string }> {
+): Promise<{ success: boolean; planId?: string; isDraft?: boolean; error?: string; validation?: ValidationResult }> {
   const opts: GeneratePlanOptions = typeof weekStartOrOptions === 'string'
     ? { weekStart: weekStartOrOptions }
     : weekStartOrOptions ?? {};
@@ -236,7 +237,7 @@ export async function generateWeeklyPlan(
     return { success: false, error: sessionsError.message };
   }
 
-  return { success: true, planId: planRow.id, isDraft: opts.draft ?? false };
+  return { success: true, planId: planRow.id, isDraft: opts.draft ?? false, validation };
 }
 
 // =============================================================================

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META, SESSION_DOMAINS, type SessionDomain } from '@/lib/types';
 import type { AppSupabaseClient } from '@/lib/types';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
+import { validatePlanFromDB, type ValidationResult } from '@/lib/ai/planSchema';
 
 interface SessionRow { domain: string; status: string }
 
@@ -483,6 +484,8 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
       if (!result.success || !result.planId) return result;
 
+      const validationResult: ValidationResult | undefined = result.validation;
+
       if (draft) {
         const { data: plan } = await supabase
           .from('weekly_plans')
@@ -504,10 +507,11 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
           plan: plan ?? null,
           sessions: sessions ?? [],
           trackingBriefs: plan?.tracking_briefs ?? null,
+          validation: validationResult,
         };
       }
 
-      return result;
+      return { ...result, validation: validationResult };
     },
   });
 
@@ -648,6 +652,220 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     },
   });
 
+  const get_sessions = tool({
+    description:
+      'Query sessions across weeks. Use to look up past sessions, check completion history, track progressive overload, or review what happened in previous weeks. Returns raw data, no UI card.',
+    inputSchema: z.object({
+      weekStart: z.string().optional().describe('Filter by week start date (YYYY-MM-DD). Omit for all recent sessions.'),
+      domain: z.enum(['cardio', 'strength', 'mindfulness']).optional().describe('Filter by domain'),
+      status: z.enum(['pending', 'completed', 'skipped']).optional().describe('Filter by status'),
+      limit: z.number().optional().describe('Max results (default 20)'),
+    }),
+    execute: async ({ weekStart, domain, status, limit }: {
+      weekStart?: string;
+      domain?: SessionDomain;
+      status?: string;
+      limit?: number;
+    }) => {
+      let query = supabase
+        .from('planned_sessions')
+        .select('id, domain, title, scheduled_date, status, detail, completed_detail, completed_at, is_extra, plan_id')
+        .eq('user_id', userId)
+        .in('domain', SESSION_DOMAINS)
+        .order('scheduled_date', { ascending: false })
+        .limit(limit ?? 20);
+
+      if (domain) query = query.eq('domain', domain);
+      if (status) query = query.eq('status', status);
+
+      if (weekStart) {
+        const weekEnd = (() => {
+          const d = new Date(weekStart + 'T00:00:00');
+          d.setDate(d.getDate() + 6);
+          return d.toISOString().slice(0, 10);
+        })();
+        query = query.gte('scheduled_date', weekStart).lte('scheduled_date', weekEnd);
+      }
+
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { sessions: data ?? [], count: data?.length ?? 0 };
+    },
+  });
+
+  const get_habits = tool({
+    description:
+      'Query daily habit data (steps, nutrition, sleep) over a date range. Use to check trends, averages, and adherence patterns. Returns raw data, no UI card.',
+    inputSchema: z.object({
+      from: z.string().optional().describe('Start date (YYYY-MM-DD). Defaults to 7 days ago.'),
+      to: z.string().optional().describe('End date (YYYY-MM-DD). Defaults to today.'),
+    }),
+    execute: async ({ from, to }: { from?: string; to?: string }) => {
+      const today = getTodayISO(timezone);
+      const defaultFrom = (() => {
+        const d = new Date(today + 'T00:00:00');
+        d.setDate(d.getDate() - 6);
+        return d.toISOString().slice(0, 10);
+      })();
+
+      const { data, error } = await supabase
+        .from('daily_habits')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', from ?? defaultFrom)
+        .lte('date', to ?? today)
+        .order('date', { ascending: true });
+
+      if (error) return { error: error.message };
+
+      const habits = data ?? [];
+      const sleepEntries = habits.filter(h => h.sleep_hours != null);
+      const avgSleep = sleepEntries.length > 0
+        ? Math.round(sleepEntries.reduce((s, h) => s + Number(h.sleep_hours), 0) / sleepEntries.length * 10) / 10
+        : null;
+      const nutritionEntries = habits.filter(h => h.nutrition_on_plan != null);
+      const daysOnPlan = nutritionEntries.filter(h => h.nutrition_on_plan === true).length;
+
+      return {
+        habits,
+        summary: {
+          days: habits.length,
+          avgSleepHours: avgSleep,
+          nutritionDaysOnPlan: daysOnPlan,
+          nutritionDaysLogged: nutritionEntries.length,
+          avgSteps: habits.filter(h => h.steps_actual).length > 0
+            ? Math.round(habits.filter(h => h.steps_actual).reduce((s, h) => s + Number(h.steps_actual), 0) / habits.filter(h => h.steps_actual).length)
+            : null,
+        },
+      };
+    },
+  });
+
+  const get_context = tool({
+    description:
+      'Read back the user\'s active context items (injuries, equipment, environment, schedule). Use to verify what you know about this person before making recommendations or generating plans.',
+    inputSchema: z.object({
+      category: z.enum(['physical', 'environment', 'equipment', 'schedule']).optional().describe('Filter by category. Omit for all categories.'),
+    }),
+    execute: async ({ category }: { category?: string }) => {
+      const today = getTodayISO(timezone);
+      let query = supabase
+        .from('user_context')
+        .select('id, category, content, scope, expires_at, source, created_at')
+        .eq('user_id', userId)
+        .eq('active', true)
+        .or(`expires_at.is.null,expires_at.gte.${today}`)
+        .order('created_at', { ascending: false });
+
+      if (category) query = query.eq('category', category);
+
+      const { data, error } = await query;
+      if (error) return { error: error.message };
+      return { context: data ?? [], count: data?.length ?? 0 };
+    },
+  });
+
+  const validate_plan = tool({
+    description:
+      'Validate the current week\'s plan against conviction rules, session quality, and structural soundness. Call after generate_plan, after a series of adapt_plan changes, or anytime you want to verify the plan holds up. Returns rule-based validation results plus active user context for you to check semantic compliance (e.g., do exercises respect injuries?).',
+    inputSchema: z.object({
+      weekStart: z.string().optional().describe('Week to validate (YYYY-MM-DD). Defaults to current week.'),
+    }),
+    execute: async ({ weekStart: ws }: { weekStart?: string }) => {
+      const targetWeek = ws ?? getWeekStart(timezone);
+      const today = getTodayISO(timezone);
+
+      const { data: plan } = await supabase
+        .from('weekly_plans')
+        .select('id, status')
+        .eq('user_id', userId)
+        .eq('week_start', targetWeek)
+        .in('status', ['active', 'draft'])
+        .maybeSingle();
+
+      if (!plan) return { error: 'No active or draft plan found for this week.' };
+
+      const { data: sessions } = await supabase
+        .from('planned_sessions')
+        .select('*')
+        .eq('plan_id', plan.id)
+        .in('domain', SESSION_DOMAINS)
+        .neq('status', 'skipped')
+        .eq('is_extra', false);
+
+      if (!sessions || sessions.length === 0) {
+        return { error: 'No sessions found in plan.' };
+      }
+
+      const sessionOutputs = sessions.map(s => ({
+        domain: s.domain as 'cardio' | 'strength' | 'mindfulness',
+        dayOfWeek: s.day_of_week as number,
+        title: s.title as string,
+        detail: (typeof s.detail === 'string' ? JSON.parse(s.detail) : s.detail ?? {}) as Record<string, unknown>,
+        sortOrder: (s.sort_order ?? 0) as number,
+        scheduledDate: s.scheduled_date as string,
+      }));
+
+      const validation = validatePlanFromDB(sessionOutputs);
+
+      const { data: context } = await supabase
+        .from('user_context')
+        .select('id, category, content, scope, expires_at')
+        .eq('user_id', userId)
+        .eq('active', true)
+        .or(`expires_at.is.null,expires_at.gte.${today}`);
+
+      return {
+        weekStart: targetWeek,
+        planStatus: plan.status,
+        validation,
+        sessionCount: sessions.length,
+        activeContext: context ?? [],
+        contextNote: context && context.length > 0
+          ? 'Review the active context items above and verify that planned sessions respect injuries, available equipment, schedule constraints, and environment.'
+          : 'No active user context. Validation covers conviction rules and session quality only.',
+      };
+    },
+  });
+
+  const web_search = tool({
+    description:
+      'Search the web for information about exercises, training methods, nutrition, recovery, or health research. Use when you need specific exercise variations, form guidance, or evidence-based recommendations.',
+    inputSchema: z.object({
+      query: z.string().describe('Search query'),
+    }),
+    execute: async ({ query }: { query: string }) => {
+      const apiKey = process.env.TAVILY_API_KEY;
+      if (!apiKey) {
+        return { error: 'Web search is not configured. Answer based on your training knowledge.' };
+      }
+      try {
+        const response = await fetch('https://api.tavily.com/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: apiKey,
+            query,
+            max_results: 5,
+            include_answer: true,
+          }),
+        });
+        if (!response.ok) return { error: `Search failed (${response.status})` };
+        const data = await response.json();
+        return {
+          answer: data.answer ?? null,
+          results: (data.results ?? []).slice(0, 5).map((r: Record<string, unknown>) => ({
+            title: r.title,
+            url: r.url,
+            content: typeof r.content === 'string' ? r.content.slice(0, 500) : '',
+          })),
+        };
+      } catch {
+        return { error: 'Web search request failed.' };
+      }
+    },
+  });
+
   return {
     show_today_plan,
     show_week_plan,
@@ -663,6 +881,11 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     start_timer,
     save_context,
     save_feedback,
+    get_sessions,
+    get_habits,
+    get_context,
+    validate_plan,
+    web_search,
   };
 }
 

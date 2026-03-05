@@ -14,6 +14,6 @@ export function createCoachAgent(userId: string, profile: UserProfile | null, su
     model: anthropic('claude-sonnet-4-6'),
     instructions,
     tools,
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(10),
   });
 }

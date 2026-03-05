@@ -116,6 +116,31 @@ export const planZodSchema = z.object({
 export interface ValidationResult {
   valid: boolean;
   issues: string[];
+  summary: {
+    cardio: { sessions: number; z2Sessions: number; z5Sessions: number; totalMinutes: number };
+    strength: { sessions: number };
+    mindfulness: { sessions: number; totalMinutes: number };
+  };
+}
+
+function parseZone(raw: unknown): number | null {
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string') {
+    const match = raw.match(/(\d)/);
+    return match ? Number(match[1]) : null;
+  }
+  return null;
+}
+
+function parseMinutes(d: Record<string, unknown>): number {
+  if (typeof d.targetMinutes === 'number') return d.targetMinutes;
+  if (typeof d.duration === 'string') return parseInt(d.duration, 10) || 0;
+  if (typeof d.duration === 'number') return d.duration;
+  return 0;
+}
+
+function hasKey(d: Record<string, unknown>, ...keys: string[]): boolean {
+  return keys.some(k => d[k] != null && d[k] !== '');
 }
 
 export function validatePlan(sessions: SessionOutput[]): ValidationResult {
@@ -123,64 +148,120 @@ export function validatePlan(sessions: SessionOutput[]): ValidationResult {
 
   const cardioSessions = sessions.filter(s => s.domain === 'cardio');
   const strengthSessions = sessions.filter(s => s.domain === 'strength');
+  const mindfulnessSessions = sessions.filter(s => s.domain === 'mindfulness');
 
-  function parseZone(raw: unknown): number | null {
-    if (typeof raw === 'number') return raw;
-    if (typeof raw === 'string') {
-      const match = raw.match(/(\d)/);
-      return match ? Number(match[1]) : null;
-    }
-    return null;
-  }
+  // ---- Cardio conviction checks ----
+  const z2Sessions = cardioSessions.filter(s => parseZone(s.detail.zone) === 2);
+  const z5Sessions = cardioSessions.filter(s => parseZone(s.detail.zone) === 5);
+  const totalCardioMin = cardioSessions.reduce((sum, s) => sum + parseMinutes(s.detail), 0);
+  const z2Min = z2Sessions.reduce((sum, s) => sum + parseMinutes(s.detail), 0);
 
   for (const cs of cardioSessions) {
-    const detail = cs.detail;
-    const zone = parseZone(detail.zone);
-    const targetMinutes = typeof detail.targetMinutes === 'number'
-      ? detail.targetMinutes
-      : typeof detail.duration === 'string'
-        ? parseInt(detail.duration as string, 10) || undefined
-        : undefined;
+    const zone = parseZone(cs.detail.zone);
+    const mins = parseMinutes(cs.detail);
 
-    if (zone === 2 && targetMinutes && targetMinutes < 45) {
-      issues.push(`Zone 2 session "${cs.title}" is ${targetMinutes} min -- minimum is 45 min.`);
+    if (zone === 2 && mins > 0 && mins < 45) {
+      issues.push(`Zone 2 session "${cs.title}" is ${mins} min -- minimum is 45 min.`);
     }
     if (zone && zone !== 2 && zone !== 5) {
       issues.push(`Session "${cs.title}" uses Zone ${zone} -- only Zone 2 and Zone 5 allowed.`);
     }
-  }
-
-  const z2Sessions = cardioSessions.filter(s => parseZone(s.detail.zone) === 2);
-  const z5Sessions = cardioSessions.filter(s => parseZone(s.detail.zone) === 5);
-
-  if (z5Sessions.length > 1) {
-    issues.push(`${z5Sessions.length} Zone 5 sessions -- maximum is 1 per week.`);
-  }
-
-  function parseMinutes(d: Record<string, unknown>): number {
-    if (typeof d.targetMinutes === 'number') return d.targetMinutes;
-    if (typeof d.duration === 'string') return parseInt(d.duration, 10) || 0;
-    if (typeof d.duration === 'number') return d.duration;
-    return 0;
-  }
-
-  const totalCardioMin = cardioSessions.reduce((sum, s) => sum + parseMinutes(s.detail), 0);
-  const z2Min = z2Sessions.reduce((sum, s) => sum + parseMinutes(s.detail), 0);
-
-  if (totalCardioMin > 0) {
-    const z2Pct = (z2Min / totalCardioMin) * 100;
-    if (z2Pct < 70) {
-      issues.push(`Zone 2 is ${Math.round(z2Pct)}% of volume -- should be ~80%.`);
+    if (!hasKey(cs.detail, 'warmUp', 'warm_up', 'warmup')) {
+      issues.push(`Cardio session "${cs.title}" missing warm-up.`);
+    }
+    if (!hasKey(cs.detail, 'coolDown', 'cool_down', 'cooldown')) {
+      issues.push(`Cardio session "${cs.title}" missing cool-down.`);
     }
   }
 
-  for (const ss of strengthSessions) {
-    const d = ss.detail;
-    const hasWarmUp = d.warmUp || d.warm_up || d.warmup;
-    const hasCoolDown = d.coolDown || d.cool_down || d.cooldown;
-    if (!hasWarmUp) issues.push(`Strength session "${ss.title}" missing warm-up.`);
-    if (!hasCoolDown) issues.push(`Strength session "${ss.title}" missing cool-down.`);
+  if (z2Sessions.length < 3) issues.push(`${z2Sessions.length} Zone 2 sessions -- minimum is 3.`);
+  if (z2Sessions.length > 4) issues.push(`${z2Sessions.length} Zone 2 sessions -- maximum is 4.`);
+  if (z5Sessions.length > 1) issues.push(`${z5Sessions.length} Zone 5 sessions -- maximum is 1 per week.`);
+  if (z5Sessions.length < 1) issues.push(`No Zone 5 session -- exactly 1 per week required.`);
+  if (totalCardioMin < 150) issues.push(`Total cardio volume is ${totalCardioMin} min -- minimum is 150 min.`);
+  if (totalCardioMin > 0 && z2Min > 0) {
+    const z2Pct = (z2Min / totalCardioMin) * 100;
+    if (z2Pct < 70) issues.push(`Zone 2 is ${Math.round(z2Pct)}% of volume -- should be ~80%.`);
   }
 
-  return { valid: issues.length === 0, issues };
+  // ---- Strength conviction checks ----
+  if (strengthSessions.length < 2) issues.push(`${strengthSessions.length} strength session(s) -- minimum is 2.`);
+  if (strengthSessions.length > 3) issues.push(`${strengthSessions.length} strength sessions -- maximum is 3.`);
+
+  for (const ss of strengthSessions) {
+    const d = ss.detail;
+    if (!hasKey(d, 'warmUp', 'warm_up', 'warmup')) issues.push(`Strength session "${ss.title}" missing warm-up.`);
+    if (!hasKey(d, 'coolDown', 'cool_down', 'cooldown')) issues.push(`Strength session "${ss.title}" missing cool-down.`);
+    const exercises = d.exercises ?? d.exercise;
+    if (!exercises || (Array.isArray(exercises) && exercises.length === 0)) {
+      issues.push(`Strength session "${ss.title}" has no exercises defined.`);
+    }
+  }
+
+  // ---- Mindfulness conviction checks ----
+  const totalMindMin = mindfulnessSessions.reduce((sum, s) => sum + parseMinutes(s.detail), 0);
+  if (mindfulnessSessions.length < 3) issues.push(`${mindfulnessSessions.length} mindfulness session(s) -- minimum is 3.`);
+  if (totalMindMin < 60) issues.push(`Total mindfulness volume is ${totalMindMin} min -- minimum is 60 min.`);
+  for (const ms of mindfulnessSessions) {
+    if (!hasKey(ms.detail, 'type')) issues.push(`Mindfulness session "${ms.title}" missing type.`);
+  }
+
+  // ---- Session quality (all domains) ----
+  for (const s of sessions) {
+    if (!s.detail || Object.keys(s.detail).length === 0) {
+      issues.push(`Session "${s.title}" has empty detail.`);
+    }
+  }
+
+  // ---- Structural soundness ----
+  const strengthDays = strengthSessions.map(s => s.dayOfWeek).sort((a, b) => a - b);
+  for (let i = 1; i < strengthDays.length; i++) {
+    const gap = strengthDays[i] - strengthDays[i - 1];
+    if (gap === 1 || (gap === 0)) {
+      issues.push(`Back-to-back strength sessions on consecutive days (days ${strengthDays[i - 1]} and ${strengthDays[i]}).`);
+    }
+  }
+
+  return {
+    valid: issues.length === 0,
+    issues,
+    summary: {
+      cardio: { sessions: cardioSessions.length, z2Sessions: z2Sessions.length, z5Sessions: z5Sessions.length, totalMinutes: totalCardioMin },
+      strength: { sessions: strengthSessions.length },
+      mindfulness: { sessions: mindfulnessSessions.length, totalMinutes: totalMindMin },
+    },
+  };
+}
+
+/**
+ * Validate sessions loaded from the DB (which include scheduledDate).
+ * Runs the same checks as validatePlan, plus date-aware structural checks.
+ */
+export function validatePlanFromDB(
+  sessions: (SessionOutput & { scheduledDate?: string })[],
+): ValidationResult {
+  const result = validatePlan(sessions);
+
+  if (sessions.some(s => s.scheduledDate)) {
+    const z5Dates = sessions
+      .filter(s => s.domain === 'cardio' && parseZone(s.detail.zone) === 5 && s.scheduledDate)
+      .map(s => s.scheduledDate!);
+    const strengthDates = sessions
+      .filter(s => s.domain === 'strength' && s.scheduledDate)
+      .map(s => s.scheduledDate!);
+
+    for (const z5Date of z5Dates) {
+      const z5Time = new Date(z5Date + 'T00:00:00').getTime();
+      const hasAdjacentStrength = strengthDates.some(sd => {
+        const diff = Math.abs(new Date(sd + 'T00:00:00').getTime() - z5Time);
+        return diff === 0;
+      });
+      if (hasAdjacentStrength) {
+        result.issues.push(`Zone 5 cardio and strength scheduled on same day (${z5Date}) -- consider spacing.`);
+      }
+    }
+  }
+
+  result.valid = result.issues.length === 0;
+  return result;
 }
