@@ -90,7 +90,7 @@ function ToolPart({
     case "show_today_plan":
       return <TodayPlanCard data={output} />;
     case "show_week_plan":
-      if (output.isDraft && output.sessions?.length) return <DraftPlanCard data={output} />;
+      if (output.isDraft && output.sessions) return <DraftPlanCard data={output} />;
       return <WeekPlanCard data={output} />;
     case "show_session":
       return <SessionDetailCard data={output} />;
