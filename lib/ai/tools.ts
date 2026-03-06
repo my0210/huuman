@@ -441,11 +441,14 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     description:
       'Delete one or more sessions from the plan entirely. Accepts a single ID or an array of IDs -- always batch into ONE call. Use when the user asks to remove/delete sessions, or to clean up duplicates. Prefer adapt_plan with "skip" when the user just wants to pass on a session.',
     inputSchema: z.object({
-      sessionIds: z.union([z.string(), z.array(z.string())]).describe('Session ID or array of IDs to delete'),
+      sessionIds: z.union([z.string(), z.array(z.string())]).optional().describe('Session ID or array of IDs to delete'),
+      sessionId: z.string().optional().describe('Single session ID (use sessionIds for new calls)'),
       reason: z.string().describe('Why the sessions are being deleted'),
     }),
-    execute: async ({ sessionIds, reason }: { sessionIds: string | string[]; reason: string }) => {
-      const ids = Array.isArray(sessionIds) ? sessionIds : [sessionIds];
+    execute: async ({ sessionIds, sessionId, reason }: { sessionIds?: string | string[]; sessionId?: string; reason: string }) => {
+      const raw = sessionIds ?? sessionId;
+      if (!raw) return { error: 'No session IDs provided' };
+      const ids = Array.isArray(raw) ? raw : [raw];
 
       const { data: existing } = await supabase
         .from('planned_sessions')
