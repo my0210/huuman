@@ -27,18 +27,21 @@ export async function getOrCreateConversation(userId: string, supabase: AppSupab
   return created.id;
 }
 
-export async function loadMessages(conversationId: string, supabase: AppSupabaseClient): Promise<DBMessage[]> {
+export async function loadMessages(conversationId: string, supabase: AppSupabaseClient, limit = 300): Promise<DBMessage[]> {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
     .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) {
     throw new Error(`Failed to load messages: ${error.message}`);
   }
 
-  return (data ?? []) as DBMessage[];
+  const msgs = (data ?? []) as DBMessage[];
+  msgs.reverse();
+  return msgs;
 }
 
 export async function saveMessages(
@@ -143,7 +146,15 @@ export function convertToModelUIMessages(dbMessages: DBMessage[], registeredTool
         const raw = p as Record<string, unknown>;
         const t = raw.type as string;
 
-        if (t === 'text' || t === 'file' || t === 'reasoning') return p;
+        if (t === 'text' || t === 'reasoning') return p;
+
+        if (t === 'file') {
+          const url = raw.url as string | undefined;
+          if (url?.startsWith('data:') && url.length > BASE64_THRESHOLD) {
+            return { type: 'text', text: `[image: ${raw.filename ?? 'photo'}]` } as unknown as typeof p;
+          }
+          return p;
+        }
 
         if (typeof t === 'string' && t.startsWith('tool-')) {
           const toolName = t.slice(5);
