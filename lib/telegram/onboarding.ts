@@ -166,7 +166,7 @@ async function advanceOnboarding(
 
     if (step.type === 'welcome') {
       await sendMessage(state.chat_id,
-        `<b>huuman</b>\n\nI'll build your weekly program across 5 domains: cardio, strength, mindfulness, nutrition, and sleep. I'll adapt it around your life, push you when it counts, and adjust when things change.\n\nFirst, I need to know where you stand. Takes about 2 minutes.`,
+        `<b>huuman</b>\n\nYou deserve to be in your prime. I'll build your weekly program across 5 domains -- cardio, strength, mindfulness, nutrition, and sleep -- and coach you through it. The plan adapts to your life. I hold the standard.\n\nFirst, I need to know where you stand. Takes about 2 minutes.`,
       );
       state.step_index++;
       await saveState(state, supabase);

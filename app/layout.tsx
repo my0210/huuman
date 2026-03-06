@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "huuman",
-  description: "Your longevity coach. Evidence-based plans that adapt to your life.",
+  description: "Your longevity coach. Because you deserve to be in your prime.",
 };
 
 export const viewport: Viewport = {

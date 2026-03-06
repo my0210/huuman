@@ -259,10 +259,10 @@ function StepRenderer({
             <>
               <h2 className="text-xl font-bold text-zinc-100">Ready when you are</h2>
               <p className="text-zinc-400 leading-relaxed">
-                I&apos;ve got what I need. Hit &quot;Build My Plan&quot; and I&apos;ll put together your first week across all 5 domains.
+                I have what I need. Hit &quot;Build My Plan&quot; and I&apos;ll set your first week across all 5 domains.
               </p>
               <p className="text-sm text-zinc-500">
-                You can always adjust things later -- just tell me what&apos;s working and what isn&apos;t.
+                I&apos;ll adapt as I learn more about you. For now, trust the process.
               </p>
               {error && (
                 <div className="rounded-lg border border-red-800 bg-red-900/20 px-4 py-3">

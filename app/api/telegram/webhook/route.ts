@@ -203,7 +203,7 @@ async function handleStartCommand(chatId: number, text: string, admin: ReturnTyp
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://huuman.vercel.app';
   const registerUrl = `${siteUrl}/auth/register?token=${token}`;
 
-  await sendMessage(chatId, 'Welcome to huuman.\n\nI\'ll build your weekly program, adapt it to your life, and coach you through it. Tap below to get started.', {
+  await sendMessage(chatId, 'Welcome to huuman.\n\nYour longevity coach. I\'ll build your program, hold the standard, and adapt when life shifts. Tap below to get started.', {
     reply_markup: {
       inline_keyboard: [[{ text: 'Create Account', url: registerUrl }]],
     },

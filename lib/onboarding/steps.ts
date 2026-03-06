@@ -68,8 +68,8 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     type: 'welcome',
     title: 'Welcome to huuman',
-    body: 'Your weekly program across 5 domains: cardio, strength, mindfulness, nutrition, and sleep. Adapted around your life, adjusted as things change.',
-    subtitle: "First, a quick walkthrough of each domain -- the approach and why it matters. Then where you stand today, so your plan starts in the right place.",
+    body: 'You deserve to be in your prime. Your weekly program across 5 domains: cardio, strength, mindfulness, nutrition, and sleep -- evidence-based, adapted to your life.',
+    subtitle: "First, a walkthrough of each domain -- the approach and why it matters. Then where you stand today, so your plan starts in the right place.",
   },
 
   // Step 1: Cardio methodology
