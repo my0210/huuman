@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { UIMessage } from "ai";
 import { isToolUIPart, isFileUIPart, getToolName } from "ai";
 import { Camera } from "lucide-react";
@@ -14,6 +15,31 @@ import { BreathworkTimer } from "@/components/cards/BreathworkTimer";
 
 type Part = UIMessage["parts"][number];
 
+function formatInlineMarkdown(text: string): React.ReactNode[] {
+  const result: React.ReactNode[] = [];
+  const regex = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      result.push(text.slice(lastIndex, match.index));
+    }
+    result.push(
+      <strong key={match.index} className="font-semibold text-zinc-100">
+        {match[1]}
+      </strong>
+    );
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    result.push(text.slice(lastIndex));
+  }
+
+  return result;
+}
+
 export function MessagePart({ part, role }: { part: Part; role: string }) {
   if (part.type === "text") {
     const displayText = part.text.replace(/\n?\[sessionId:[^\]]+\]/g, '');
@@ -22,7 +48,7 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
       <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
         role === "user" ? "text-zinc-100" : "text-zinc-300"
       }`}>
-        {displayText}
+        {role === "user" ? displayText : formatInlineMarkdown(displayText)}
       </p>
     );
   }
