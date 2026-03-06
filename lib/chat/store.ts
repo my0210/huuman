@@ -186,11 +186,7 @@ export function convertToModelUIMessages(dbMessages: DBMessage[], registeredTool
 function trimOrphanedUserMessages(messages: DBMessage[]): DBMessage[] {
   const result: DBMessage[] = [];
   for (let i = 0; i < messages.length; i++) {
-    if (
-      messages[i].role === 'user' &&
-      i + 1 < messages.length &&
-      messages[i + 1].role === 'user'
-    ) {
+    if (i + 1 < messages.length && messages[i].role === messages[i + 1].role) {
       continue;
     }
     result.push(messages[i]);
