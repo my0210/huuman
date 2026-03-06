@@ -27,7 +27,7 @@ export async function getOrCreateConversation(userId: string, supabase: AppSupab
   return created.id;
 }
 
-export async function loadMessages(conversationId: string, supabase: AppSupabaseClient, limit = 300): Promise<DBMessage[]> {
+export async function loadMessages(conversationId: string, supabase: AppSupabaseClient, limit = 100): Promise<DBMessage[]> {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
