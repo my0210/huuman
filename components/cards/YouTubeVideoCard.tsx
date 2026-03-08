@@ -6,6 +6,7 @@ interface YouTubeVideo {
   videoId: string;
   title: string;
   channel: string;
+  description: string;
   thumbnail: string;
   duration: string | null;
   viewCount: string | null;
@@ -68,10 +69,13 @@ export function YouTubeVideoCard({ data }: { data: Record<string, unknown> }) {
             <p className="text-sm font-medium text-zinc-200 line-clamp-2 leading-snug">
               {video.title}
             </p>
-            <p className="text-xs text-zinc-500 mt-1 truncate">{video.channel}</p>
-            {video.viewCount && (
-              <p className="text-xs text-zinc-600 mt-0.5">
-                {formatViews(video.viewCount)}
+            <p className="text-xs text-zinc-500 mt-1 truncate">
+              {video.channel}
+              {video.viewCount && <span className="text-zinc-600"> · {formatViews(video.viewCount)}</span>}
+            </p>
+            {video.description && (
+              <p className="text-xs text-zinc-500 mt-1 line-clamp-2 leading-relaxed">
+                {video.description}
               </p>
             )}
           </div>
