@@ -12,6 +12,7 @@ import { ProgressRings } from "@/components/cards/ProgressRings";
 import { CompletionWidget } from "@/components/cards/CompletionWidget";
 import { DailyHabitWidget } from "@/components/cards/DailyHabitWidget";
 import { BreathworkTimer } from "@/components/cards/BreathworkTimer";
+import { YouTubeVideoCard } from "@/components/cards/YouTubeVideoCard";
 
 type Part = UIMessage["parts"][number];
 
@@ -137,6 +138,8 @@ function ToolPart({
       return <PlanGenerated data={output} />;
     case "confirm_plan":
       return <PlanConfirmed data={output} />;
+    case "search_youtube":
+      return <YouTubeVideoCard data={output} />;
     default:
       return null;
   }
@@ -158,6 +161,7 @@ function LoadingCard({ toolName }: { toolName: string }) {
     save_context: "Saving context...",
     save_feedback: "Saving feedback...",
     delete_session: "Removing session...",
+    search_youtube: "Searching videos...",
   };
 
   return (
