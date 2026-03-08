@@ -396,8 +396,34 @@ export function formatToolOutput(toolName: string, output: Record<string, unknow
     case 'adapt_plan': return formatAdapt(output);
     case 'generate_plan': return formatPlanGenerated(output);
     case 'confirm_plan': return formatPlanConfirmed(output);
+    case 'search_youtube': return formatYouTubeResults(output);
     default: return null;
   }
+}
+
+export function formatYouTubeResults(data: Record<string, unknown>): FormattedResponse {
+  const videos = data.videos as Array<Record<string, unknown>> | undefined;
+  if (data.error || !videos || videos.length === 0) {
+    return { text: 'No videos found. Try a different search.' };
+  }
+
+  const lines: string[] = [];
+  for (const v of videos) {
+    const duration = v.duration ? ` (${formatIsoDuration(String(v.duration))})` : '';
+    lines.push(`▶️ <a href="${esc(String(v.url))}">${esc(String(v.title))}</a>${duration}`);
+    lines.push(`  ${esc(String(v.channel))}`);
+  }
+
+  return { text: lines.join('\n') };
+}
+
+function formatIsoDuration(iso: string): string {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return '';
+  const h = match[1] ? `${match[1]}:` : '';
+  const m = match[2] ?? '0';
+  const s = (match[3] ?? '0').padStart(2, '0');
+  return h ? `${h}${m.padStart(2, '0')}:${s}` : `${m}:${s}`;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
