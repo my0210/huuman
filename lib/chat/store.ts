@@ -142,34 +142,36 @@ export function convertToModelUIMessages(dbMessages: DBMessage[], registeredTool
   const cleaned = trimOrphanedUserMessages(noEmpty);
   return cleaned.reduce<UIMessage[]>((acc, msg) => {
     const modelParts = (msg.parts as UIMessage['parts'])
-      .map((p) => {
+      .flatMap((p) => {
         const raw = p as Record<string, unknown>;
         const t = raw.type as string;
 
-        if (t === 'text' || t === 'reasoning') return p;
+        if (t === 'text' || t === 'reasoning') return [p];
 
         if (t === 'file') {
           const url = raw.url as string | undefined;
           if (url?.startsWith('data:') && url.length > BASE64_THRESHOLD) {
-            return { type: 'text', text: `[image: ${raw.filename ?? 'photo'}]` } as unknown as typeof p;
+            return [{ type: 'text', text: `[image: ${raw.filename ?? 'photo'}]` } as unknown as typeof p];
           }
-          return p;
+          if (url && !url.startsWith('data:')) {
+            return [p, { type: 'text', text: `[image_url: ${url}]` } as unknown as typeof p];
+          }
+          return [p];
         }
 
         if (typeof t === 'string' && t.startsWith('tool-')) {
           const toolName = t.slice(5);
-          if (registeredToolNames && !registeredToolNames.has(toolName)) return null;
+          if (registeredToolNames && !registeredToolNames.has(toolName)) return [];
           if (!raw.toolCallId) raw.toolCallId = generateId();
           if (raw.args !== undefined && raw.input === undefined) {
             raw.input = raw.args;
           }
           raw.providerExecuted = true;
-          return p;
+          return [p];
         }
 
-        return null;
-      })
-      .filter((p): p is NonNullable<typeof p> => p !== null);
+        return [];
+      });
 
     if (modelParts.length > 0) {
       acc.push({
