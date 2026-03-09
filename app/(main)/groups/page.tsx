@@ -61,37 +61,31 @@ export default function GroupsPage() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 hover:bg-zinc-900/50 transition-colors"
-          >
-            <Plus size={16} />
-            Create new group
-          </button>
+        {groups.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+            <Users size={32} className="text-zinc-700 mb-4" />
+            <p className="text-sm text-zinc-300">No groups yet</p>
+            <p className="text-xs text-zinc-500 mt-1.5 max-w-[220px]">
+              Add friends and create a group to share workouts together
+            </p>
+            <button
+              onClick={() => router.push("/friends/manage")}
+              className="mt-6 rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
+            >
+              Find friends
+            </button>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 hover:bg-zinc-900/50 transition-colors"
+            >
+              <Plus size={16} />
+              Create new group
+            </button>
 
-          {groups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Users size={32} className="text-zinc-700 mb-3" />
-              <p className="text-sm text-zinc-300">Get started</p>
-              <p className="text-xs text-zinc-500 mt-1 max-w-[240px]">
-                Add friends first, then create a group to share workouts and stay motivated together
-              </p>
-              <button
-                onClick={() => router.push("/friends/manage")}
-                className="mt-4 rounded-xl bg-zinc-100 px-5 py-2 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
-              >
-                Find friends
-              </button>
-              <button
-                onClick={() => setCreateOpen(true)}
-                className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                or create a group directly
-              </button>
-            </div>
-          ) : (
-            groups.map((group) => (
+            {groups.map((group) => (
               <button
                 key={group.id}
                 onClick={() => router.push(`/groups/${group.id}`)}
