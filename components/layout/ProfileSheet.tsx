@@ -210,7 +210,7 @@ export function ProfileSheet({
                   <Camera size={10} className="text-zinc-300" />
                 </div>
               </button>
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple={false} onChange={handleAvatarUpload} className="hidden" />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">Name</p>
                 <input
