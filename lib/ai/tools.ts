@@ -866,18 +866,47 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         items?: Array<{ id?: { videoId?: string }; snippet?: { title?: string; channelTitle?: string; description?: string; thumbnails?: { medium?: { url?: string } } } }>;
       };
 
+      const videoIds = (searchData.items ?? [])
+        .map(item => item.id?.videoId)
+        .filter((id): id is string => !!id);
+
+      if (videoIds.length === 0) return { videos: [], query };
+
+      const detailRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?${new URLSearchParams({
+          part: 'contentDetails,statistics',
+          id: videoIds.join(','),
+          key: apiKey,
+        })}`,
+      );
+      const detailMap = new Map<string, { duration?: string; viewCount?: string }>();
+      if (detailRes.ok) {
+        const detailData = await detailRes.json() as {
+          items?: Array<{ id?: string; contentDetails?: { duration?: string }; statistics?: { viewCount?: string } }>;
+        };
+        for (const item of detailData.items ?? []) {
+          if (item.id) {
+            detailMap.set(item.id, {
+              duration: item.contentDetails?.duration,
+              viewCount: item.statistics?.viewCount,
+            });
+          }
+        }
+      }
+
       const videos = (searchData.items ?? [])
         .filter(item => item.id?.videoId)
         .map(item => {
           const videoId = item.id!.videoId!;
+          const detail = detailMap.get(videoId);
           return {
             videoId,
             title: item.snippet?.title ?? '',
             channel: item.snippet?.channelTitle ?? '',
             description: (item.snippet?.description ?? '').slice(0, 200),
             thumbnail: item.snippet?.thumbnails?.medium?.url ?? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-            duration: null,
-            viewCount: null,
+            duration: detail?.duration ?? null,
+            viewCount: detail?.viewCount ?? null,
             url: `https://www.youtube.com/watch?v=${videoId}`,
           };
         });
