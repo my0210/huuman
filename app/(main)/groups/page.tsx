@@ -63,7 +63,7 @@ export default function GroupsPage() {
             onClick={() => router.push("/friends/manage")}
             className="mt-6 rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
           >
-            Find friends
+            Add friends
           </button>
         </div>
       ) : (
