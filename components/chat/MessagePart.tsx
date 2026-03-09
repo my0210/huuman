@@ -255,22 +255,16 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
     );
   }
 
-  const imageUrl = data.imageUrl as string | undefined;
   const totalCount = data.totalCount as number | undefined;
 
   return (
-    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 overflow-hidden">
-      {imageUrl && (
-        <img src={imageUrl} alt="Progress photo" className="w-full max-h-32 object-cover" />
+    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 flex items-center justify-between">
+      <span className="text-xs font-medium text-emerald-400">Progress photo saved</span>
+      {totalCount != null && (
+        <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
+          #{totalCount}
+        </span>
       )}
-      <div className="flex items-center justify-between px-4 py-2.5">
-        <span className="text-xs font-medium text-emerald-400">Progress photo saved</span>
-        {totalCount != null && (
-          <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
-            Photo #{totalCount}
-          </span>
-        )}
-      </div>
     </div>
   );
 }
@@ -284,8 +278,6 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
     );
   }
 
-  const imageUrl = data.imageUrl as string | undefined;
-  const description = data.description as string | undefined;
   const cal = data.estimatedCalories as number | undefined;
   const protein = data.estimatedProteinG as number | undefined;
   const mealType = data.mealType as string | undefined;
@@ -295,30 +287,22 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
     : null;
 
   return (
-    <div className="rounded-xl border border-green-900/50 bg-green-950/20 overflow-hidden">
-      {imageUrl && (
-        <img src={imageUrl} alt="Meal photo" className="w-full max-h-32 object-cover" />
-      )}
-      <div className="px-4 py-2.5 space-y-1">
-        <div className="flex items-center gap-2">
-          {mealLabel && (
-            <span className="rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500">
-              {mealLabel}
-            </span>
-          )}
-          <span className="text-xs font-medium text-green-400">Meal logged</span>
-        </div>
-        {description && (
-          <p className="text-[11px] text-zinc-400 line-clamp-2">{description}</p>
+    <div className="rounded-xl border border-green-900/50 bg-green-950/30 px-4 py-3 space-y-1">
+      <div className="flex items-center gap-2">
+        {mealLabel && (
+          <span className="rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500">
+            {mealLabel}
+          </span>
         )}
-        {(cal != null || protein != null) && (
-          <p className="text-[11px] text-zinc-500">
-            {cal != null && <span>~{cal} cal</span>}
-            {cal != null && protein != null && <span> / </span>}
-            {protein != null && <span>~{protein}g protein</span>}
-          </p>
-        )}
+        <span className="text-xs font-medium text-green-400">Meal logged</span>
       </div>
+      {(cal != null || protein != null) && (
+        <p className="text-[11px] text-zinc-500">
+          {cal != null && <span>~{cal} cal</span>}
+          {cal != null && protein != null && <span> / </span>}
+          {protein != null && <span>~{protein}g protein</span>}
+        </p>
+      )}
     </div>
   );
 }
