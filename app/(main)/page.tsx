@@ -29,7 +29,6 @@ export default async function MainPage() {
       userEmail={user!.email ?? ''}
       displayName={profile?.display_name ?? undefined}
       avatarUrl={profile?.avatar_url ?? undefined}
-      userId={userId}
     />
   );
 }

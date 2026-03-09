@@ -16,17 +16,11 @@ import { compressImage, uploadChatImage } from "@/lib/images";
 import { ProfileSheet } from "@/components/layout/ProfileSheet";
 import SocialBadge from "@/components/layout/SocialBadge";
 import { Avatar } from "@/components/ui/Avatar";
-import { GroupListDrawer } from "@/components/social/GroupListDrawer";
-import { CreateGroupDrawer } from "@/components/social/CreateGroupDrawer";
-import { GroupChatDrawer } from "@/components/social/GroupChatDrawer";
-import { FriendsDrawer } from "@/components/social/FriendsDrawer";
 
 interface PendingImage {
   file: File;
   previewUrl: string;
 }
-
-type SocialView = 'groups' | 'group-chat' | 'create-group' | 'friends' | null;
 
 interface ChatInterfaceProps {
   chatId: string;
@@ -34,10 +28,9 @@ interface ChatInterfaceProps {
   userEmail?: string;
   displayName?: string;
   avatarUrl?: string;
-  userId: string;
 }
 
-export function ChatInterface({ chatId, initialMessages, userEmail, displayName, avatarUrl, userId }: ChatInterfaceProps) {
+export function ChatInterface({ chatId, initialMessages, userEmail, displayName, avatarUrl }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
@@ -46,8 +39,6 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
   const [error, setError] = useState<string | null>(null);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [socialView, setSocialView] = useState<SocialView>(null);
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -206,7 +197,7 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
           <Avatar src={avatarUrl} name={displayName || userEmail} size="md" />
         </button>
         <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
-        <SocialBadge unreadCount={unreadCount} onClick={() => setSocialView('groups')} />
+        <SocialBadge unreadCount={unreadCount} onClick={() => router.push('/groups')} />
       </header>
 
       <ProfileSheet
@@ -215,37 +206,6 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
         userEmail={userEmail ?? ""}
         displayName={displayName}
         avatarUrl={avatarUrl}
-      />
-
-      <GroupListDrawer
-        open={socialView === 'groups'}
-        onClose={() => setSocialView(null)}
-        onOpenGroup={(id) => { setActiveGroupId(id); setSocialView('group-chat'); }}
-        onOpenFriends={() => setSocialView('friends')}
-        onOpenCreateGroup={() => setSocialView('create-group')}
-      />
-
-      <CreateGroupDrawer
-        open={socialView === 'create-group'}
-        onClose={() => setSocialView('groups')}
-        onCreated={(id) => { setActiveGroupId(id); setSocialView('group-chat'); }}
-      />
-
-      {activeGroupId && (
-        <GroupChatDrawer
-          open={socialView === 'group-chat'}
-          groupId={activeGroupId}
-          currentUserId={userId}
-          onClose={() => { setSocialView(null); setActiveGroupId(null); }}
-          onBack={() => { setSocialView('groups'); setActiveGroupId(null); }}
-        />
-      )}
-
-      <FriendsDrawer
-        open={socialView === 'friends'}
-        onClose={() => setSocialView(null)}
-        onBack={() => setSocialView('groups')}
-        currentUserId={userId}
       />
 
       {/* Messages */}
