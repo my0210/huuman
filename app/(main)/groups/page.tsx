@@ -75,15 +75,21 @@ export default function GroupsPage() {
         {groups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Users size={32} className="text-zinc-700 mb-3" />
-            <p className="text-sm text-zinc-400">Create your first group</p>
-            <p className="text-xs text-zinc-600 mt-1">
-              Invite friends to share workouts and stay motivated
+            <p className="text-sm text-zinc-300">Get started</p>
+            <p className="text-xs text-zinc-500 mt-1 max-w-[240px]">
+              Add friends first, then create a group to share workouts and stay motivated together
             </p>
             <button
-              onClick={() => router.push("/groups/create")}
+              onClick={() => router.push("/friends/manage")}
               className="mt-4 rounded-xl bg-zinc-100 px-5 py-2 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
             >
-              Create group
+              Find friends
+            </button>
+            <button
+              onClick={() => router.push("/groups/create")}
+              className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              or create a group directly
             </button>
           </div>
         ) : (

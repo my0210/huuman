@@ -202,11 +202,7 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
           {(displayName || userEmail || "?").charAt(0).toUpperCase()}
         </button>
         <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
-        {hasGroups ? (
-          <SocialBadge unreadCount={unreadCount} onClick={() => router.push("/groups")} />
-        ) : (
-          <div className="w-8" />
-        )}
+        <SocialBadge unreadCount={unreadCount} onClick={() => router.push("/groups")} />
       </header>
 
       <ProfileSheet
