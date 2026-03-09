@@ -63,6 +63,7 @@ export default function FriendsManagePage() {
   }, []);
 
   const personalLink = currentUserId ? `huuman.app/u/${currentUserId}` : "";
+  const hasContent = friends.length > 0 || pendingReceived.length > 0 || pendingSent.length > 0;
 
   const handleAccept = async (friendshipId: string) => {
     setAcceptingId(friendshipId);
@@ -106,97 +107,123 @@ export default function FriendsManagePage() {
         <h1 className="text-sm font-semibold text-zinc-100">Friends</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
-        {pendingReceived.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Requests</h2>
-            <div className="space-y-2">
-              {pendingReceived.map((req) => (
-                <div key={req.friendshipId} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-                  <Avatar name={req.user.display_name || req.user.email} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-200 truncate">{req.user.display_name || req.user.email}</p>
-                  </div>
-                  <button
-                    onClick={() => handleAccept(req.friendshipId)}
-                    disabled={acceptingId === req.friendshipId}
-                    className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-white transition-colors disabled:opacity-50"
-                  >
-                    {acceptingId === req.friendshipId ? <Loader2 size={12} className="animate-spin" /> : "Accept"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+      {hasContent ? (
+        <div className="flex-1 overflow-y-auto">
+          <div className="px-4 py-3 space-y-2">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-left text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 transition-colors"
+            >
+              <Search size={16} className="flex-none" />
+              Search by name
+            </button>
+            {personalLink && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyLink}
+                  className="flex flex-1 items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-left hover:bg-zinc-900 transition-colors"
+                >
+                  <span className="text-xs text-zinc-500 truncate">{personalLink}</span>
+                  {copied ? <Check size={14} className="flex-none text-emerald-400" /> : <Copy size={14} className="flex-none text-zinc-600" />}
+                </button>
+                <button
+                  onClick={() => setQrOpen(true)}
+                  className="flex h-10 w-10 flex-none items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 transition-colors"
+                >
+                  <QrCode size={14} />
+                </button>
+              </div>
+            )}
+          </div>
 
-        {pendingSent.length > 0 && (
-          <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Sent</h2>
-            <div className="space-y-2">
-              {pendingSent.map((req) => (
-                <div key={req.friendshipId} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-                  <Avatar name={req.user.display_name || req.user.email} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-200 truncate">{req.user.display_name || req.user.email}</p>
-                    <p className="text-xs text-zinc-500">Pending</p>
+          <div className="px-4 py-3 space-y-6">
+            {pendingReceived.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Requests</h2>
+                {pendingReceived.map((req) => (
+                  <div key={req.friendshipId} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                    <Avatar name={req.user.display_name || req.user.email} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-zinc-200 truncate">{req.user.display_name || req.user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => handleAccept(req.friendshipId)}
+                      disabled={acceptingId === req.friendshipId}
+                      className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-white transition-colors disabled:opacity-50"
+                    >
+                      {acceptingId === req.friendshipId ? <Loader2 size={12} className="animate-spin" /> : "Accept"}
+                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+                ))}
+              </section>
+            )}
 
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Friends</h2>
-          {friends.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-zinc-500">No friends yet</p>
-              <p className="text-xs text-zinc-600 mt-1">Share your link or search to connect</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {friends.map((f) => (
-                <div key={f.friendshipId} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-                  <Avatar name={f.user.display_name || f.user.email} size="md" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-200 truncate">{f.user.display_name || f.user.email}</p>
-                    <p className="text-xs text-zinc-500">connected {formatRelativeTime(f.acceptedAt || f.createdAt)}</p>
+            {pendingSent.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Sent</h2>
+                {pendingSent.map((req) => (
+                  <div key={req.friendshipId} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                    <Avatar name={req.user.display_name || req.user.email} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-zinc-200 truncate">{req.user.display_name || req.user.email}</p>
+                      <p className="text-xs text-zinc-500">Pending</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+                ))}
+              </section>
+            )}
 
-      <div className="flex-none border-t border-zinc-800 bg-zinc-950 px-4 py-4 space-y-3">
-        {personalLink && (
-          <button
-            onClick={handleCopyLink}
-            className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-left hover:bg-zinc-800/80 transition-colors"
-          >
-            <span className="text-sm text-zinc-300 truncate">{personalLink}</span>
-            {copied ? <Check size={16} className="flex-none text-emerald-400" /> : <Copy size={16} className="flex-none text-zinc-500" />}
-          </button>
-        )}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setQrOpen(true)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-          >
-            <QrCode size={16} />
-            Show QR
-          </button>
+            {friends.length > 0 && (
+              <section className="space-y-2">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Friends</h2>
+                {friends.map((f) => (
+                  <div key={f.friendshipId} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+                    <Avatar name={f.user.display_name || f.user.email} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-zinc-200 truncate">{f.user.display_name || f.user.email}</p>
+                      <p className="text-xs text-zinc-500">connected {formatRelativeTime(f.acceptedAt || f.createdAt)}</p>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <UserPlus size={32} className="text-zinc-700 mb-4" />
+          <p className="text-sm font-medium text-zinc-200">Add friends</p>
+          <p className="text-xs text-zinc-500 mt-1.5 max-w-[240px]">
+            Find someone already on huuman, or share your link to invite them
+          </p>
+
           <button
             onClick={() => setSearchOpen(true)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="mt-6 w-full max-w-[260px] flex items-center justify-center gap-2 rounded-xl bg-zinc-100 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
           >
             <Search size={16} />
-            Search
+            Search by name
           </button>
+
+          {personalLink && (
+            <div className="mt-4 w-full max-w-[260px] space-y-2">
+              <button
+                onClick={handleCopyLink}
+                className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2.5 text-left hover:bg-zinc-800/80 transition-colors"
+              >
+                <span className="text-xs text-zinc-400 truncate">{personalLink}</span>
+                {copied ? <Check size={14} className="flex-none text-emerald-400" /> : <Copy size={14} className="flex-none text-zinc-500" />}
+              </button>
+              <button
+                onClick={() => setQrOpen(true)}
+                className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+              >
+                Show QR code
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {qrOpen && <QrModal link={`https://${personalLink}`} onClose={() => setQrOpen(false)} />}
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}

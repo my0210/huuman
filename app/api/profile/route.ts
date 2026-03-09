@@ -14,7 +14,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('display_name, username, sharing_enabled, email')
+    .select('id, display_name, username, sharing_enabled, email, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -65,7 +65,7 @@ export async function PATCH(request: NextRequest) {
     .from('user_profiles')
     .update(updatePayload)
     .eq('id', user.id)
-    .select('display_name, username, sharing_enabled, email')
+    .select('id, display_name, username, sharing_enabled, email, avatar_url')
     .single();
 
   if (error) {
