@@ -836,15 +836,16 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       'Search YouTube for relevant videos. Use when the user asks for exercise demos, technique videos, guided meditations, breathwork guides, or any health/fitness video content. Also use proactively when recommending a session that could benefit from a visual reference.',
     inputSchema: z.object({
       query: z.string().describe('Search query (e.g. "zone 2 running form tips", "box breathing guided 5 minutes")'),
-      maxResults: z.number().min(1).max(5).optional().describe('Number of results to return (default 3)'),
+      maxResults: z.number().min(1).max(5).optional().describe('1 for a single targeted recommendation, 2-3 for giving options (default 1)'),
+      videoDuration: z.enum(['any', 'short', 'medium', 'long']).optional().describe('Filter by length: short (<4 min), medium (4-20 min), long (>20 min). Omit or "any" for no filter.'),
     }),
-    execute: async ({ query, maxResults }: { query: string; maxResults?: number }) => {
+    execute: async ({ query, maxResults, videoDuration }: { query: string; maxResults?: number; videoDuration?: string }) => {
       const apiKey = process.env.YOUTUBE_API_KEY;
       if (!apiKey) return { error: 'YouTube search is not configured.' };
 
-      const limit = maxResults ?? 3;
+      const limit = maxResults ?? 1;
 
-      const searchParams = new URLSearchParams({
+      const params: Record<string, string> = {
         part: 'snippet',
         q: query,
         type: 'video',
@@ -852,9 +853,12 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         videoEmbeddable: 'true',
         safeSearch: 'strict',
         key: apiKey,
-      });
+      };
+      if (videoDuration && videoDuration !== 'any') {
+        params.videoDuration = videoDuration;
+      }
 
-      const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?${searchParams}`);
+      const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?${new URLSearchParams(params)}`);
       if (!searchRes.ok) {
         return { error: 'YouTube search failed. Try again later.' };
       }
@@ -862,47 +866,21 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         items?: Array<{ id?: { videoId?: string }; snippet?: { title?: string; channelTitle?: string; description?: string; thumbnails?: { medium?: { url?: string } } } }>;
       };
 
-      const videoIds = (searchData.items ?? [])
-        .map(item => item.id?.videoId)
-        .filter((id): id is string => !!id);
-
-      if (videoIds.length === 0) return { videos: [], query };
-
-      const detailParams = new URLSearchParams({
-        part: 'contentDetails,statistics',
-        id: videoIds.join(','),
-        key: apiKey,
-      });
-
-      const detailRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?${detailParams}`);
-      const detailData = detailRes.ok
-        ? (await detailRes.json() as { items?: Array<{ id?: string; contentDetails?: { duration?: string }; statistics?: { viewCount?: string } }> })
-        : { items: [] };
-
-      const detailMap = new Map<string, { duration?: string; viewCount?: string }>();
-      for (const item of detailData.items ?? []) {
-        if (item.id) {
-          detailMap.set(item.id, {
-            duration: item.contentDetails?.duration,
-            viewCount: item.statistics?.viewCount,
-          });
-        }
-      }
-
-      const videos = (searchData.items ?? []).map(item => {
-        const videoId = item.id?.videoId ?? '';
-        const detail = detailMap.get(videoId);
-        return {
-          videoId,
-          title: item.snippet?.title ?? '',
-          channel: item.snippet?.channelTitle ?? '',
-          description: (item.snippet?.description ?? '').slice(0, 200),
-          thumbnail: item.snippet?.thumbnails?.medium?.url ?? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-          duration: detail?.duration ?? null,
-          viewCount: detail?.viewCount ?? null,
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-        };
-      });
+      const videos = (searchData.items ?? [])
+        .filter(item => item.id?.videoId)
+        .map(item => {
+          const videoId = item.id!.videoId!;
+          return {
+            videoId,
+            title: item.snippet?.title ?? '',
+            channel: item.snippet?.channelTitle ?? '',
+            description: (item.snippet?.description ?? '').slice(0, 200),
+            thumbnail: item.snippet?.thumbnails?.medium?.url ?? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+            duration: null,
+            viewCount: null,
+            url: `https://www.youtube.com/watch?v=${videoId}`,
+          };
+        });
 
       return { videos, query };
     },
