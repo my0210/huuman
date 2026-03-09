@@ -101,7 +101,7 @@ export default function FriendsManagePage() {
     <div className="flex h-dvh flex-col bg-zinc-950">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
         <button
-          onClick={() => router.push("/groups")}
+          onClick={() => router.push("/")}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         >
           <ArrowLeft size={16} />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, UserPlus, Plus } from "lucide-react";
+import { ArrowLeft, Users, Plus } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { CreateGroupDrawer } from "@/components/social/CreateGroupDrawer";
 
@@ -45,12 +45,7 @@ export default function GroupsPage() {
           </button>
           <h1 className="text-sm font-semibold text-zinc-100">Groups</h1>
         </div>
-        <button
-          onClick={() => router.push("/friends/manage")}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-        >
-          <UserPlus size={16} />
-        </button>
+        <div className="w-8" />
       </header>
 
       {loading ? (

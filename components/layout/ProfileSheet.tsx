@@ -12,6 +12,7 @@ import {
   Check,
   Copy,
   Camera,
+  Users,
   MessageSquarePlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -225,6 +226,17 @@ export function ProfileSheet({
               </div>
             </div>
           </div>
+
+          <button
+            onClick={() => { close(); router.push("/friends/manage"); }}
+            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+          >
+            <Users size={16} className="flex-none text-zinc-500" />
+            <div>
+              <p className="font-medium">Friends</p>
+              <p className="text-xs text-zinc-500">Add and manage friends</p>
+            </div>
+          </button>
 
           <div className="border-t border-zinc-800 my-2" />
 
