@@ -1,0 +1,44 @@
+"use client";
+
+import { Moon } from "lucide-react";
+import type { SleepCardDetail } from "@/lib/types";
+
+const QUALITY_LABEL: Record<number, string> = {
+  1: "Poor",
+  2: "Fair",
+  3: "OK",
+  4: "Good",
+  5: "Great",
+};
+
+export function SleepCardContent({ detail }: { detail: SleepCardDetail }) {
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+      <div className="flex items-start gap-3 px-4 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-400/10">
+          <Moon size={14} className="text-violet-400" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-2xl font-bold leading-tight text-zinc-100">
+            {detail.hours}h
+          </p>
+          {detail.quality != null && (
+            <p className="mt-0.5 text-xs text-zinc-400">
+              Quality:{" "}
+              <span className="text-zinc-300">
+                {QUALITY_LABEL[detail.quality] ?? detail.quality}
+              </span>
+            </p>
+          )}
+        </div>
+
+        {detail.streak != null && detail.streak > 0 && (
+          <span className="whitespace-nowrap rounded-full border border-violet-400/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-bold text-violet-400">
+            {detail.streak}d streak
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

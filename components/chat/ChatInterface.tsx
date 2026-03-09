@@ -4,15 +4,17 @@ import { useChat } from "@ai-sdk/react";
 import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { Send, Settings, X, RotateCcw, Trash2, LogOut, MessageCircle, Copy, Check, Database, Globe, ArrowLeft, Plus, Camera, MessageSquarePlus, Loader2 } from "lucide-react";
+import { Send, X, Plus, Camera, Loader2 } from "lucide-react";
 import { CommandMenu } from "./CommandMenu";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
 import { ChatActionsProvider } from "./ChatActions";
-import { LANGUAGES, getSavedLanguage, saveLanguage, getLanguageByCode, type LanguageCode } from "@/lib/languages";
+import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
 import { compressImage, uploadChatImage } from "@/lib/images";
+import { ProfileSheet } from "@/components/layout/ProfileSheet";
+import SocialBadge from "@/components/layout/SocialBadge";
 
 interface PendingImage {
   file: File;
@@ -23,22 +25,21 @@ interface ChatInterfaceProps {
   chatId: string;
   initialMessages: UIMessage[];
   userEmail?: string;
+  displayName?: string;
+  username?: string;
+  sharingEnabled?: boolean;
 }
 
-const FEEDBACK_EMAILS = ['yilmazym@gmail.com', 'joshuaklint@gmail.com'];
-
-export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterfaceProps) {
+export function ChatInterface({ chatId, initialMessages, userEmail, displayName, username, sharingEnabled }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [settingsView, setSettingsView] = useState<"main" | "language">("main");
+  const [profileOpen, setProfileOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
-  const [busy, setBusy] = useState(false);
-  const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [hasGroups, setHasGroups] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,256 +179,44 @@ export function ChatInterface({ chatId, initialMessages, userEmail }: ChatInterf
     setPendingImages([]);
   };
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  };
-
-  const handleRedoOnboarding = async () => {
-    if (!confirm("Redo onboarding? This clears your profile baselines and sends you back through the flow.")) return;
-    setBusy(true);
-    try {
-      const res = await fetch("/api/dev/reset-onboarding", { method: "POST" });
-      if (res.ok) {
-        router.push("/onboarding");
-        router.refresh();
-      } else {
-        alert("Reset failed");
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleConnectTelegram = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/telegram/link", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        setTelegramLink(data);
-      } else {
-        alert(data.error ?? "Failed to generate link");
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleCopyLink = () => {
-    if (telegramLink) {
-      navigator.clipboard.writeText(telegramLink.botUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    }
-  };
-
-  const handleResetEverything = async () => {
-    if (!confirm("Reset everything? This deletes all data (plan, chat, tracking, profile) and restarts from scratch.")) return;
-    setBusy(true);
-    try {
-      const res = await fetch("/api/dev/reset", { method: "POST" });
-      if (res.ok) {
-        router.push("/onboarding");
-        router.refresh();
-      } else {
-        alert("Reset failed");
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
+  useEffect(() => {
+    fetch("/api/social/init")
+      .then((res) => res.json())
+      .then((data) => {
+        const groups = data.groups ?? [];
+        setHasGroups(groups.length > 0);
+        const total = groups.reduce((sum: number, g: { unreadCount?: number }) => sum + (g.unreadCount ?? 0), 0);
+        setUnreadCount(total);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex h-dvh flex-col bg-zinc-950">
       {/* Header */}
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
-        </div>
         <button
-          onClick={() => setMenuOpen(true)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          title="Settings"
+          onClick={() => setProfileOpen(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-700 text-sm font-semibold text-zinc-200 hover:bg-zinc-600 transition-colors"
         >
-          <Settings size={16} />
+          {(displayName || userEmail || "?").charAt(0).toUpperCase()}
         </button>
+        <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
+        {hasGroups ? (
+          <SocialBadge unreadCount={unreadCount} onClick={() => router.push("/groups")} />
+        ) : (
+          <div className="w-8" />
+        )}
       </header>
 
-      {/* Settings panel */}
-      {menuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => { setMenuOpen(false); setSettingsView("main"); }} />
-          <div className="relative w-full max-w-sm mx-4 mb-4 sm:mb-0 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 space-y-1">
-            {settingsView === "language" ? (
-              <>
-                <div className="flex items-center gap-2 mb-3">
-                  <button
-                    onClick={() => setSettingsView("main")}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-                  >
-                    <ArrowLeft size={14} />
-                  </button>
-                  <h2 className="text-sm font-semibold text-zinc-100">{t("settings.language", currentLanguage)}</h2>
-                </div>
-                <div className="max-h-[50dvh] overflow-y-auto -mx-2 scrollbar-none">
-                  {LANGUAGES.map((lang) => {
-                    const isActive = currentLanguage === lang.code;
-                    return (
-                      <button
-                        key={lang.code}
-                        onClick={() => {
-                          if (lang.code === currentLanguage) return;
-                          saveLanguage(lang.code);
-                          window.location.reload();
-                        }}
-                        className={`w-full flex items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm transition-colors ${
-                          isActive
-                            ? "bg-blue-600 text-white"
-                            : "text-zinc-300 hover:bg-zinc-800"
-                        }`}
-                      >
-                        <div className="flex items-baseline gap-2 min-w-0">
-                          <span className="font-medium truncate">{lang.native}</span>
-                          <span className={`text-xs flex-none ${isActive ? "text-blue-100" : "text-zinc-500"}`}>
-                            {lang.region}
-                          </span>
-                        </div>
-                        {isActive && <Check size={14} className="flex-none ml-2" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-zinc-100">{t("settings.title", currentLanguage)}</h2>
-                  <button
-                    onClick={() => { setMenuOpen(false); setSettingsView("main"); }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => setSettingsView("language")}
-                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-                >
-                  <Globe size={16} className="flex-none text-zinc-500" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium">{t("settings.language", currentLanguage)}</p>
-                    <p className="text-xs text-zinc-500">{getLanguageByCode(currentLanguage)?.native ?? "English"}</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => { setMenuOpen(false); router.push("/data"); }}
-                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-                >
-                  <Database size={16} className="flex-none text-zinc-500" />
-                  <div>
-                    <p className="font-medium">{t("settings.data", currentLanguage)}</p>
-                    <p className="text-xs text-zinc-500">{t("settings.dataDesc", currentLanguage)}</p>
-                  </div>
-                </button>
-
-                {userEmail && FEEDBACK_EMAILS.includes(userEmail) && (
-                  <button
-                    onClick={() => { setMenuOpen(false); router.push("/feedback"); }}
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-                  >
-                    <MessageSquarePlus size={16} className="flex-none text-zinc-500" />
-                    <div>
-                      <p className="font-medium">Feedback board</p>
-                      <p className="text-xs text-zinc-500">View all user feedback</p>
-                    </div>
-                  </button>
-                )}
-
-                <button
-                  onClick={handleRedoOnboarding}
-                  disabled={busy}
-                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
-                >
-                  <RotateCcw size={16} className="flex-none text-zinc-500" />
-                  <div>
-                    <p className="font-medium">{t("settings.redoOnboarding", currentLanguage)}</p>
-                    <p className="text-xs text-zinc-500">{t("settings.redoOnboardingDesc", currentLanguage)}</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={handleResetEverything}
-                  disabled={busy}
-                  className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
-                >
-                  <Trash2 size={16} className="flex-none text-zinc-500" />
-                  <div>
-                    <p className="font-medium">{t("settings.reset", currentLanguage)}</p>
-                    <p className="text-xs text-zinc-500">{t("settings.resetDesc", currentLanguage)}</p>
-                  </div>
-                </button>
-
-                <div className="border-t border-zinc-800 mt-2 pt-2">
-                  {!telegramLink ? (
-                    <button
-                      onClick={handleConnectTelegram}
-                      disabled={busy}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
-                    >
-                      <MessageCircle size={16} className="flex-none text-zinc-500" />
-                      <div>
-                        <p className="font-medium">{t("settings.connectTelegram", currentLanguage)}</p>
-                        <p className="text-xs text-zinc-500">{t("settings.connectTelegramDesc", currentLanguage)}</p>
-                      </div>
-                    </button>
-                  ) : (
-                    <div className="rounded-xl px-3 py-3 space-y-2">
-                      <div className="flex items-center gap-3">
-                        <MessageCircle size={16} className="flex-none text-cyan-400" />
-                        <p className="text-sm font-medium text-zinc-300">{t("settings.connectTelegram", currentLanguage)}</p>
-                      </div>
-                      <p className="text-xs text-zinc-500 ml-7">
-                        Open this link in Telegram to connect:
-                      </p>
-                      <div className="ml-7 flex items-center gap-2">
-                        <a
-                          href={telegramLink.botUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-cyan-400 underline truncate flex-1"
-                        >
-                          {telegramLink.botUrl}
-                        </a>
-                        <button
-                          onClick={handleCopyLink}
-                          className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 transition-colors"
-                        >
-                          {linkCopied ? <Check size={12} /> : <Copy size={12} />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t border-zinc-800 mt-2 pt-2">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-400 hover:bg-zinc-800 transition-colors"
-                  >
-                    <LogOut size={16} className="flex-none text-zinc-500" />
-                    <p className="font-medium">{t("settings.signOut", currentLanguage)}</p>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <ProfileSheet
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        userEmail={userEmail ?? ""}
+        displayName={displayName}
+        username={username}
+        sharingEnabled={sharingEnabled}
+      />
 
       {/* Messages */}
       <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>

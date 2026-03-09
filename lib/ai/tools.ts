@@ -4,6 +4,8 @@ import { getWeekStart, getTodayISO, DOMAINS, Domain, DOMAIN_META, SESSION_DOMAIN
 import type { AppSupabaseClient } from '@/lib/types';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 import { validatePlanFromDB, type ValidationResult } from '@/lib/ai/planSchema';
+import { postSessionCard, postSleepCard, shouldAutoPostSleep } from '@/lib/social/post';
+import type { SessionCardDetail, SleepCardDetail } from '@/lib/types';
 
 interface SessionRow { domain: string; status: string }
 
@@ -196,6 +198,22 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
       const weekSessions = await fetchWeekSessions(supabase, userId, weekStart, activePlan?.id ?? null);
 
+      const sessionData: SessionCardDetail = {
+        sessionId: session.id,
+        domain: session.domain as SessionDomain,
+        title: session.title,
+        exercises: session.domain === 'strength' && session.detail
+          ? (session.detail as any).exercises?.map((e: any) => ({ name: e.name, sets: e.sets, reps: e.reps, weight: e.targetWeight }))
+          : undefined,
+        durationMinutes: session.domain === 'cardio' && session.detail
+          ? (session.detail as any).targetMinutes
+          : session.domain === 'mindfulness' && session.detail
+          ? (session.detail as any).durationMinutes
+          : undefined,
+        zone: session.domain === 'cardio' ? (session.detail as any)?.zone : undefined,
+      };
+      postSessionCard(supabase, userId, sessionData).catch(() => {});
+
       return { session, weekProgress: computeWeekProgress(weekSessions) };
     },
   });
@@ -251,6 +269,21 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       }
 
       const weekSessions = await fetchWeekSessions(supabase, userId, weekStart, activePlan?.id ?? null);
+
+      const sessionData: SessionCardDetail = {
+        sessionId: session.id,
+        domain: domain as SessionDomain,
+        title,
+        exercises: domain === 'strength' && detail
+          ? (detail as any).exercises?.map((e: any) => ({ name: e.name, sets: e.sets, reps: e.reps, weight: e.targetWeight }))
+          : undefined,
+        durationMinutes: domain === 'cardio' ? (detail as any)?.targetMinutes
+          : domain === 'mindfulness' ? (detail as any)?.durationMinutes
+          : undefined,
+        zone: domain === 'cardio' ? (detail as any)?.zone : undefined,
+        isExtra: true,
+      };
+      postSessionCard(supabase, userId, sessionData).catch(() => {});
 
       return { session, weekProgress: computeWeekProgress(weekSessions), isExtra: true };
     },
@@ -362,6 +395,18 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         .single();
 
       if (error) return { error: error.message };
+
+      if (sleepHours !== undefined) {
+        const sleepData: SleepCardDetail = {
+          hours: sleepHours,
+          quality: sleepQuality as 1 | 2 | 3 | 4 | 5 | undefined,
+        };
+        const { autoPost } = shouldAutoPostSleep(sleepData);
+        if (autoPost) {
+          postSleepCard(supabase, userId, sleepData).catch(() => {});
+        }
+      }
+
       return { logged: data };
     },
   });

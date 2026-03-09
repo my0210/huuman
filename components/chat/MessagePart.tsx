@@ -9,7 +9,8 @@ import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { DraftPlanCard } from "@/components/cards/DraftPlanCard";
 import { SessionDetailCard } from "@/components/cards/SessionDetailCard";
 import { ProgressRings } from "@/components/cards/ProgressRings";
-import { CompletionWidget } from "@/components/cards/CompletionWidget";
+import { CoachSessionCard } from "@/components/cards/CoachSessionCard";
+import { CoachSleepCard } from "@/components/cards/CoachSleepCard";
 import { DailyHabitWidget } from "@/components/cards/DailyHabitWidget";
 import { BreathworkTimer } from "@/components/cards/BreathworkTimer";
 import { YouTubeVideoCard } from "@/components/cards/YouTubeVideoCard";
@@ -122,13 +123,18 @@ function ToolPart({
     case "show_session":
       return <SessionDetailCard data={output} />;
     case "complete_session":
-      return <CompletionWidget data={output} />;
+      return <CoachSessionCard data={output} />;
     case "log_session":
-      return <CompletionWidget data={output} />;
+      return <CoachSessionCard data={output} />;
     case "show_progress":
       return <ProgressRings data={output} />;
-    case "log_daily":
+    case "log_daily": {
+      const logged = output?.logged as Record<string, unknown> | undefined;
+      if (logged?.sleep_hours != null && !logged?.steps_actual && logged?.nutrition_on_plan == null) {
+        return <CoachSleepCard data={output} />;
+      }
       return <DailyHabitWidget data={output} />;
+    }
     case "start_timer":
       return <BreathworkTimer data={output} />;
     case "adapt_plan":
