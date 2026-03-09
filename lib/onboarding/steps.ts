@@ -23,6 +23,7 @@ export type FieldDef = {
 
 export type OnboardingStep =
   | { type: 'welcome'; title: string; body: string; subtitle: string }
+  | { type: 'name'; title: string; subtitle: string }
   | { type: 'methodology'; domain: Domain }
   | { type: 'questions'; domain?: Domain; title: string; questions: QuestionDef[] }
   | { type: 'basics'; title: string; subtitle: string; fields: FieldDef[] }
@@ -34,6 +35,7 @@ export type OnboardingContextData = {
 };
 
 export type OnboardingData = {
+  name: string;
   cardio: CardioBaseline;
   strength: StrengthBaseline;
   nutrition: NutritionBaseline;
@@ -49,6 +51,7 @@ export type OnboardingData = {
 // =============================================================================
 
 export const INITIAL_ONBOARDING_DATA: OnboardingData = {
+  name: '',
   cardio: { activities: [], weeklyMinutes: '0', canSustain45min: false },
   strength: { trainingTypes: [], daysPerWeek: 0, liftFamiliarity: 'none', setup: [] },
   nutrition: { pattern: 'no_structure', restrictions: [] },
@@ -72,7 +75,14 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     subtitle: "First, a walkthrough of each domain -- the approach and why it matters. Then where you stand today, so your plan starts in the right place.",
   },
 
-  // Step 1: Cardio methodology
+  // Step 1: Name
+  {
+    type: 'name',
+    title: 'What should we call you?',
+    subtitle: 'This is how you\'ll appear to friends',
+  },
+
+  // Step 2: Cardio methodology
   { type: 'methodology', domain: 'cardio' },
 
   // Step 2: Cardio baseline

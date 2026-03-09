@@ -91,6 +91,7 @@ export default function OnboardingPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          displayName: data.name.trim() || undefined,
           age: data.age ? Number(data.age) : undefined,
           weightKg: data.weightKg ? Number(data.weightKg) : undefined,
           domainBaselines,
@@ -217,6 +218,22 @@ function StepRenderer({
           <h1 className="text-3xl font-bold text-zinc-100">{step.title}</h1>
           <p className="text-lg text-zinc-400 leading-relaxed">{step.body}</p>
           <p className="text-zinc-500">{step.subtitle}</p>
+        </div>
+      );
+
+    case "name":
+      return (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-zinc-100">{step.title}</h2>
+          <p className="text-sm text-zinc-500">{step.subtitle}</p>
+          <input
+            type="text"
+            value={data.name}
+            onChange={(e) => setData((prev) => ({ ...prev, name: e.target.value }))}
+            placeholder="Your name"
+            autoFocus
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-lg text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+          />
         </div>
       );
 

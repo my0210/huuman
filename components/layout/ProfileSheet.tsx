@@ -15,10 +15,11 @@ import {
   ArrowLeft,
   Check,
   Copy,
-  Share2,
+  Camera,
   MessageSquarePlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/images";
 import {
   LANGUAGES,
   getSavedLanguage,
@@ -33,31 +34,25 @@ interface ProfileSheetProps {
   onClose: () => void;
   userEmail: string;
   displayName?: string;
-  username?: string;
-  sharingEnabled?: boolean;
+  avatarUrl?: string;
 }
 
 const FEEDBACK_EMAILS = ["yilmazym@gmail.com", "joshuaklint@gmail.com"];
-
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
 
 export function ProfileSheet({
   open,
   onClose,
   userEmail,
   displayName: initialDisplayName,
-  username: initialUsername,
-  sharingEnabled: initialSharing,
+  avatarUrl: initialAvatarUrl,
 }: ProfileSheetProps) {
   const router = useRouter();
 
-  // Profile fields
   const [displayName, setDisplayName] = useState(initialDisplayName ?? "");
-  const [username, setUsername] = useState(initialUsername ?? "");
-  const [sharing, setSharing] = useState(initialSharing ?? true);
-  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [avatarSrc, setAvatarSrc] = useState<string | undefined>(
+    initialAvatarUrl,
+  );
 
-  // Settings state
   const [view, setView] = useState<"main" | "language">("main");
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
   const [busy, setBusy] = useState(false);
@@ -68,7 +63,7 @@ export function ProfileSheet({
   const [linkCopied, setLinkCopied] = useState(false);
 
   const nameRef = useRef<HTMLInputElement>(null);
-  const usernameRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCurrentLanguage(getSavedLanguage());
@@ -77,14 +72,12 @@ export function ProfileSheet({
   useEffect(() => {
     if (open) {
       setDisplayName(initialDisplayName ?? "");
-      setUsername(initialUsername ?? "");
-      setSharing(initialSharing ?? true);
-      setUsernameError(null);
+      setAvatarSrc(initialAvatarUrl);
       setView("main");
       setTelegramLink(null);
       setLinkCopied(false);
     }
-  }, [open, initialDisplayName, initialUsername, initialSharing]);
+  }, [open, initialDisplayName, initialAvatarUrl]);
 
   const patchProfile = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -108,31 +101,35 @@ export function ProfileSheet({
     }
   };
 
-  const handleUsernameBlur = () => {
-    const trimmed = username.trim().toLowerCase();
-    setUsername(trimmed);
+  const handleAvatarUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-    if (trimmed === "") {
-      setUsernameError(null);
-      if (initialUsername) patchProfile({ username: null });
-      return;
+      const compressed = await compressImage(file);
+      const path = `${user.id}/avatar.jpg`;
+
+      const { error } = await supabase.storage
+        .from("avatars")
+        .upload(path, compressed, { contentType: "image/jpeg", upsert: true });
+
+      if (error) return;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      setAvatarSrc(publicUrl);
+      patchProfile({ avatarUrl: publicUrl });
+    } catch {
+      /* silent */
     }
-
-    if (!USERNAME_RE.test(trimmed)) {
-      setUsernameError("3-20 characters, letters, numbers, underscore only");
-      return;
-    }
-
-    setUsernameError(null);
-    if (trimmed !== (initialUsername ?? "")) {
-      patchProfile({ username: trimmed });
-    }
-  };
-
-  const handleSharingToggle = () => {
-    const next = !sharing;
-    setSharing(next);
-    patchProfile({ sharingEnabled: next });
   };
 
   const handleLogout = async () => {
@@ -235,7 +232,7 @@ export function ProfileSheet({
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
           >
-            <div className="max-h-[85dvh] overflow-y-auto scrollbar-none p-5 space-y-1">
+            <div className="max-h-[85dvh] overflow-y-auto scrollbar-none p-5 pb-2 space-y-1">
               {view === "language" ? (
                 <>
                   <div className="flex items-center gap-2 mb-3">
@@ -299,68 +296,54 @@ export function ProfileSheet({
                     </button>
                   </div>
 
-                  {/* Avatar + profile fields */}
-                  <div className="flex flex-col items-center gap-3 pb-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-700">
-                      <span className="text-lg font-semibold text-zinc-200">
-                        {initial}
-                      </span>
-                    </div>
-
-                    <input
-                      ref={nameRef}
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      onBlur={handleNameBlur}
-                      placeholder="Display name"
-                      className="w-full max-w-[220px] text-center text-sm font-medium text-zinc-100 bg-transparent border-b border-zinc-700 focus:border-zinc-400 outline-none py-1 placeholder:text-zinc-600 transition-colors"
-                    />
-
-                    <div className="w-full max-w-[220px]">
-                      <div className="flex items-center justify-center">
-                        <span className="text-sm text-zinc-500">@</span>
+                  {/* Avatar + Name card */}
+                  <div className="rounded-xl bg-zinc-800/30 p-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="relative flex-none"
+                      >
+                        {avatarSrc ? (
+                          <img
+                            src={avatarSrc}
+                            alt="Avatar"
+                            className="h-12 w-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-700">
+                            <span className="text-lg font-semibold text-zinc-200">
+                              {initial}
+                            </span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600 ring-2 ring-zinc-900">
+                          <Camera size={10} className="text-zinc-300" />
+                        </div>
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">
+                          Name
+                        </p>
                         <input
-                          ref={usernameRef}
+                          ref={nameRef}
                           type="text"
-                          value={username}
-                          onChange={(e) => {
-                            setUsername(e.target.value);
-                            setUsernameError(null);
-                          }}
-                          onBlur={handleUsernameBlur}
-                          placeholder="username"
-                          className="text-center text-sm text-zinc-300 bg-transparent border-b border-zinc-700 focus:border-zinc-400 outline-none py-1 placeholder:text-zinc-600 transition-colors"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          onBlur={handleNameBlur}
+                          placeholder="Display name"
+                          className="w-full rounded-lg bg-zinc-800/50 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-400 focus:outline-none"
                         />
                       </div>
-                      {usernameError && (
-                        <p className="text-xs text-red-400 text-center mt-1">
-                          {usernameError}
-                        </p>
-                      )}
                     </div>
                   </div>
-
-                  {/* Sharing toggle */}
-                  <button
-                    onClick={handleSharingToggle}
-                    className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
-                  >
-                    <Share2 size={16} className="flex-none text-zinc-500" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">Sharing</p>
-                      <p className="text-xs text-zinc-500">
-                        Let friends see your activity
-                      </p>
-                    </div>
-                    <div
-                      className={`relative h-5 w-9 rounded-full transition-colors ${sharing ? "bg-blue-600" : "bg-zinc-700"}`}
-                    >
-                      <div
-                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${sharing ? "translate-x-4" : "translate-x-0.5"}`}
-                      />
-                    </div>
-                  </button>
 
                   <div className="border-t border-zinc-800 my-2" />
 

@@ -6,17 +6,30 @@ interface Props {
   params: Promise<{ username: string }>;
 }
 
-export async function generateMetadata({ params }: Props) {
-  const { username } = await params;
-  const supabase = await createClient();
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const { data: profile } = await supabase
+async function lookupProfile(supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : never, slug: string) {
+  if (UUID_RE.test(slug)) {
+    const { data } = await supabase
+      .from("user_profiles")
+      .select("id, display_name, username, avatar_url")
+      .eq("id", slug)
+      .maybeSingle();
+    return data;
+  }
+  const { data } = await supabase
     .from("user_profiles")
-    .select("display_name")
-    .eq("username", username)
+    .select("id, display_name, username, avatar_url")
+    .eq("username", slug)
     .maybeSingle();
+  return data;
+}
 
-  const displayName = profile?.display_name || username;
+export async function generateMetadata({ params }: Props) {
+  const { username: slug } = await params;
+  const supabase = await createClient();
+  const profile = await lookupProfile(supabase, slug);
+  const displayName = profile?.display_name || slug;
 
   return {
     title: `${displayName} on huuman`,
@@ -29,14 +42,9 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function PublicProfilePage({ params }: Props) {
-  const { username } = await params;
+  const { username: slug } = await params;
   const supabase = await createClient();
-
-  const { data: profile } = await supabase
-    .from("user_profiles")
-    .select("id, display_name, username")
-    .eq("username", username)
-    .maybeSingle();
+  const profile = await lookupProfile(supabase, slug);
 
   if (!profile) notFound();
 
@@ -44,21 +52,26 @@ export default async function PublicProfilePage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const displayName = profile.display_name || profile.username || "User";
+  const displayName = profile.display_name || "User";
   const initial = displayName.charAt(0).toUpperCase();
   const isSelf = user?.id === profile.id;
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-zinc-950 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-700 text-2xl font-bold text-zinc-200">
-          {initial}
-        </div>
+        {profile.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={displayName}
+            className="mx-auto mb-4 h-20 w-20 rounded-full object-cover"
+          />
+        ) : (
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-700 text-2xl font-bold text-zinc-200">
+            {initial}
+          </div>
+        )}
 
         <h1 className="text-lg font-semibold text-zinc-100">{displayName}</h1>
-        {profile.username && (
-          <p className="mt-1 text-sm text-zinc-500">@{profile.username}</p>
-        )}
 
         <div className="mt-8">
           {isSelf ? (
@@ -67,7 +80,7 @@ export default async function PublicProfilePage({ params }: Props) {
             <ConnectButton recipientId={profile.id} />
           ) : (
             <a
-              href={`/login?connect=${encodeURIComponent(username)}`}
+              href={`/login?connect=${encodeURIComponent(slug)}`}
               className="inline-flex items-center justify-center rounded-xl bg-zinc-100 px-6 py-3 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
             >
               Join huuman to connect
@@ -76,7 +89,7 @@ export default async function PublicProfilePage({ params }: Props) {
         </div>
 
         <p className="mt-6 text-xs text-zinc-600">
-          huuman — AI longevity coach
+          huuman -- AI longevity coach
         </p>
       </div>
     </div>

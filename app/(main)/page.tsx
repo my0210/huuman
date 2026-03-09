@@ -12,7 +12,7 @@ export default async function MainPage() {
     getOrCreateConversation(userId, supabase),
     supabase
       .from('user_profiles')
-      .select('display_name, username, sharing_enabled')
+      .select('display_name, avatar_url')
       .eq('id', userId)
       .single(),
   ]);
@@ -28,8 +28,8 @@ export default async function MainPage() {
       initialMessages={initialMessages}
       userEmail={user!.email ?? ''}
       displayName={profile?.display_name ?? undefined}
-      username={profile?.username ?? undefined}
-      sharingEnabled={profile?.sharing_enabled ?? true}
+      avatarUrl={profile?.avatar_url ?? undefined}
+      userId={userId}
     />
   );
 }

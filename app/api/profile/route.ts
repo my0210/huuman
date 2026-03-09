@@ -51,8 +51,8 @@ export async function PATCH(request: NextRequest) {
     updatePayload.username = normalized;
   }
 
-  if (body.sharingEnabled !== undefined) {
-    updatePayload.sharing_enabled = body.sharingEnabled;
+  if (body.avatarUrl !== undefined) {
+    updatePayload.avatar_url = body.avatarUrl;
   }
 
   if (Object.keys(updatePayload).length === 0) {
@@ -98,6 +98,7 @@ export async function PUT(req: Request) {
 
   const updatePayload: Record<string, unknown> = {};
 
+  if (body.displayName !== undefined) updatePayload.display_name = body.displayName;
   if (body.age !== undefined) updatePayload.age = body.age;
   if (body.weightKg !== undefined) updatePayload.weight_kg = body.weightKg;
   if (body.goals !== undefined) updatePayload.goals = body.goals;
