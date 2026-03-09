@@ -4,20 +4,21 @@ import { DOMAIN_CONTENT, DOMAIN_ORDER } from '@/lib/convictions/content';
 import type { Domain } from '@/lib/types';
 
 describe('Onboarding step definitions', () => {
-  it('has exactly 14 steps', () => {
-    expect(ONBOARDING_STEPS).toHaveLength(14);
+  it('has exactly 15 steps', () => {
+    expect(ONBOARDING_STEPS).toHaveLength(15);
   });
 
-  it('starts with welcome and ends with build', () => {
+  it('starts with welcome, then name, and ends with build', () => {
     expect(ONBOARDING_STEPS[0].type).toBe('welcome');
-    expect(ONBOARDING_STEPS[13].type).toBe('build');
+    expect(ONBOARDING_STEPS[1].type).toBe('name');
+    expect(ONBOARDING_STEPS[14].type).toBe('build');
   });
 
   it('alternates methodology and questions for each domain', () => {
     const domains: Domain[] = ['cardio', 'strength', 'mindfulness', 'nutrition', 'sleep'];
     for (let i = 0; i < domains.length; i++) {
-      const methStep = ONBOARDING_STEPS[1 + i * 2];
-      const qStep = ONBOARDING_STEPS[2 + i * 2];
+      const methStep = ONBOARDING_STEPS[2 + i * 2];
+      const qStep = ONBOARDING_STEPS[3 + i * 2];
 
       expect(methStep.type).toBe('methodology');
       if (methStep.type === 'methodology') {
@@ -32,8 +33,8 @@ describe('Onboarding step definitions', () => {
     }
   });
 
-  it('has a context step at index 11', () => {
-    const contextStep = ONBOARDING_STEPS[11];
+  it('has a context step at index 12', () => {
+    const contextStep = ONBOARDING_STEPS[12];
     expect(contextStep.type).toBe('questions');
     if (contextStep.type === 'questions') {
       expect(contextStep.domain).toBeUndefined();
@@ -44,8 +45,8 @@ describe('Onboarding step definitions', () => {
     }
   });
 
-  it('has a basics step at index 12', () => {
-    const basicsStep = ONBOARDING_STEPS[12];
+  it('has a basics step at index 13', () => {
+    const basicsStep = ONBOARDING_STEPS[13];
     expect(basicsStep.type).toBe('basics');
     if (basicsStep.type === 'basics') {
       expect(basicsStep.fields.length).toBe(2);
