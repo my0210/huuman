@@ -80,6 +80,16 @@ Bidirectional linking:
 
 Tool results persist across turns: `convertToModelUIMessages` in `lib/chat/store.ts` passes completed tool parts back to the SDK so the model retains cross-turn memory. A workaround for Anthropic compatibility sets `providerExecuted=true` on historical tool parts (see `.cursor/rules/ai-sdk-tool-history.mdc` and vercel/ai #11855).
 
+### AI harnessing philosophy
+How we build with AI. Derived from Anthropic's [Effective harnesses for long-running agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) and [Claude Code's architecture](https://code.claude.com/docs/en/how-claude-code-works). These principles govern every AI-related change.
+
+1. **Model controls the loop.** The model decides which tools to call, in what order, with what arguments, and when to stop. The application provides tools and a stop condition (`stepCountIs(10)`), but does not script sequences. Only allowed overrides: step cap (safety), context management (token limits), and `generate_plan` as a macro tool (latency).
+2. **Three-phase agentic loop -- gather context, take action, verify results.** Every tool maps to a phase. When adding new capabilities, classify them. The model cycles through phases using tools, with each result feeding back into reasoning.
+3. **Tools are how the model thinks, not just how it acts.** Read tools enable intelligent coaching -- without `get_sessions` the model cannot check progressive overload, without `get_habits` it cannot spot sleep trends. New data surfaces should be exposed as tools, not pre-loaded into the system prompt.
+4. **Tool results persist across turns.** Tool parts are stored in message history and reconstructed for the model. The model accumulates understanding across the conversation -- no amnesia between turns.
+5. **Intent over scripting.** The system prompt tells the model *what* to achieve, not *how* to sequence tools. The model's reasoning determines the sequence. Prescriptive tool rules only exist where the model consistently gets something wrong.
+6. **Primitive tools, not macro tools.** Each tool does one thing. Tools are composable -- the model chains them. The one exception is `generate_plan` (4 parallel LLM calls for latency). Do not add new macro tools without a compelling reason.
+
 ### Onboarding state machine
 `lib/onboarding/steps.ts` defines 14 steps as pure data (no React). Includes 5 domain methodology/baseline pairs, a "Good to know" step (injuries + home equipment), basics (age/weight), and build. Two renderers:
 - Web: `app/(onboarding)/onboarding/page.tsx` renders as cards/buttons/inputs
