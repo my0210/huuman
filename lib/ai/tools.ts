@@ -916,6 +916,150 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     },
   });
 
+  const save_progress_photo = tool({
+    description:
+      'Save a body composition or progress photo the user just sent. Use when the user sends a physique selfie or progress photo.',
+    inputSchema: z.object({
+      imageUrl: z.string().describe('The image URL from the user message'),
+      analysis: z.string().describe('Your visual analysis: posture, muscle definition, proportions, body fat distribution'),
+      notes: z.string().optional().describe('Optional user-provided context (e.g. "12 weeks into cut")'),
+    }),
+    execute: async ({ imageUrl, analysis, notes }: { imageUrl: string; analysis: string; notes?: string }) => {
+      const today = getTodayISO(timezone);
+
+      const { data, error } = await supabase
+        .from('progress_photos')
+        .insert({
+          user_id: userId,
+          image_url: imageUrl,
+          ai_analysis: analysis,
+          notes: notes ?? null,
+          captured_at: today,
+          conversation_id: conversationId ?? null,
+        })
+        .select('id')
+        .single();
+
+      if (error) return { error: error.message };
+
+      const { count } = await supabase
+        .from('progress_photos')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      return { saved: true, id: data.id, imageUrl, totalCount: count ?? 1 };
+    },
+  });
+
+  const get_progress_photos = tool({
+    description:
+      'Query saved body composition / progress photos and their analyses. Use to compare progress over time or review past photos.',
+    inputSchema: z.object({
+      limit: z.number().optional().describe('Max results (default 10)'),
+    }),
+    execute: async ({ limit }: { limit?: number }) => {
+      const { data, error } = await supabase
+        .from('progress_photos')
+        .select('id, image_url, ai_analysis, notes, captured_at')
+        .eq('user_id', userId)
+        .order('captured_at', { ascending: false })
+        .limit(limit ?? 10);
+
+      if (error) return { error: error.message };
+
+      return {
+        photos: (data ?? []).map(p => ({
+          id: p.id,
+          imageUrl: p.image_url,
+          analysis: p.ai_analysis,
+          notes: p.notes,
+          capturedAt: p.captured_at,
+        })),
+        count: data?.length ?? 0,
+      };
+    },
+  });
+
+  const save_meal_photo = tool({
+    description:
+      'Save a meal or food photo the user just sent. Use when the user sends a photo of food or a meal.',
+    inputSchema: z.object({
+      imageUrl: z.string().describe('The image URL from the user message'),
+      description: z.string().describe('What you see in the photo (e.g. "Grilled chicken breast with roasted vegetables and brown rice")'),
+      estimatedCalories: z.number().optional().describe('Rough calorie estimate'),
+      estimatedProteinG: z.number().optional().describe('Rough protein estimate in grams'),
+      mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional().describe('Meal type, inferred from time of day and content'),
+    }),
+    execute: async ({ imageUrl, description, estimatedCalories, estimatedProteinG, mealType }: {
+      imageUrl: string;
+      description: string;
+      estimatedCalories?: number;
+      estimatedProteinG?: number;
+      mealType?: string;
+    }) => {
+      const today = getTodayISO(timezone);
+
+      const { data, error } = await supabase
+        .from('meal_photos')
+        .insert({
+          user_id: userId,
+          image_url: imageUrl,
+          description,
+          estimated_calories: estimatedCalories ?? null,
+          estimated_protein_g: estimatedProteinG ?? null,
+          meal_type: mealType ?? null,
+          captured_at: today,
+          conversation_id: conversationId ?? null,
+        })
+        .select('id')
+        .single();
+
+      if (error) return { error: error.message };
+
+      return { saved: true, id: data.id, imageUrl };
+    },
+  });
+
+  const get_meal_photos = tool({
+    description:
+      "Query saved meal photos with daily calorie/protein totals. Use to check today's meal log or review past meals.",
+    inputSchema: z.object({
+      date: z.string().optional().describe('Date to query (YYYY-MM-DD). Defaults to today.'),
+      limit: z.number().optional().describe('Max results (default 20)'),
+    }),
+    execute: async ({ date, limit }: { date?: string; limit?: number }) => {
+      const targetDate = date ?? getTodayISO(timezone);
+
+      const { data, error } = await supabase
+        .from('meal_photos')
+        .select('id, image_url, description, estimated_calories, estimated_protein_g, meal_type, captured_at')
+        .eq('user_id', userId)
+        .eq('captured_at', targetDate)
+        .order('created_at', { ascending: true })
+        .limit(limit ?? 20);
+
+      if (error) return { error: error.message };
+
+      const photos = (data ?? []).map(p => ({
+        id: p.id,
+        imageUrl: p.image_url,
+        description: p.description,
+        estimatedCalories: p.estimated_calories,
+        estimatedProteinG: p.estimated_protein_g,
+        mealType: p.meal_type,
+        capturedAt: p.captured_at,
+      }));
+
+      const dailyTotals = {
+        meals: photos.length,
+        calories: photos.reduce((s, p) => s + (p.estimatedCalories ?? 0), 0),
+        proteinG: photos.reduce((s, p) => s + (p.estimatedProteinG ?? 0), 0),
+      };
+
+      return { photos, dailyTotals };
+    },
+  });
+
   return {
     show_today_plan,
     show_week_plan,
@@ -936,6 +1080,10 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     get_context,
     validate_plan,
     search_youtube,
+    save_progress_photo,
+    get_progress_photos,
+    save_meal_photo,
+    get_meal_photos,
   };
 }
 

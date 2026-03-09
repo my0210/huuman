@@ -146,6 +146,10 @@ function ToolPart({
       return <PlanConfirmed data={output} />;
     case "search_youtube":
       return <YouTubeVideoCard data={output} />;
+    case "save_progress_photo":
+      return <SavedPhotoCard data={output} />;
+    case "save_meal_photo":
+      return <SavedMealCard data={output} />;
     default:
       return null;
   }
@@ -168,6 +172,10 @@ function LoadingCard({ toolName }: { toolName: string }) {
     save_feedback: "Saving feedback...",
     delete_session: "Removing session...",
     search_youtube: "Searching videos...",
+    save_progress_photo: "Saving progress photo...",
+    save_meal_photo: "Logging meal...",
+    get_progress_photos: "Loading progress photos...",
+    get_meal_photos: "Loading meal log...",
   };
 
   return (
@@ -234,6 +242,83 @@ function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
   return (
     <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
       Plan locked in. Let's go.
+    </div>
+  );
+}
+
+function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
+  if (data.error) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t save the photo. Try sending it again.
+      </div>
+    );
+  }
+
+  const imageUrl = data.imageUrl as string | undefined;
+  const totalCount = data.totalCount as number | undefined;
+
+  return (
+    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/20 overflow-hidden">
+      {imageUrl && (
+        <img src={imageUrl} alt="Progress photo" className="w-full max-h-32 object-cover" />
+      )}
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <span className="text-xs font-medium text-emerald-400">Progress photo saved</span>
+        {totalCount != null && (
+          <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
+            Photo #{totalCount}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SavedMealCard({ data }: { data: Record<string, unknown> }) {
+  if (data.error) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t log the meal. Try sending the photo again.
+      </div>
+    );
+  }
+
+  const imageUrl = data.imageUrl as string | undefined;
+  const description = data.description as string | undefined;
+  const cal = data.estimatedCalories as number | undefined;
+  const protein = data.estimatedProteinG as number | undefined;
+  const mealType = data.mealType as string | undefined;
+
+  const mealLabel = mealType
+    ? mealType.charAt(0).toUpperCase() + mealType.slice(1)
+    : null;
+
+  return (
+    <div className="rounded-xl border border-green-900/50 bg-green-950/20 overflow-hidden">
+      {imageUrl && (
+        <img src={imageUrl} alt="Meal photo" className="w-full max-h-32 object-cover" />
+      )}
+      <div className="px-4 py-2.5 space-y-1">
+        <div className="flex items-center gap-2">
+          {mealLabel && (
+            <span className="rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500">
+              {mealLabel}
+            </span>
+          )}
+          <span className="text-xs font-medium text-green-400">Meal logged</span>
+        </div>
+        {description && (
+          <p className="text-[11px] text-zinc-400 line-clamp-2">{description}</p>
+        )}
+        {(cal != null || protein != null) && (
+          <p className="text-[11px] text-zinc-500">
+            {cal != null && <span>~{cal} cal</span>}
+            {cal != null && protein != null && <span> / </span>}
+            {protein != null && <span>~{protein}g protein</span>}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

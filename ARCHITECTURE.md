@@ -74,7 +74,7 @@ Bidirectional linking:
 - `validatePlan()` validates cardio/strength session rules
 
 ### AI agent
-`ToolLoopAgent` with `stepCountIs(10)` stop condition. The agent has 19 tools across three phases (gather context, take action, verify):
+`ToolLoopAgent` with `stepCountIs(10)` stop condition. The agent has 23 tools across three phases (gather context, take action, verify):
 - Web: tools return JSON, `MessagePart.tsx` maps toolName -> React card component
 - Telegram: tools return JSON, `formatters.ts` maps toolName -> text + inline keyboards
 
@@ -97,7 +97,7 @@ How we build with AI. Derived from Anthropic's [Effective harnesses for long-run
 
 ## Database Schema (Supabase)
 
-8 tables, all with RLS:
+10 tables, all with RLS:
 - `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints (legacy), onboarding_completed, telegram_chat_id, timezone (IANA, default 'UTC')
 - `user_context` -- user_id, category (physical/environment/equipment/schedule), content (text), scope (permanent/temporary), expires_at, active, source (onboarding/conversation). Categorized, time-scoped facts about the user that drive plan personalization.
 - `weekly_plans` -- user_id, week_start, status, intro_message, tracking_briefs (JSONB: personalized nutrition/sleep targets). Unique on (user_id, week_start).
@@ -106,6 +106,8 @@ How we build with AI. Derived from Anthropic's [Effective harnesses for long-run
 - `conversations` -- user_id, created_at
 - `messages` -- conversation_id, role, parts (JSONB), attachments
 - `user_feedback` -- user_id, category (bug/feature_request/experience), content (AI summary), raw_quotes (text[], user's exact words), conversation_id (FK conversations). Collected via save_feedback tool or Feedback shortcut in CommandMenu.
+- `progress_photos` -- user_id, image_url, ai_analysis (text), notes, captured_at (date), conversation_id. AI-detected body composition selfies from chat, saved via save_progress_photo tool. Calorie/protein estimates are approximate (~).
+- `meal_photos` -- user_id, image_url, description, estimated_calories, estimated_protein_g, meal_type, captured_at, conversation_id. AI-detected meal photos from chat, saved via save_meal_photo tool.
 
 Telegram-specific tables (no RLS, accessed via admin client):
 - `telegram_registration_tokens` -- token, telegram_chat_id, user_id, expires_at
@@ -126,6 +128,8 @@ Telegram-specific tables (no RLS, accessed via admin client):
 - `GET /api/cron/daily-briefing` -- morning briefing (7 AM UTC, Vercel Cron). Sends today's plan to all Telegram users with pending sessions.
 - `GET /api/cron/session-nudge` -- missed session nudge (6 PM UTC). Sends reminders for pending sessions with Done/Skip/→ Tomorrow buttons.
 - `GET /api/cron/evening-checkin` -- evening check-in (9 PM UTC). Prompts for nutrition and steps via inline keyboards.
+- `GET/DELETE /api/progress-photos` -- CRUD for body composition progress photos (Your Data page)
+- `GET/DELETE /api/meal-photos` -- CRUD for meal photos (Your Data page)
 
 ### Middleware (`proxy.ts`)
 Redirects unauthenticated requests to `/login`. Public routes: login, signup, auth callbacks, all Telegram endpoints, registration pages, cron endpoints.

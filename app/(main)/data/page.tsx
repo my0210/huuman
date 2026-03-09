@@ -6,6 +6,8 @@ import { ArrowLeft, Trash2, Send } from "lucide-react";
 import { DOMAIN_META } from "@/lib/types";
 import type { ContextCategory, ContextScope, DomainBaselines } from "@/lib/types";
 import { formatSingleDomainBaseline } from "@/lib/onboarding/formatBaselines";
+import { ProgressPhotosSection, type ProgressPhoto } from "@/components/data/ProgressPhotosSection";
+import { MealLogSection, type MealPhoto } from "@/components/data/MealLogSection";
 
 const CATEGORY_LABELS: Record<ContextCategory, string> = {
   physical: "Physical",
@@ -41,15 +43,23 @@ export default function DataPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
+  const [mealPhotos, setMealPhotos] = useState<MealPhoto[]>([]);
+
   const [newContent, setNewContent] = useState("");
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    fetch("/api/context")
-      .then((r) => r.json())
-      .then((data) => {
-        setProfile(data.profile);
-        setItems(data.contextItems);
+    Promise.all([
+      fetch("/api/context").then((r) => r.json()),
+      fetch("/api/progress-photos").then((r) => r.json()),
+      fetch("/api/meal-photos").then((r) => r.json()),
+    ])
+      .then(([contextData, progressData, mealData]) => {
+        setProfile(contextData.profile);
+        setItems(contextData.contextItems);
+        setProgressPhotos(progressData.photos ?? []);
+        setMealPhotos(mealData.photos ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -147,6 +157,32 @@ export default function DataPage() {
             <p className="text-[11px] text-zinc-600 px-1">Collected during onboarding</p>
           </section>
         )}
+
+        {/* Progress photos */}
+        <ProgressPhotosSection
+          photos={progressPhotos}
+          onDelete={async (id) => {
+            const res = await fetch("/api/progress-photos", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id }),
+            });
+            if (res.ok) setProgressPhotos((prev) => prev.filter((p) => p.id !== id));
+          }}
+        />
+
+        {/* Meal log */}
+        <MealLogSection
+          photos={mealPhotos}
+          onDelete={async (id) => {
+            const res = await fetch("/api/meal-photos", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id }),
+            });
+            if (res.ok) setMealPhotos((prev) => prev.filter((p) => p.id !== id));
+          }}
+        />
 
         {/* Context items by category */}
         {grouped.length > 0 && (
