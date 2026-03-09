@@ -57,7 +57,7 @@ export function FriendsDrawer({
   const [searchOpen, setSearchOpen] = useState(false);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
-  const personalLink = `huuman.app/u/${currentUserId}`;
+  const personalLink = `${typeof window !== "undefined" ? window.location.origin : ""}/u/${currentUserId}`;
 
   useEffect(() => {
     if (!open) return;
@@ -248,7 +248,7 @@ export function FriendsDrawer({
 
       {qrOpen && (
         <QrModal
-          link={`https://${personalLink}`}
+          link={personalLink}
           onClose={() => setQrOpen(false)}
         />
       )}

@@ -62,7 +62,9 @@ export default function FriendsManagePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const personalLink = currentUserId ? `huuman.app/u/${currentUserId}` : "";
+  const personalLink = currentUserId
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/u/${currentUserId}`
+    : "";
   const hasContent = friends.length > 0 || pendingReceived.length > 0 || pendingSent.length > 0;
 
   const handleAccept = async (friendshipId: string) => {
@@ -225,7 +227,7 @@ export default function FriendsManagePage() {
         </div>
       )}
 
-      {qrOpen && <QrModal link={`https://${personalLink}`} onClose={() => setQrOpen(false)} />}
+      {qrOpen && <QrModal link={personalLink} onClose={() => setQrOpen(false)} />}
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
     </div>
   );
