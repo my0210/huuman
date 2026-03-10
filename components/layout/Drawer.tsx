@@ -6,7 +6,7 @@ import { ArrowLeft, X } from "lucide-react";
 interface DrawerProps {
   open: boolean;
   onClose: () => void;
-  title?: string;
+  title?: React.ReactNode;
   onBack?: () => void;
   rightAction?: React.ReactNode;
   children: React.ReactNode;

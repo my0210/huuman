@@ -187,8 +187,7 @@ export default function ProgressPhotosPage() {
       <Drawer
         open={!!selected}
         onClose={() => { setSelectedId(null); setConfirmingId(null); }}
-        title={selected ? formatFullDate(selected.capturedAt) : ""}
-        rightAction={
+        title={
           selected ? (
             <DateEditOverlay
               date={selected.capturedAt}
@@ -264,9 +263,11 @@ export default function ProgressPhotosPage() {
 }
 
 function DateEditOverlay({ date, onChange }: { date: string; onChange: (d: string) => void }) {
+  const label = formatFullDate(date);
   return (
-    <div className="relative flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
-      <Pencil size={12} />
+    <div className="relative inline-flex items-center gap-1.5 cursor-pointer">
+      <span>{label}</span>
+      <Pencil size={11} className="text-zinc-500" />
       <input
         type="date"
         value={date}

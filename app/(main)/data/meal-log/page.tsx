@@ -220,11 +220,10 @@ export default function MealLogPage() {
           setSelectedId(null);
           setConfirmingId(null);
         }}
-        title={selected ? mealTitle(selected) : ""}
-        rightAction={
+        title={
           selected ? (
-            <DateEditOverlay
-              date={selected.capturedAt}
+            <MealTitleWithEdit
+              photo={selected}
               onChange={(d) => handleUpdate(selected.id, { capturedAt: d })}
             />
           ) : undefined
@@ -323,13 +322,21 @@ export default function MealLogPage() {
   );
 }
 
-function DateEditOverlay({ date, onChange }: { date: string; onChange: (d: string) => void }) {
+function MealTitleWithEdit({
+  photo,
+  onChange,
+}: {
+  photo: MealPhoto;
+  onChange: (d: string) => void;
+}) {
+  const mt = photo.mealType ? capitalize(photo.mealType) : "Meal";
   return (
-    <div className="relative flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
-      <Pencil size={12} />
+    <div className="relative inline-flex items-center gap-1.5 cursor-pointer">
+      <span>{mt} · {formatShortDate(photo.capturedAt)}</span>
+      <Pencil size={11} className="text-zinc-500" />
       <input
         type="date"
-        value={date}
+        value={photo.capturedAt}
         onChange={(e) => {
           if (e.target.value) onChange(e.target.value);
         }}
