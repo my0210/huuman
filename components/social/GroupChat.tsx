@@ -327,7 +327,7 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       {/* Message list */}
       <div
         ref={scrollRef}
