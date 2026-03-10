@@ -22,16 +22,20 @@ const EXPECTED_TOOLS = [
   'get_context',
   'validate_plan',
   'search_youtube',
+  'save_progress_photo',
+  'get_progress_photos',
+  'save_meal_photo',
+  'get_meal_photos',
 ] as const;
 
 describe('createTools', () => {
   const supabase = createMockSupabase();
   const tools = createTools('user-123', supabase, 'conv-1', 'UTC');
 
-  it('returns all 19 registered tools', () => {
+  it('returns all 23 registered tools', () => {
     const names = Object.keys(tools).sort();
     expect(names).toEqual([...EXPECTED_TOOLS].sort());
-    expect(names).toHaveLength(19);
+    expect(names).toHaveLength(23);
   });
 
   it('every tool has a description and execute function', () => {
