@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Utensils, Pencil, Flame, Beef } from "lucide-react";
+import { motion } from "framer-motion";
 import { Drawer } from "@/components/layout/Drawer";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
@@ -25,6 +26,17 @@ interface DayGroup {
 }
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+
+const MEAL_TYPE_COLORS: Record<string, string> = {
+  breakfast: "text-amber-400",
+  lunch: "text-green-400",
+  dinner: "text-orange-400",
+  snack: "text-sky-400",
+};
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 export default function MealLogPage() {
   const router = useRouter();
@@ -57,7 +69,7 @@ export default function MealLogPage() {
   };
 
   const handleUpdate = async (id: string, fields: Partial<MealPhoto>) => {
-    setPhotos((prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p));
+    setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...fields } : p)));
     const body: Record<string, unknown> = { id };
     if (fields.capturedAt) body.capturedAt = fields.capturedAt;
     if (fields.mealType !== undefined) body.mealType = fields.mealType;
@@ -69,14 +81,7 @@ export default function MealLogPage() {
   };
 
   const days = groupByDate(photos);
-
-  if (loading) {
-    return (
-      <div className="flex flex-1 min-h-0 items-center justify-center bg-zinc-950">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
-      </div>
-    );
-  }
+  let mealIndex = 0;
 
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
@@ -98,99 +103,205 @@ export default function MealLogPage() {
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
-        {photos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4">
-            <p className="text-sm text-zinc-500">No meal photos yet.</p>
-            <p className="text-xs text-zinc-600 mt-1">Snap your meals in chat or tap + to upload.</p>
+      <div className="flex-1 overflow-y-auto scrollbar-none">
+        {loading ? (
+          <div>
+            {[0, 1].map((g) => (
+              <div key={g}>
+                <div className="px-4 py-3 flex items-center justify-between">
+                  <div className="h-4 w-20 animate-pulse rounded-md bg-zinc-800/60" />
+                  <div className="flex gap-2">
+                    <div className="h-5 w-20 animate-pulse rounded-full bg-zinc-800/40" />
+                    <div className="h-5 w-16 animate-pulse rounded-full bg-zinc-800/40" />
+                  </div>
+                </div>
+                {[0, 1].map((i) => (
+                  <div key={i} className="flex gap-3.5 px-4 py-3.5">
+                    <div className="w-20 h-20 animate-pulse rounded-xl bg-zinc-800/60 flex-none" />
+                    <div className="flex-1 space-y-2 py-1">
+                      <div className="h-3 w-14 animate-pulse rounded-md bg-zinc-800/40" />
+                      <div className="h-3 w-full animate-pulse rounded-md bg-zinc-800/50" />
+                      <div className="h-3 w-24 animate-pulse rounded-md bg-zinc-800/30" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : photos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 px-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10 mb-5">
+              <Utensils size={28} className="text-green-400" />
+            </div>
+            <p className="text-base font-semibold text-zinc-200 mb-1.5">Log your meals</p>
+            <p className="text-sm text-zinc-500 text-center mb-6">
+              Snap a photo in chat or upload here
+            </p>
+            <button
+              onClick={() => setShowUpload(true)}
+              className="rounded-xl bg-zinc-100 px-6 py-2.5 text-sm font-medium text-zinc-900 active:scale-[0.97] transition-transform"
+            >
+              Upload meal
+            </button>
           </div>
         ) : (
           <div>
             {days.map((day) => (
               <div key={day.date}>
-                <div className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/95 backdrop-blur-sm px-4 py-2.5 border-b border-zinc-800/50">
-                  <span className="text-xs font-medium text-zinc-400">{formatShortDate(day.date)}</span>
-                  <span className="text-[10px] text-zinc-600">~{day.totalCalories} cal / ~{day.totalProtein}g protein</span>
+                <div className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/95 backdrop-blur-sm px-4 py-3 border-b border-zinc-800/50">
+                  <span className="text-sm font-semibold text-zinc-200">
+                    {formatDayLabel(day.date)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {day.totalCalories > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/80 px-2.5 py-0.5 text-[11px] text-zinc-400">
+                        <Flame size={10} className="text-orange-400" />
+                        ~{day.totalCalories}
+                      </span>
+                    )}
+                    {day.totalProtein > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/80 px-2.5 py-0.5 text-[11px] text-zinc-400">
+                        <Beef size={10} className="text-sky-400" />
+                        ~{day.totalProtein}g
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {day.photos.map((photo) => (
-                  <button
-                    key={photo.id}
-                    onClick={() => setSelectedId(photo.id)}
-                    className="w-full flex gap-3 px-4 py-3 text-left border-b border-zinc-800/30 hover:bg-zinc-900/50 active:bg-zinc-900 transition-colors"
-                  >
-                    <img src={photo.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover flex-none" />
-                    <div className="flex-1 min-w-0 space-y-0.5 py-0.5">
-                      {photo.mealType && (
-                        <span className="text-[10px] font-medium text-green-500">
-                          {photo.mealType.charAt(0).toUpperCase() + photo.mealType.slice(1)}
-                        </span>
-                      )}
-                      <p className="text-xs text-zinc-300 line-clamp-2">{photo.description}</p>
-                      {(photo.estimatedCalories != null || photo.estimatedProteinG != null) && (
-                        <p className="text-[10px] text-zinc-500">
-                          {photo.estimatedCalories != null && `~${photo.estimatedCalories} cal`}
-                          {photo.estimatedCalories != null && photo.estimatedProteinG != null && " / "}
-                          {photo.estimatedProteinG != null && `~${photo.estimatedProteinG}g protein`}
+                {day.photos.map((photo) => {
+                  const i = mealIndex++;
+                  return (
+                    <motion.button
+                      key={photo.id}
+                      onClick={() => setSelectedId(photo.id)}
+                      className="w-full flex gap-3.5 px-4 py-3.5 text-left hover:bg-zinc-900/50 active:bg-zinc-900 transition-colors"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.25 }}
+                    >
+                      <img
+                        src={photo.imageUrl}
+                        alt=""
+                        className="w-20 h-20 rounded-xl object-cover flex-none"
+                      />
+                      <div className="flex-1 min-w-0 space-y-1 py-0.5">
+                        {photo.mealType && (
+                          <span
+                            className={`text-[11px] font-semibold ${MEAL_TYPE_COLORS[photo.mealType] ?? "text-zinc-400"}`}
+                          >
+                            {capitalize(photo.mealType)}
+                          </span>
+                        )}
+                        <p className="text-[13px] text-zinc-300 line-clamp-2 leading-snug">
+                          {photo.description}
                         </p>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                        {(photo.estimatedCalories != null || photo.estimatedProteinG != null) && (
+                          <p className="text-[11px] text-zinc-500">
+                            {photo.estimatedCalories != null && `~${photo.estimatedCalories} cal`}
+                            {photo.estimatedCalories != null &&
+                              photo.estimatedProteinG != null &&
+                              " · "}
+                            {photo.estimatedProteinG != null &&
+                              `~${photo.estimatedProteinG}g protein`}
+                          </p>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Detail drawer */}
       <Drawer
         open={!!selected}
-        onClose={() => { setSelectedId(null); setConfirmingId(null); }}
+        onClose={() => {
+          setSelectedId(null);
+          setConfirmingId(null);
+        }}
         title={selected ? mealTitle(selected) : ""}
-        rightAction={selected ? <DateEditButton date={selected.capturedAt} onChange={(d) => handleUpdate(selected.id, { capturedAt: d })} /> : undefined}
+        rightAction={
+          selected ? (
+            <DateEditOverlay
+              date={selected.capturedAt}
+              onChange={(d) => handleUpdate(selected.id, { capturedAt: d })}
+            />
+          ) : undefined
+        }
       >
         {selected && (
           <>
-            <img src={selected.imageUrl} alt="Meal photo" className="w-full object-contain max-h-[50vh]" />
-            <div className="px-4 py-4 space-y-3">
+            <div className="px-4 pt-2">
+              <div className="rounded-xl overflow-hidden">
+                <img
+                  src={selected.imageUrl}
+                  alt="Meal photo"
+                  className="w-full aspect-[4/3] object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="px-4 py-4 space-y-4">
+              {(selected.estimatedCalories != null || selected.estimatedProteinG != null) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {selected.estimatedCalories != null && (
+                    <div className="rounded-xl bg-zinc-900 border border-zinc-800/60 p-3 text-center">
+                      <p className="text-xl font-bold text-zinc-100">~{selected.estimatedCalories}</p>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">cal</p>
+                    </div>
+                  )}
+                  {selected.estimatedProteinG != null && (
+                    <div className="rounded-xl bg-zinc-900 border border-zinc-800/60 p-3 text-center">
+                      <p className="text-xl font-bold text-zinc-100">~{selected.estimatedProteinG}</p>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">g protein</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Meal type</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                  Meal type
+                </p>
                 <div className="flex gap-2">
                   {MEAL_TYPES.map((mt) => (
                     <button
                       key={mt}
                       onClick={() => handleUpdate(selected.id, { mealType: mt })}
-                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
                         mt === selected.mealType
                           ? "bg-green-900/40 text-green-400 border border-green-800"
                           : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300"
                       }`}
                     >
-                      {mt.charAt(0).toUpperCase() + mt.slice(1)}
+                      {capitalize(mt)}
                     </button>
                   ))}
                 </div>
               </div>
+
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Description</p>
-                <p className="text-sm text-zinc-300 leading-relaxed">{selected.description}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                  Description
+                </p>
+                <p className="text-[13px] text-zinc-300 leading-relaxed">{selected.description}</p>
               </div>
-              {(selected.estimatedCalories != null || selected.estimatedProteinG != null) && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Estimates</p>
-                  <div className="flex gap-4">
-                    {selected.estimatedCalories != null && <p className="text-sm text-zinc-300">~{selected.estimatedCalories} cal</p>}
-                    {selected.estimatedProteinG != null && <p className="text-sm text-zinc-300">~{selected.estimatedProteinG}g protein</p>}
-                  </div>
-                </div>
-              )}
-              <div className="pt-2 border-t border-zinc-800">
+
+              <div className="pt-3 border-t border-zinc-800/60">
                 {confirmingId !== selected.id ? (
-                  <button onClick={() => setConfirmingId(selected.id)} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
-                    <Trash2 size={12} /><span>Delete meal</span>
+                  <button
+                    onClick={() => setConfirmingId(selected.id)}
+                    className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    <span>Delete meal</span>
                   </button>
                 ) : (
-                  <button onClick={() => handleDelete(selected.id)} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors">
+                  <button
+                    onClick={() => handleDelete(selected.id)}
+                    className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors"
+                  >
                     Confirm delete?
                   </button>
                 )}
@@ -200,23 +311,31 @@ export default function MealLogPage() {
         )}
       </Drawer>
 
-      {/* Upload drawer */}
       <Drawer open={showUpload} onClose={() => setShowUpload(false)} title="Upload meal photo">
-        <MealUploadForm onUploaded={(photo) => { setPhotos((prev) => [photo, ...prev]); setShowUpload(false); }} />
+        <MealUploadForm
+          onUploaded={(photo) => {
+            setPhotos((prev) => [photo, ...prev]);
+            setShowUpload(false);
+          }}
+        />
       </Drawer>
     </div>
   );
 }
 
-function DateEditButton({ date, onChange }: { date: string; onChange: (d: string) => void }) {
-  const ref = useRef<HTMLInputElement>(null);
+function DateEditOverlay({ date, onChange }: { date: string; onChange: (d: string) => void }) {
   return (
-    <>
-      <button onClick={() => ref.current?.showPicker()} className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
-        <Pencil size={12} />
-      </button>
-      <input ref={ref} type="date" value={date} onChange={(e) => { if (e.target.value) onChange(e.target.value); }} className="sr-only" />
-    </>
+    <div className="relative flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+      <Pencil size={12} />
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => {
+          if (e.target.value) onChange(e.target.value);
+        }}
+        className="absolute inset-0 opacity-0 cursor-pointer"
+      />
+    </div>
   );
 }
 
@@ -242,7 +361,9 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
     setUploading(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const compressed = await compressImage(file);
       const imageUrl = await uploadChatImage(supabase, user.id, compressed, file.name);
@@ -262,36 +383,60 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
   return (
     <div className="px-4 py-4 space-y-4">
       {preview ? (
-        <img src={preview} alt="Preview" className="w-full max-h-48 object-contain rounded-xl" />
+        <div className="rounded-2xl overflow-hidden">
+          <img src={preview} alt="Preview" className="w-full aspect-[4/3] object-cover" />
+        </div>
       ) : (
-        <button onClick={() => fileRef.current?.click()} className="w-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900 py-8 text-sm text-zinc-500 hover:border-zinc-500 hover:text-zinc-400 transition-colors">
-          Tap to select photo
+        <button
+          onClick={() => fileRef.current?.click()}
+          className="w-full rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/50 py-12 flex flex-col items-center gap-2 hover:border-zinc-500 transition-colors"
+        >
+          <Utensils size={24} className="text-zinc-500" />
+          <span className="text-sm text-zinc-500">Choose photo</span>
         </button>
       )}
       <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-      <div className="space-y-1">
+
+      <div className="space-y-1.5">
         <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Date</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} max={new Date().toISOString().slice(0, 10)} className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none" />
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          max={new Date().toISOString().slice(0, 10)}
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none transition-colors"
+        />
       </div>
-      <div className="space-y-1">
-        <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Meal type</label>
-        <div className="flex gap-2">
+
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          Meal type
+        </label>
+        <div className="grid grid-cols-2 gap-2">
           {MEAL_TYPES.map((mt) => (
             <button
               key={mt}
               onClick={() => setMealType(mealType === mt ? "" : mt)}
-              className={`flex-1 rounded-xl border py-2 text-xs font-medium transition-colors ${
+              className={`rounded-xl border py-2.5 text-sm font-medium transition-colors ${
                 mealType === mt
                   ? "border-green-700 bg-green-900/30 text-green-400"
                   : "border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400"
               }`}
             >
-              {mt.charAt(0).toUpperCase() + mt.slice(1)}
+              {capitalize(mt)}
             </button>
           ))}
         </div>
       </div>
-      <button onClick={handleSave} disabled={!file || uploading} className="w-full rounded-xl bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 disabled:opacity-30 transition-opacity">
+
+      <button
+        onClick={handleSave}
+        disabled={!file || uploading}
+        className="w-full rounded-xl bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+      >
+        {uploading && (
+          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-400 border-t-zinc-900" />
+        )}
         {uploading ? "Uploading..." : "Save"}
       </button>
     </div>
@@ -299,7 +444,7 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
 }
 
 function mealTitle(photo: MealPhoto): string {
-  const mt = photo.mealType ? photo.mealType.charAt(0).toUpperCase() + photo.mealType.slice(1) : "Meal";
+  const mt = photo.mealType ? capitalize(photo.mealType) : "Meal";
   return `${mt} · ${formatShortDate(photo.capturedAt)}`;
 }
 
@@ -320,7 +465,19 @@ function groupByDate(photos: MealPhoto[]): DayGroup[] {
     }));
 }
 
+function formatDayLabel(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((today.getTime() - target.getTime()) / 86400000);
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
 function formatShortDate(iso: string): string {
   const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }

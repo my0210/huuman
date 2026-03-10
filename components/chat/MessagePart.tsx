@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import type { UIMessage } from "ai";
 import { isToolUIPart, isFileUIPart, getToolName } from "ai";
-import { Camera, Pencil, Scale } from "lucide-react";
+import { Camera, Pencil, Scale, Utensils } from "lucide-react";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { DraftPlanCard } from "@/components/cards/DraftPlanCard";
@@ -250,26 +250,19 @@ function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
 }
 
 function EditableDate({ date, onUpdate }: { date: string; onUpdate: (newDate: string) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const label = new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   return (
-    <>
-      <button
-        onClick={() => inputRef.current?.showPicker()}
-        className="inline-flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
-      >
-        <span>{label}</span>
-        <Pencil size={9} />
-      </button>
+    <div className="relative inline-flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+      <span>{label}</span>
+      <Pencil size={9} />
       <input
-        ref={inputRef}
         type="date"
         value={date}
         onChange={(e) => { if (e.target.value) onUpdate(e.target.value); }}
-        className="sr-only"
+        className="absolute inset-0 opacity-0 cursor-pointer"
       />
-    </>
+    </div>
   );
 }
 
@@ -281,12 +274,12 @@ function EditableMealType({ value, onUpdate }: { value: string | null; onUpdate:
 
   if (open) {
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         {MEAL_TYPES.map((mt) => (
           <button
             key={mt}
             onClick={() => { onUpdate(mt); setOpen(false); }}
-            className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
               mt === value
                 ? "bg-green-900/40 text-green-400"
                 : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
@@ -302,10 +295,10 @@ function EditableMealType({ value, onUpdate }: { value: string | null; onUpdate:
   return (
     <button
       onClick={() => setOpen(true)}
-      className="inline-flex items-center gap-1 rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500 hover:bg-green-900/50 transition-colors"
+      className="inline-flex items-center gap-1 rounded-full bg-green-900/30 px-2.5 py-1 text-[11px] font-medium text-green-500 hover:bg-green-900/50 transition-colors"
     >
       <span>{label}</span>
-      <Pencil size={8} />
+      <Pencil size={9} />
     </button>
   );
 }
@@ -336,15 +329,22 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-emerald-400">Progress photo saved</span>
-        {date && <EditableDate date={date} onUpdate={handleDateUpdate} />}
+    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 border-l-[3px] border-l-emerald-600 px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Camera size={13} className="text-emerald-400" />
+          <span className="text-[13px] font-medium text-emerald-400">Progress photo saved</span>
+        </div>
+        {totalCount != null && (
+          <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
+            #{totalCount}
+          </span>
+        )}
       </div>
-      {totalCount != null && (
-        <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
-          #{totalCount}
-        </span>
+      {date && (
+        <div className="mt-1.5 pl-[21px]">
+          <EditableDate date={date} onUpdate={handleDateUpdate} />
+        </div>
       )}
     </div>
   );
@@ -377,26 +377,36 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div className="rounded-xl border border-green-900/50 bg-green-950/30 px-4 py-3 space-y-1.5">
+    <div className="rounded-xl border border-green-900/50 bg-green-950/30 border-l-[3px] border-l-green-600 px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-green-400">Meal logged</span>
-          {date && (
-            <EditableDate date={date} onUpdate={(d) => { setDate(d); patchMeal({ capturedAt: d }); }} />
-          )}
+          <Utensils size={13} className="text-green-400" />
+          <span className="text-[13px] font-medium text-green-400">Meal logged</span>
         </div>
         <EditableMealType value={mt} onUpdate={(v) => { setMt(v); patchMeal({ mealType: v }); }} />
       </div>
       {description && (
-        <p className="text-[11px] text-zinc-400 line-clamp-2">{description}</p>
+        <p className="text-[12px] text-zinc-400 line-clamp-2 leading-relaxed">{description}</p>
       )}
-      {(cal != null || protein != null) && (
-        <p className="text-[11px] text-zinc-500">
-          {cal != null && <span>~{cal} cal</span>}
-          {cal != null && protein != null && <span> / </span>}
-          {protein != null && <span>~{protein}g protein</span>}
-        </p>
-      )}
+      <div className="flex items-center justify-between">
+        {(cal != null || protein != null) ? (
+          <div className="flex gap-2">
+            {cal != null && (
+              <span className="rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] text-zinc-500">
+                ~{cal} cal
+              </span>
+            )}
+            {protein != null && (
+              <span className="rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] text-zinc-500">
+                ~{protein}g protein
+              </span>
+            )}
+          </div>
+        ) : <div />}
+        {date && (
+          <EditableDate date={date} onUpdate={(d) => { setDate(d); patchMeal({ capturedAt: d }); }} />
+        )}
+      </div>
     </div>
   );
 }
