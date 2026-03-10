@@ -50,7 +50,7 @@ function normalizeMessage(m: Record<string, unknown>): SocialMessage {
   return {
     id: m.id as string,
     groupId: (m.groupId ?? m.group_id) as string,
-    userId: (m.userId ?? m.senderId ?? m.sender_id) as string,
+    userId: (m.userId ?? m.user_id ?? m.senderId ?? m.sender_id) as string,
     messageType: (m.messageType ?? m.message_type) as SocialMessage["messageType"],
     content: (m.content ?? undefined) as string | undefined,
     detail: (m.detail ?? undefined) as SocialMessage["detail"],

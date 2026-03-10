@@ -80,7 +80,7 @@ export default async function PublicProfilePage({ params }: Props) {
             <ConnectButton recipientId={profile.id} />
           ) : (
             <a
-              href={`/login?connect=${encodeURIComponent(slug)}`}
+              href={`/login?connect=${encodeURIComponent(profile.id)}`}
               className="inline-flex items-center justify-center rounded-xl bg-zinc-100 px-6 py-3 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
             >
               Join huuman to connect

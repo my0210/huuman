@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import LanguageSelector from "@/components/auth/LanguageSelector";
 import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const connectId = searchParams.get("connect");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +43,14 @@ export default function SignupPage() {
       if (result.error) {
         setError(result.error.message);
         return;
+      }
+
+      if (connectId) {
+        fetch("/api/friends", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipientId: connectId }),
+        }).catch(() => {});
       }
 
       router.push("/");
@@ -109,7 +119,7 @@ export default function SignupPage() {
 
           <p className="text-center text-xs text-zinc-500">
             {t("signup.hasAccount", lang)}{" "}
-            <a href="/login" className="text-zinc-300 hover:text-zinc-100">
+            <a href={connectId ? `/login?connect=${encodeURIComponent(connectId)}` : "/login"} className="text-zinc-300 hover:text-zinc-100">
               {t("signup.signin", lang)}
             </a>
           </p>

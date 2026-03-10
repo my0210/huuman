@@ -33,14 +33,14 @@ export async function GET(
     .select(`
       id,
       group_id,
-      sender_id,
+      user_id,
       message_type,
       content,
       detail,
       media_url,
       media_duration_ms,
       created_at,
-      sender:user_profiles!social_messages_sender_id_fkey(display_name, username)
+      sender:user_profiles!social_messages_user_id_fkey(display_name)
     `)
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
@@ -82,7 +82,7 @@ export async function GET(
   const enriched = (messages ?? []).map((m) => ({
     id: m.id,
     groupId: m.group_id,
-    senderId: m.sender_id,
+    userId: m.user_id,
     messageType: m.message_type,
     content: m.content,
     detail: m.detail,
@@ -130,7 +130,7 @@ export async function POST(
     .from('social_messages')
     .insert({
       group_id: groupId,
-      sender_id: user.id,
+      user_id: user.id,
       message_type: messageType,
       content: content ?? null,
       detail: detail ?? null,
@@ -143,6 +143,12 @@ export async function POST(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  try {
+    const channel = supabase.channel(`group:${groupId}`);
+    await channel.send({ type: 'broadcast', event: 'new_message', payload: message });
+    supabase.removeChannel(channel);
+  } catch { /* broadcast is best-effort */ }
 
   return NextResponse.json({ message }, { status: 201 });
 }

@@ -114,19 +114,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: groupError.message }, { status: 500 });
   }
 
-  const memberRows = [
-    { group_id: group.id, user_id: user.id, role: 'admin' },
-    ...memberIds
-      .filter((id: string) => id !== user.id)
-      .map((id: string) => ({ group_id: group.id, user_id: id, role: 'member' })),
-  ];
-
-  const { error: membersError } = await supabase
+  const { error: creatorError } = await supabase
     .from('group_members')
-    .insert(memberRows);
+    .insert({ group_id: group.id, user_id: user.id, role: 'admin' });
 
-  if (membersError) {
-    return NextResponse.json({ error: membersError.message }, { status: 500 });
+  if (creatorError) {
+    return NextResponse.json({ error: creatorError.message }, { status: 500 });
+  }
+
+  const otherIds = (memberIds as string[]).filter((id) => id !== user.id);
+  if (otherIds.length > 0) {
+    const { error: membersError } = await supabase
+      .from('group_members')
+      .insert(otherIds.map((id) => ({ group_id: group.id, user_id: id, role: 'member' })));
+
+    if (membersError) {
+      return NextResponse.json({ error: membersError.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ group }, { status: 201 });

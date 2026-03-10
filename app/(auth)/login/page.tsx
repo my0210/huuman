@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +10,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const connectId = searchParams.get("connect");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +31,14 @@ export default function LoginPage() {
       if (result.error) {
         setError(result.error.message);
         return;
+      }
+
+      if (connectId) {
+        fetch("/api/friends", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipientId: connectId }),
+        }).catch(() => {});
       }
 
       router.push("/");
@@ -85,7 +95,7 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-zinc-500">
           No account?{" "}
-          <a href="/signup" className="text-zinc-300 hover:text-zinc-100">
+          <a href={connectId ? `/signup?connect=${encodeURIComponent(connectId)}` : "/signup"} className="text-zinc-300 hover:text-zinc-100">
             Sign up
           </a>
         </p>
