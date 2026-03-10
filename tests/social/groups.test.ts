@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { createSocialMockSupabase, _error } from '../mocks/supabase';
+import { createSocialMockSupabase, _error, _count } from '../mocks/supabase';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
@@ -183,6 +183,35 @@ describe('POST /api/groups', () => {
     const deletes = mock._calls.filter(c => c.table === 'groups' && c.op === 'delete');
     expect(deletes).toHaveLength(1);
   });
+
+  it('returns 500 when group insert fails', async () => {
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: { groups: [_error('DB write failed')] },
+      }),
+    );
+
+    const res = await POST(makeReq({ name: 'Fail', memberIds: [] }));
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 500 when other members insert fails', async () => {
+    const created = { id: 'g-partial', name: 'Partial', created_by: USER_ID, created_at: '2026-03-10' };
+
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: {
+          groups: [created],
+          group_members: [null, _error('FK violation')],
+        },
+      }),
+    );
+
+    const res = await POST(makeReq({ name: 'Partial', memberIds: [OTHER_ID] }));
+    expect(res.status).toBe(500);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -273,5 +302,20 @@ describe('PATCH /api/groups', () => {
 
     const deletes = mock._calls.filter(c => c.table === 'group_members' && c.op === 'delete');
     expect(deletes).toHaveLength(1);
+  });
+
+  it('returns 500 when name update fails', async () => {
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: {
+          group_members: [{ role: 'admin' }],
+          groups: [_error('update failed')],
+        },
+      }),
+    );
+
+    const res = await PATCH(makeReq({ groupId: 'g-1', name: 'Should fail' }));
+    expect(res.status).toBe(500);
   });
 });

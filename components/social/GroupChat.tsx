@@ -9,7 +9,8 @@ import {
 import { Send, Camera, Mic, Loader2, Square } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/images";
-import type { SocialMessage, ReactionSummary } from "@/lib/types";
+import { normalizeMessage } from "@/lib/social/normalize";
+import type { SocialMessage } from "@/lib/types";
 import TextMessage from "./TextMessage";
 import VoiceMessage from "./VoiceMessage";
 import PhotoMessage from "./PhotoMessage";
@@ -21,45 +22,6 @@ import CommitmentCardMessage from "./CommitmentCardMessage";
 interface GroupChatProps {
   groupId: string;
   currentUserId: string;
-}
-
-interface RawReactionMap {
-  [emoji: string]: { count: number; userReacted: boolean };
-}
-
-function normalizeReactions(raw: RawReactionMap | ReactionSummary[] | undefined): ReactionSummary[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
-  return Object.entries(raw).map(([emoji, v]) => ({
-    emoji,
-    count: v.count,
-    reacted: v.userReacted,
-  }));
-}
-
-function normalizeSender(sender: unknown): { displayName?: string; username?: string } | undefined {
-  if (!sender || typeof sender !== "object") return undefined;
-  const s = sender as Record<string, unknown>;
-  return {
-    displayName: (s.displayName ?? s.display_name ?? undefined) as string | undefined,
-    username: (s.username ?? undefined) as string | undefined,
-  };
-}
-
-function normalizeMessage(m: Record<string, unknown>): SocialMessage {
-  return {
-    id: m.id as string,
-    groupId: (m.groupId ?? m.group_id) as string,
-    userId: (m.userId ?? m.user_id ?? m.senderId ?? m.sender_id) as string,
-    messageType: (m.messageType ?? m.message_type) as SocialMessage["messageType"],
-    content: (m.content ?? undefined) as string | undefined,
-    detail: (m.detail ?? undefined) as SocialMessage["detail"],
-    mediaUrl: (m.mediaUrl ?? m.media_url ?? undefined) as string | undefined,
-    mediaDurationMs: (m.mediaDurationMs ?? m.media_duration_ms ?? undefined) as number | undefined,
-    createdAt: (m.createdAt ?? m.created_at) as string,
-    sender: normalizeSender(m.sender),
-    reactions: normalizeReactions(m.reactions as RawReactionMap | ReactionSummary[] | undefined),
-  };
 }
 
 const SOCIAL_PHOTOS_BUCKET = "social-photos";
@@ -177,7 +139,10 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
         const data = await res.json();
         const msg = normalizeMessage(data.message as Record<string, unknown>);
         msg.sender = { displayName: "You" };
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       }
     } finally {
       setSending(false);
@@ -212,7 +177,10 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
         const data = await res.json();
         const msg = normalizeMessage(data.message as Record<string, unknown>);
         msg.sender = { displayName: "You" };
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       }
     } finally {
       setSending(false);
@@ -266,7 +234,10 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
             const data = await res.json();
             const msg = normalizeMessage(data.message as Record<string, unknown>);
             msg.sender = { displayName: "You" };
-            setMessages((prev) => [...prev, msg]);
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
           }
         } finally {
           setSending(false);

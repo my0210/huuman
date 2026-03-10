@@ -40,9 +40,11 @@ export interface MockCallRecord {
 }
 
 /**
- * Pass `{ _error: 'msg' }` as a table value to simulate a Supabase error.
+ * Pass `_error('msg')` as a table value to simulate a Supabase error.
+ * Pass `_count(n)` as a table value to simulate a count-only query (head: true).
  */
 export const _error = (msg: string) => ({ __mockError: true, message: msg });
+export const _count = (n: number) => ({ __mockCount: true, count: n });
 
 type TableValue = unknown;
 
@@ -64,6 +66,9 @@ export function createSocialMockSupabase(opts: {
   function resolve(raw: unknown) {
     if (raw && typeof raw === 'object' && '__mockError' in (raw as Record<string, unknown>)) {
       return { data: null, error: { message: (raw as { message: string }).message }, count: 0 };
+    }
+    if (raw && typeof raw === 'object' && '__mockCount' in (raw as Record<string, unknown>)) {
+      return { data: null, error: null, count: (raw as { count: number }).count };
     }
     return { data: raw, error: null, count: 0 };
   }

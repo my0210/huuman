@@ -131,6 +131,19 @@ describe('postSleepCard', () => {
   });
 });
 
+describe('postSleepCard -- edge cases', () => {
+  it('does nothing when user has no groups', async () => {
+    const supabase = createSocialMockSupabase({
+      tables: { group_members: [null] },
+    });
+
+    await postSleepCard(supabase, USER_ID, sleepData);
+
+    const inserts = supabase._calls.filter(c => c.op === 'insert');
+    expect(inserts).toHaveLength(0);
+  });
+});
+
 describe('postMealCard', () => {
   it('inserts meal_card messages into all user groups', async () => {
     const supabase = createSocialMockSupabase({
@@ -148,6 +161,32 @@ describe('postMealCard', () => {
       message_type: 'meal_card',
       detail: mealData,
     });
+  });
+});
+
+describe('postMealCard -- edge cases', () => {
+  it('does nothing when user has no groups', async () => {
+    const supabase = createSocialMockSupabase({
+      tables: { group_members: [null] },
+    });
+
+    await postMealCard(supabase, USER_ID, mealData);
+
+    const inserts = supabase._calls.filter(c => c.op === 'insert');
+    expect(inserts).toHaveLength(0);
+  });
+
+  it('swallows errors silently', async () => {
+    const supabase = createSocialMockSupabase({
+      tables: { group_members: [[{ group_id: 'g-1' }]] },
+    });
+    const origFrom = supabase.from.bind(supabase);
+    (supabase as unknown as Record<string, unknown>).from = (table: string) => {
+      if (table === 'social_messages') throw new Error('DB down');
+      return origFrom(table);
+    };
+
+    await expect(postMealCard(supabase, USER_ID, mealData)).resolves.toBeUndefined();
   });
 });
 

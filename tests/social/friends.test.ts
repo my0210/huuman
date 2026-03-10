@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { createSocialMockSupabase } from '../mocks/supabase';
+import { createSocialMockSupabase, _error } from '../mocks/supabase';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
@@ -79,6 +79,18 @@ describe('GET /api/friends', () => {
     expect(body.pendingSent).toHaveLength(1);
     expect(body.pendingSent[0].friendshipId).toBe('f-3');
   });
+
+  it('returns 500 when friendships query fails', async () => {
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: { friendships: [_error('DB down')] },
+      }),
+    );
+
+    const res = await GET();
+    expect(res.status).toBe(500);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -137,6 +149,20 @@ describe('POST /api/friends', () => {
 
     const res = await POST(makeReq({ recipientId: OTHER_ID }));
     expect(res.status).toBe(409);
+  });
+
+  it('returns 500 when insert fails', async () => {
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: {
+          friendships: [null, _error('insert failed')],
+        },
+      }),
+    );
+
+    const res = await POST(makeReq({ recipientId: OTHER_ID }));
+    expect(res.status).toBe(500);
   });
 
   it('creates a new friend request', async () => {

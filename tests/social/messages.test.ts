@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { createSocialMockSupabase } from '../mocks/supabase';
+import { createSocialMockSupabase, _error } from '../mocks/supabase';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
@@ -108,6 +108,43 @@ describe('GET /api/groups/[id]/messages', () => {
     expect(msg2.reactions['👊'].count).toBe(1);
     expect(msg2.reactions['👊'].userReacted).toBe(false);
   });
+
+  it('supports before pagination param', async () => {
+    const olderMessages = [
+      {
+        id: 'msg-old',
+        group_id: GROUP_ID,
+        user_id: OTHER_ID,
+        message_type: 'text',
+        content: 'older msg',
+        detail: null,
+        media_url: null,
+        media_duration_ms: null,
+        created_at: '2026-03-09T10:00:00Z',
+        sender: { display_name: 'Joshua' },
+      },
+    ];
+
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: {
+          group_members: [{ user_id: USER_ID }],
+          social_messages: [olderMessages],
+          message_reactions: [[]],
+        },
+      }),
+    );
+
+    const req = new NextRequest(
+      `http://localhost/api/groups/${GROUP_ID}/messages?before=2026-03-10T00:00:00Z&limit=10`,
+    );
+    const res = await GET_MESSAGES(req, makeParams(GROUP_ID));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.messages).toHaveLength(1);
+    expect(body.messages[0].content).toBe('older msg');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -201,6 +238,83 @@ describe('POST /api/groups/[id]/messages', () => {
       message_type: 'text',
       content: 'hello team',
     });
+  });
+
+  it('returns 500 when message insert fails', async () => {
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: {
+          group_members: [{ user_id: USER_ID }],
+          social_messages: [_error('insert failed')],
+        },
+      }),
+    );
+
+    const res = await POST_MESSAGE(
+      makeReq({ messageType: 'text', content: 'will fail' }),
+      makeParams(GROUP_ID),
+    );
+    expect(res.status).toBe(500);
+  });
+
+  it('sends a voice message with mediaUrl and duration', async () => {
+    const inserted = {
+      id: 'msg-voice',
+      group_id: GROUP_ID,
+      user_id: USER_ID,
+      message_type: 'voice',
+      media_url: 'https://example.com/voice.webm',
+      media_duration_ms: 8000,
+      created_at: '2026-03-10T15:00:00Z',
+    };
+
+    const mock = createSocialMockSupabase({
+      userId: USER_ID,
+      tables: {
+        group_members: [{ user_id: USER_ID }],
+        social_messages: [inserted],
+      },
+    });
+    vi.mocked(createClient).mockResolvedValue(mock);
+
+    const res = await POST_MESSAGE(
+      makeReq({ messageType: 'voice', mediaUrl: 'https://example.com/voice.webm', mediaDurationMs: 8000 }),
+      makeParams(GROUP_ID),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.message.message_type).toBe('voice');
+    expect(body.message.media_url).toBe('https://example.com/voice.webm');
+  });
+
+  it('sends a photo message with mediaUrl', async () => {
+    const inserted = {
+      id: 'msg-photo',
+      group_id: GROUP_ID,
+      user_id: USER_ID,
+      message_type: 'photo',
+      media_url: 'https://example.com/pic.jpg',
+      created_at: '2026-03-10T15:30:00Z',
+    };
+
+    vi.mocked(createClient).mockResolvedValue(
+      createSocialMockSupabase({
+        userId: USER_ID,
+        tables: {
+          group_members: [{ user_id: USER_ID }],
+          social_messages: [inserted],
+        },
+      }),
+    );
+
+    const res = await POST_MESSAGE(
+      makeReq({ messageType: 'photo', mediaUrl: 'https://example.com/pic.jpg' }),
+      makeParams(GROUP_ID),
+    );
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.message.message_type).toBe('photo');
   });
 
   it('sends a session_card message with detail', async () => {
