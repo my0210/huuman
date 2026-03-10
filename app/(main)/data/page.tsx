@@ -414,13 +414,11 @@ function WeightHistorySection({
       {showForm && (
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={weightInput}
             onChange={(e) => setWeightInput(e.target.value)}
             placeholder="kg"
-            min={20}
-            max={300}
-            step={0.1}
             className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
           />
           <input
