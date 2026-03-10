@@ -43,6 +43,7 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
   const chunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval>>(0 as unknown as ReturnType<typeof setInterval>);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const initialScrollDone = useRef(false);
   const supabaseRef = useRef(createClient());
 
   // ---- Load messages ----
@@ -77,7 +78,12 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
 
   // ---- Scroll to bottom on new messages ----
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!messages.length) return;
+    const behavior = initialScrollDone.current ? "smooth" : "auto";
+    initialScrollDone.current = true;
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior });
+    });
   }, [messages.length]);
 
   // ---- Realtime subscription ----
