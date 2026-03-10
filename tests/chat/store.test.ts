@@ -92,4 +92,56 @@ describe('convertToModelUIMessages', () => {
     expect(part.type).toBe('tool-search_web');
     expect(part.providerExecuted).toBe(true);
   });
+
+  it('adds a text image_url annotation for non-data file URLs', () => {
+    const imageUrl = 'https://cdn.example.com/photo.jpg';
+    const messages: DBMessage[] = [
+      makeMessage(
+        'u1',
+        'user',
+        [{
+          type: 'file',
+          mediaType: 'image/jpeg',
+          url: imageUrl,
+        }],
+      ),
+    ];
+
+    const converted = convertToModelUIMessages(messages);
+
+    expect(converted).toHaveLength(1);
+    expect(converted[0].parts).toHaveLength(2);
+    expect(converted[0].parts[0]).toMatchObject({
+      type: 'file',
+      url: imageUrl,
+    });
+    expect(converted[0].parts[1]).toMatchObject({
+      type: 'text',
+      text: `[image_url: ${imageUrl}]`,
+    });
+  });
+
+  it('replaces oversized base64 file URLs with image placeholder text', () => {
+    const longDataUrl = `data:image/jpeg;base64,${'a'.repeat(50_001)}`;
+    const messages: DBMessage[] = [
+      makeMessage(
+        'u1',
+        'user',
+        [{
+          type: 'file',
+          filename: 'checkin.jpg',
+          url: longDataUrl,
+        }],
+      ),
+    ];
+
+    const converted = convertToModelUIMessages(messages);
+
+    expect(converted).toHaveLength(1);
+    expect(converted[0].parts).toHaveLength(1);
+    expect(converted[0].parts[0]).toMatchObject({
+      type: 'text',
+      text: '[image: checkin.jpg]',
+    });
+  });
 });

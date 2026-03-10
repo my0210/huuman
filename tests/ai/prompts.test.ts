@@ -22,4 +22,11 @@ describe('getSystemPrompt', () => {
     expect(english).not.toContain('The user\'s preferred language is');
     expect(britishEnglish).not.toContain('The user\'s preferred language is');
   });
+
+  it('instructs using the explicit image_url text annotation', () => {
+    const prompt = getSystemPrompt();
+
+    expect(prompt).toContain('Each image in the conversation has an [image_url: ...] text annotation');
+    expect(prompt).toContain('Always use this annotated URL as the imageUrl argument -- never guess or construct URLs.');
+  });
 });
