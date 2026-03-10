@@ -33,7 +33,7 @@ interface FriendEntry {
 interface SearchUser {
   id: string;
   display_name?: string;
-  username?: string;
+  email?: string;
 }
 
 export default function FriendsManagePage() {
@@ -308,9 +308,9 @@ function SearchModal({ onClose }: { onClose: () => void }) {
         {!searching && query && results.length === 0 && <p className="text-center text-sm text-zinc-500 py-8">No users found</p>}
         {results.map((user) => (
           <div key={user.id} className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-            <Avatar name={user.display_name || user.username || "?"} size="md" />
+            <Avatar name={user.display_name || user.email || "?"} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-zinc-200 truncate">{user.display_name || user.username}</p>
+              <p className="text-sm text-zinc-200 truncate">{user.display_name || user.email}</p>
             </div>
             {sentIds.has(user.id) ? (
               <span className="text-xs text-zinc-500">Sent</span>

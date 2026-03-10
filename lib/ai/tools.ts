@@ -364,18 +364,6 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         .single();
 
       if (error) return { error: error.message };
-
-      if (sleepHours !== undefined) {
-        const sleepData: SleepCardDetail = {
-          hours: sleepHours,
-          quality: sleepQuality as 1 | 2 | 3 | 4 | 5 | undefined,
-        };
-        const { autoPost } = shouldAutoPostSleep(sleepData);
-        if (autoPost) {
-          postSleepCard(supabase, userId, sleepData).catch(() => {});
-        }
-      }
-
       return { logged: row };
     },
   });

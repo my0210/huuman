@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('id, display_name, username')
+    .select('id, display_name, email')
     .neq('id', user.id)
-    .or(`display_name.ilike.${pattern},username.ilike.${pattern}`)
+    .or(`display_name.ilike.${pattern},email.ilike.${pattern}`)
     .limit(20);
 
   if (error) {

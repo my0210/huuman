@@ -36,12 +36,14 @@ export function CreateGroupDrawer({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setStep("name");
     setName("");
     setSelectedIds(new Set());
+    setError(null);
   }, [open]);
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export function CreateGroupDrawer({
   const handleCreate = async () => {
     if (!name.trim()) return;
     setCreating(true);
+    setError(null);
     try {
       const res = await fetch("/api/groups", {
         method: "POST",
@@ -77,7 +80,12 @@ export function CreateGroupDrawer({
       if (res.ok) {
         const { group } = await res.json();
         onCreated(group.id);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Failed to create group. Try again.");
       }
+    } catch {
+      setError("Something went wrong. Try again.");
     } finally {
       setCreating(false);
     }
@@ -177,6 +185,12 @@ export function CreateGroupDrawer({
                     </button>
                   );
                 })}
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs text-red-400">
+                {error}
               </div>
             )}
 

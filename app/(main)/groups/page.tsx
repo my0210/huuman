@@ -45,7 +45,12 @@ export default function GroupsPage() {
           </button>
           <h1 className="text-sm font-semibold text-zinc-100">Groups</h1>
         </div>
-        <div className="w-8" />
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+        >
+          <Plus size={16} />
+        </button>
       </header>
 
       {loading ? (
@@ -68,13 +73,6 @@ export default function GroupsPage() {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 hover:bg-zinc-900/50 transition-colors"
-          >
-            <Plus size={16} />
-            Create new group
-          </button>
           {groups.map((group) => (
             <button
               key={group.id}

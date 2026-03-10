@@ -34,7 +34,8 @@ export async function GET() {
       .from('social_messages')
       .select('id, group_id, user_id, message_type, content, created_at')
       .in('group_id', groupIds)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(50),
   ]);
 
   if (groupsRes.error) {
