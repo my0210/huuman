@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Send, Scale, Plus } from "lucide-react";
+import { ArrowLeft, Trash2, Send, Scale, Plus, ChevronRight, Camera, Utensils } from "lucide-react";
 import { DOMAIN_META } from "@/lib/types";
 import type { ContextCategory, ContextScope, DomainBaselines } from "@/lib/types";
 import { formatSingleDomainBaseline } from "@/lib/onboarding/formatBaselines";
-import { ProgressPhotosSection, type ProgressPhoto } from "@/components/data/ProgressPhotosSection";
-import { MealLogSection, type MealPhoto } from "@/components/data/MealLogSection";
 
 const CATEGORY_LABELS: Record<ContextCategory, string> = {
   physical: "Physical",
@@ -50,8 +48,7 @@ export default function DataPage() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
-  const [mealPhotos, setMealPhotos] = useState<MealPhoto[]>([]);
+  const [photoCounts, setPhotoCounts] = useState({ progress: 0, meals: 0 });
   const [weightEntries, setWeightEntries] = useState<WeightEntryData[]>([]);
 
   const [newContent, setNewContent] = useState("");
@@ -67,8 +64,10 @@ export default function DataPage() {
       .then(([contextData, progressData, mealData, weightData]) => {
         setProfile(contextData.profile);
         setItems(contextData.contextItems);
-        setProgressPhotos(progressData.photos ?? []);
-        setMealPhotos(mealData.photos ?? []);
+        setPhotoCounts({
+          progress: (progressData.photos ?? []).length,
+          meals: (mealData.photos ?? []).length,
+        });
         setWeightEntries(weightData.entries ?? []);
       })
       .finally(() => setLoading(false));
@@ -181,35 +180,42 @@ export default function DataPage() {
           </section>
         )}
 
-        {/* Progress photos */}
-        <ProgressPhotosSection
-          photos={progressPhotos}
-          onDelete={async (id) => {
-            const res = await fetch("/api/progress-photos", {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id }),
-            });
-            if (res.ok) setProgressPhotos((prev) => prev.filter((p) => p.id !== id));
-          }}
-          onAdd={(photo) => setProgressPhotos((prev) => [photo, ...prev])}
-          onUpdate={(id, fields) => setProgressPhotos((prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p))}
-        />
-
-        {/* Meal log */}
-        <MealLogSection
-          photos={mealPhotos}
-          onDelete={async (id) => {
-            const res = await fetch("/api/meal-photos", {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id }),
-            });
-            if (res.ok) setMealPhotos((prev) => prev.filter((p) => p.id !== id));
-          }}
-          onAdd={(photo) => setMealPhotos((prev) => [photo, ...prev])}
-          onUpdate={(id, fields) => setMealPhotos((prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p))}
-        />
+        {/* Photo tracking links */}
+        <section className="space-y-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Tracking</h2>
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+            <button
+              onClick={() => router.push("/data/progress-photos")}
+              className="flex items-center justify-between w-full px-4 py-3.5 text-left hover:bg-zinc-800/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Camera size={14} className="text-emerald-500" />
+                <span className="text-sm text-zinc-200">Progress Photos</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {photoCounts.progress > 0 && (
+                  <span className="text-xs text-zinc-500">{photoCounts.progress}</span>
+                )}
+                <ChevronRight size={14} className="text-zinc-600" />
+              </div>
+            </button>
+            <button
+              onClick={() => router.push("/data/meal-log")}
+              className="flex items-center justify-between w-full px-4 py-3.5 text-left hover:bg-zinc-800/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Utensils size={14} className="text-green-500" />
+                <span className="text-sm text-zinc-200">Meal Log</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {photoCounts.meals > 0 && (
+                  <span className="text-xs text-zinc-500">{photoCounts.meals}</span>
+                )}
+                <ChevronRight size={14} className="text-zinc-600" />
+              </div>
+            </button>
+          </div>
+        </section>
 
         {/* Context items by category */}
         {grouped.length > 0 && (
