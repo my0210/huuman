@@ -415,17 +415,32 @@ function WeightLogCard({ data }: { data: Record<string, unknown> }) {
 
   const weightKg = Number(entry.weight_kg);
   const deltaKg = data.deltaKg as number | null;
+  const date = entry.date as string | undefined;
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 space-y-1">
-      <div className="flex items-center gap-2">
-        <Scale size={12} className="text-zinc-500" />
-        <span className="text-xs font-medium text-zinc-400">Weight logged</span>
-      </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-sm text-zinc-200">{weightKg} kg</span>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+      <div className="flex items-start gap-3 px-4 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-400/10">
+          <Scale size={14} className="text-sky-400" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-2xl font-bold leading-tight text-zinc-100">
+            {weightKg} <span className="text-sm font-normal text-zinc-500">kg</span>
+          </p>
+          {date && (
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+            </p>
+          )}
+        </div>
+
         {deltaKg != null && deltaKg !== 0 && (
-          <span className={`text-xs ${deltaKg < 0 ? "text-green-400" : "text-amber-400"}`}>
+          <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+            deltaKg < 0
+              ? "border-green-400/30 bg-green-400/10 text-green-400"
+              : "border-amber-400/30 bg-amber-400/10 text-amber-400"
+          }`}>
             {deltaKg > 0 ? "+" : ""}{deltaKg} kg
           </span>
         )}
