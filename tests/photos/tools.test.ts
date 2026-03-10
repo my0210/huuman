@@ -286,7 +286,8 @@ describe('tool registration', () => {
     expect(names).toContain('save_meal_photo');
     expect(names).toContain('get_meal_photos');
     expect(names).toContain('search_chat_history');
-    expect(names).toHaveLength(24);
+    expect(names).toContain('log_weight');
+    expect(names).toHaveLength(25);
   });
 });
 
