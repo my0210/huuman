@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Trash2, X, Plus, Pencil } from "lucide-react";
+import { Trash2, Plus, Pencil } from "lucide-react";
+import { Drawer } from "@/components/layout/Drawer";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
 
@@ -28,8 +29,11 @@ export function ProgressPhotosSection({
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [timelineDetailId, setTimelineDetailId] = useState<string | null>(null);
 
   const expanded = expandedId ? photos.find((p) => p.id === expandedId) : null;
+  const timelineDetail = timelineDetailId ? photos.find((p) => p.id === timelineDetailId) : null;
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -37,6 +41,37 @@ export function ProgressPhotosSection({
     setDeletingId(null);
     setConfirmingId(null);
     setExpandedId(null);
+    setTimelineDetailId(null);
+  };
+
+  const dateEditButton = (photo: ProgressPhoto) => {
+    const dateRef = { current: null as HTMLInputElement | null };
+    return (
+      <>
+        <button
+          onClick={() => dateRef.current?.showPicker()}
+          className="inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors"
+        >
+          <Pencil size={10} />
+        </button>
+        <input
+          ref={(el) => { dateRef.current = el; }}
+          type="date"
+          value={photo.capturedAt}
+          onChange={(e) => {
+            if (e.target.value) {
+              onUpdate(photo.id, { capturedAt: e.target.value });
+              fetch("/api/progress-photos", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: photo.id, capturedAt: e.target.value }),
+              });
+            }
+          }}
+          className="sr-only"
+        />
+      </>
+    );
   };
 
   return (
@@ -45,12 +80,22 @@ export function ProgressPhotosSection({
         <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
           Progress Photos
         </h2>
-        <button
-          onClick={() => setShowUpload(true)}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-        >
-          <Plus size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          {photos.length > 0 && (
+            <button
+              onClick={() => setShowTimeline(true)}
+              className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              See all
+            </button>
+          )}
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          >
+            <Plus size={14} />
+          </button>
+        </div>
       </div>
 
       {photos.length === 0 ? (
@@ -62,7 +107,7 @@ export function ProgressPhotosSection({
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-2">
-          {photos.map((photo) => (
+          {photos.slice(0, 6).map((photo) => (
             <button
               key={photo.id}
               onClick={() => setExpandedId(photo.id)}
@@ -83,110 +128,118 @@ export function ProgressPhotosSection({
         </div>
       )}
 
-      {expanded && (
-        <ProgressDetailModal
-          photo={expanded}
-          confirmingId={confirmingId}
-          deletingId={deletingId}
-          onClose={() => { setExpandedId(null); setConfirmingId(null); }}
-          onRequestDelete={() => setConfirmingId(expanded.id)}
-          onConfirmDelete={() => handleDelete(expanded.id)}
-          onUpdate={(fields) => {
-            onUpdate(expanded.id, fields);
-            if (fields.capturedAt) {
-              fetch("/api/progress-photos", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: expanded.id, capturedAt: fields.capturedAt }),
-              });
-            }
-          }}
-        />
-      )}
+      {/* Detail drawer */}
+      <Drawer
+        open={!!expanded}
+        onClose={() => { setExpandedId(null); setConfirmingId(null); }}
+        title={expanded ? formatShortDate(expanded.capturedAt) : ""}
+        rightAction={expanded ? dateEditButton(expanded) : undefined}
+      >
+        {expanded && (
+          <PhotoDetail
+            photo={expanded}
+            confirmingId={confirmingId}
+            deletingId={deletingId}
+            onRequestDelete={() => setConfirmingId(expanded.id)}
+            onConfirmDelete={() => handleDelete(expanded.id)}
+          />
+        )}
+      </Drawer>
 
-      {showUpload && (
-        <UploadSheet
-          onClose={() => setShowUpload(false)}
-          onUploaded={(photo) => { onAdd(photo); setShowUpload(false); }}
-        />
-      )}
+      {/* Timeline drawer */}
+      <Drawer
+        open={showTimeline && !timelineDetail}
+        onClose={() => setShowTimeline(false)}
+        title="Progress Photos"
+      >
+        <div className="divide-y divide-zinc-800/50">
+          {photos.map((photo) => (
+            <button
+              key={photo.id}
+              onClick={() => setTimelineDetailId(photo.id)}
+              className="w-full text-left"
+            >
+              <img src={photo.imageUrl} alt="" className="w-full object-cover max-h-80" />
+              <div className="px-4 py-3 space-y-1">
+                <p className="text-xs font-medium text-zinc-300">{formatShortDate(photo.capturedAt)}</p>
+                <p className="text-[11px] text-zinc-500 line-clamp-2">{photo.analysis}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </Drawer>
+
+      {/* Timeline -> detail drill-in */}
+      <Drawer
+        open={!!timelineDetail}
+        onClose={() => setTimelineDetailId(null)}
+        onBack={() => setTimelineDetailId(null)}
+        title={timelineDetail ? formatShortDate(timelineDetail.capturedAt) : ""}
+        rightAction={timelineDetail ? dateEditButton(timelineDetail) : undefined}
+      >
+        {timelineDetail && (
+          <PhotoDetail
+            photo={timelineDetail}
+            confirmingId={confirmingId}
+            deletingId={deletingId}
+            onRequestDelete={() => setConfirmingId(timelineDetail.id)}
+            onConfirmDelete={() => handleDelete(timelineDetail.id)}
+          />
+        )}
+      </Drawer>
+
+      {/* Upload drawer */}
+      <Drawer open={showUpload} onClose={() => setShowUpload(false)} title="Upload progress photo">
+        <UploadForm onClose={() => setShowUpload(false)} onUploaded={(photo) => { onAdd(photo); setShowUpload(false); }} />
+      </Drawer>
     </section>
   );
 }
 
-function ProgressDetailModal({
+function PhotoDetail({
   photo,
   confirmingId,
   deletingId,
-  onClose,
   onRequestDelete,
   onConfirmDelete,
-  onUpdate,
 }: {
   photo: ProgressPhoto;
   confirmingId: string | null;
   deletingId: string | null;
-  onClose: () => void;
   onRequestDelete: () => void;
   onConfirmDelete: () => void;
-  onUpdate: (fields: Partial<ProgressPhoto>) => void;
 }) {
-  const dateRef = useRef<HTMLInputElement>(null);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-2xl border border-zinc-800 bg-zinc-950">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => dateRef.current?.showPicker()}
-              className="inline-flex items-center gap-1 text-sm font-medium text-zinc-200 hover:text-zinc-100 transition-colors"
-            >
-              <span>{formatShortDate(photo.capturedAt)}</span>
-              <Pencil size={10} className="text-zinc-500" />
-            </button>
-            <input
-              ref={dateRef}
-              type="date"
-              value={photo.capturedAt}
-              onChange={(e) => { if (e.target.value) onUpdate({ capturedAt: e.target.value }); }}
-              className="sr-only"
-            />
-          </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
-            <X size={16} />
-          </button>
+    <>
+      <img src={photo.imageUrl} alt="Progress photo" className="w-full object-contain max-h-[50vh]" />
+      <div className="px-4 py-4 space-y-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Analysis</p>
+          <p className="text-sm text-zinc-300 leading-relaxed">{photo.analysis}</p>
         </div>
-        <img src={photo.imageUrl} alt="Progress photo" className="w-full object-contain max-h-[50vh]" />
-        <div className="px-4 py-4 space-y-3">
+        {photo.notes && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Analysis</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">{photo.analysis}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Notes</p>
+            <p className="text-sm text-zinc-400">{photo.notes}</p>
           </div>
-          {photo.notes && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Notes</p>
-              <p className="text-sm text-zinc-400">{photo.notes}</p>
-            </div>
+        )}
+        <div className="pt-2 border-t border-zinc-800">
+          {confirmingId !== photo.id ? (
+            <button onClick={onRequestDelete} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
+              <Trash2 size={12} /><span>Delete photo</span>
+            </button>
+          ) : (
+            <button onClick={onConfirmDelete} disabled={deletingId === photo.id} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50">
+              {deletingId === photo.id ? "Deleting..." : "Confirm delete?"}
+            </button>
           )}
-          <div className="pt-2 border-t border-zinc-800">
-            {confirmingId !== photo.id ? (
-              <button onClick={onRequestDelete} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
-                <Trash2 size={12} /><span>Delete photo</span>
-              </button>
-            ) : (
-              <button onClick={onConfirmDelete} disabled={deletingId === photo.id} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50">
-                {deletingId === photo.id ? "Deleting..." : "Confirm delete?"}
-              </button>
-            )}
-          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-function UploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploaded: (photo: ProgressPhoto) => void }) {
+function UploadForm({ onClose, onUploaded }: { onClose: () => void; onUploaded: (photo: ProgressPhoto) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -209,10 +262,8 @@ function UploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploaded:
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
       const compressed = await compressImage(file);
       const imageUrl = await uploadChatImage(supabase, user.id, compressed, file.name);
-
       const res = await fetch("/api/progress-photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,46 +278,37 @@ function UploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploaded:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-t-2xl border border-zinc-800 bg-zinc-950 px-4 py-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-zinc-200">Upload progress photo</h3>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        {preview ? (
-          <img src={preview} alt="Preview" className="w-full max-h-48 object-contain rounded-xl" />
-        ) : (
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="w-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900 py-8 text-sm text-zinc-500 hover:border-zinc-500 hover:text-zinc-400 transition-colors"
-          >
-            Tap to select photo
-          </button>
-        )}
-        <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-
-        <div className="space-y-1">
-          <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Date</label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
-          />
-        </div>
-
+    <div className="px-4 py-4 space-y-4">
+      {preview ? (
+        <img src={preview} alt="Preview" className="w-full max-h-48 object-contain rounded-xl" />
+      ) : (
         <button
-          onClick={handleSave}
-          disabled={!file || uploading}
-          className="w-full rounded-xl bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 disabled:opacity-30 transition-opacity"
+          onClick={() => fileRef.current?.click()}
+          className="w-full rounded-xl border border-dashed border-zinc-700 bg-zinc-900 py-8 text-sm text-zinc-500 hover:border-zinc-500 hover:text-zinc-400 transition-colors"
         >
-          {uploading ? "Uploading..." : "Save"}
+          Tap to select photo
         </button>
+      )}
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+
+      <div className="space-y-1">
+        <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          max={new Date().toISOString().slice(0, 10)}
+          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none"
+        />
       </div>
+
+      <button
+        onClick={handleSave}
+        disabled={!file || uploading}
+        className="w-full rounded-xl bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 disabled:opacity-30 transition-opacity"
+      >
+        {uploading ? "Uploading..." : "Save"}
+      </button>
     </div>
   );
 }
