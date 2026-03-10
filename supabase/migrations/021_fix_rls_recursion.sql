@@ -53,7 +53,7 @@ CREATE POLICY "Admins can delete members" ON public.group_members FOR DELETE
   );
 
 CREATE POLICY "Group members can read groups" ON public.groups FOR SELECT
-  USING (public.is_group_member(id, auth.uid()));
+  USING (public.is_group_member(id, auth.uid()) OR created_by = auth.uid());
 
 CREATE POLICY "Group admins can update groups" ON public.groups FOR UPDATE
   USING (public.is_group_admin(id, auth.uid()));

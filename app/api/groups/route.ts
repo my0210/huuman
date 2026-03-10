@@ -105,36 +105,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'memberIds must be an array' }, { status: 400 });
   }
 
-  const { data: group, error: groupError } = await supabase
+  const { data: inserted, error: groupError } = await supabase
     .from('groups')
     .insert({ name: name.trim(), created_by: user.id })
-    .select()
+    .select('id, name, created_by, created_at')
     .single();
 
-  if (groupError) {
-    return NextResponse.json({ error: groupError.message }, { status: 500 });
+  if (groupError || !inserted) {
+    return NextResponse.json({ error: groupError?.message ?? 'Failed to create group' }, { status: 500 });
   }
 
   const { error: creatorError } = await supabase
     .from('group_members')
-    .insert({ group_id: group.id, user_id: user.id, role: 'admin' });
+    .insert({ group_id: inserted.id, user_id: user.id, role: 'admin' });
 
   if (creatorError) {
+    await supabase.from('groups').delete().eq('id', inserted.id);
     return NextResponse.json({ error: creatorError.message }, { status: 500 });
   }
 
-  const otherIds = (memberIds as string[]).filter((id) => id !== user.id);
+  const otherIds = (memberIds as string[]).filter((id: string) => id !== user.id);
   if (otherIds.length > 0) {
     const { error: membersError } = await supabase
       .from('group_members')
-      .insert(otherIds.map((id) => ({ group_id: group.id, user_id: id, role: 'member' })));
+      .insert(otherIds.map((id) => ({ group_id: inserted.id, user_id: id, role: 'member' })));
 
     if (membersError) {
       return NextResponse.json({ error: membersError.message }, { status: 500 });
     }
   }
 
-  return NextResponse.json({ group }, { status: 201 });
+  return NextResponse.json({ group: inserted }, { status: 201 });
 }
 
 export async function PATCH(request: NextRequest) {
