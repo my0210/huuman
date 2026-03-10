@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import { Send, X, Plus, Camera, Loader2 } from "lucide-react";
 import { CommandMenu } from "./CommandMenu";
 import { useRouter } from "next/navigation";
@@ -43,7 +43,8 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   const [hasMore, setHasMore] = useState(hasOlderMessages ?? false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const initialScrollDone = useRef(false);
+  const isLoadingOlderRef = useRef(false);
+  const prevScrollHeightRef = useRef(0);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -89,35 +90,37 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   }, []);
 
   useEffect(() => {
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, []);
 
-    if (initialScrollDone.current) {
-      const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
-      if (distFromBottom > 150) return;
-    } else {
-      initialScrollDone.current = true;
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    if (isLoadingOlderRef.current) {
+      el.scrollTop = el.scrollHeight - prevScrollHeightRef.current;
+      isLoadingOlderRef.current = false;
+      return;
     }
 
-    const raf = requestAnimationFrame(() => {
-      scrollEl.scrollTop = scrollEl.scrollHeight;
-    });
-
-    return () => cancelAnimationFrame(raf);
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distFromBottom < 150) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
-  const handleScrollUp = useCallback(async () => {
+  const loadOlderMessages = useCallback(async () => {
     const el = scrollRef.current;
-    if (!el || !hasMore || loadingOlder || isLoading) return;
-    if (el.scrollTop > 80) return;
-
-    const earliest = messages.find(m => (m as unknown as { createdAt?: string | Date }).createdAt);
-    const cursor = earliest
-      ? new Date((earliest as unknown as { createdAt: string | Date }).createdAt).toISOString()
-      : undefined;
-    if (!cursor) return;
+    if (!el || !hasMore || loadingOlder) return;
 
     setLoadingOlder(true);
+    const earliest = messages[0] as unknown as { createdAt?: string | Date } | undefined;
+    const cursor = earliest?.createdAt
+      ? new Date(earliest.createdAt).toISOString()
+      : undefined;
+    if (!cursor) { setLoadingOlder(false); return; }
+
     try {
       const res = await fetch(`/api/chat/messages?chatId=${chatId}&before=${encodeURIComponent(cursor)}&limit=50`);
       if (!res.ok) { setLoadingOlder(false); return; }
@@ -129,15 +132,19 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
 
       if (older.length === 0 || !data.hasMore) setHasMore(false);
       if (older.length > 0) {
-        const prevHeight = el.scrollHeight;
+        isLoadingOlderRef.current = true;
+        prevScrollHeightRef.current = el.scrollHeight;
         setMessages(prev => [...older, ...prev]);
-        requestAnimationFrame(() => {
-          el.scrollTop = el.scrollHeight - prevHeight;
-        });
       }
     } catch { /* ignore */ }
     setLoadingOlder(false);
-  }, [hasMore, loadingOlder, isLoading, messages, chatId, setMessages]);
+  }, [hasMore, loadingOlder, messages, chatId, setMessages]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || el.scrollTop > 80 || loadingOlder || isLoading) return;
+    loadOlderMessages();
+  }, [loadOlderMessages, loadingOlder, isLoading]);
 
   useEffect(() => {
     if (autoSentRef.current || initialMessages.length === 0) return;
@@ -234,7 +241,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   }, []);
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       {/* Header */}
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
         <button onClick={() => setProfileOpen(true)} className="hover:opacity-80 transition-opacity">
@@ -254,7 +261,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
 
       {/* Messages */}
       <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-      <div ref={scrollRef} onScroll={handleScrollUp} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
         {loadingOlder && (
           <div className="flex justify-center py-2">
             <Loader2 size={16} className="animate-spin text-zinc-500" />

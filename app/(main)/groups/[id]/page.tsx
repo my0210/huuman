@@ -59,7 +59,7 @@ export default function GroupDetailPage({
 
   if (loading) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-zinc-950">
+      <div className="flex flex-1 min-h-0 items-center justify-center bg-zinc-950">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
       </div>
     );
@@ -67,7 +67,7 @@ export default function GroupDetailPage({
 
   if (!group) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center bg-zinc-950 gap-3">
+      <div className="flex flex-1 min-h-0 flex-col items-center justify-center bg-zinc-950 gap-3">
         <p className="text-sm text-zinc-400">Group not found</p>
         <button
           onClick={() => router.push("/groups")}
@@ -86,7 +86,7 @@ export default function GroupDetailPage({
   }));
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button

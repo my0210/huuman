@@ -91,14 +91,14 @@ export default function FriendsManagePage() {
 
   if (loading) {
     return (
-      <div className="flex h-dvh items-center justify-center bg-zinc-950">
+      <div className="flex flex-1 min-h-0 items-center justify-center bg-zinc-950">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
         <button
           onClick={() => router.push("/")}

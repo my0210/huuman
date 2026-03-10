@@ -34,7 +34,7 @@ export default function GroupsPage() {
   }, []);
 
   return (
-    <div className="flex h-dvh flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
