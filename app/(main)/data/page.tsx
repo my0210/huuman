@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Send } from "lucide-react";
+import { ArrowLeft, Trash2, Send, Scale, Plus } from "lucide-react";
 import { DOMAIN_META } from "@/lib/types";
 import type { ContextCategory, ContextScope, DomainBaselines } from "@/lib/types";
 import { formatSingleDomainBaseline } from "@/lib/onboarding/formatBaselines";
@@ -28,6 +28,13 @@ interface ContextItem {
   createdAt: string;
 }
 
+interface WeightEntryData {
+  id: string;
+  date: string;
+  weightKg: number;
+  createdAt: string;
+}
+
 interface ProfileData {
   email: string;
   age: number | null;
@@ -45,6 +52,7 @@ export default function DataPage() {
 
   const [progressPhotos, setProgressPhotos] = useState<ProgressPhoto[]>([]);
   const [mealPhotos, setMealPhotos] = useState<MealPhoto[]>([]);
+  const [weightEntries, setWeightEntries] = useState<WeightEntryData[]>([]);
 
   const [newContent, setNewContent] = useState("");
   const [adding, setAdding] = useState(false);
@@ -54,12 +62,14 @@ export default function DataPage() {
       fetch("/api/context").then((r) => r.json()),
       fetch("/api/progress-photos").then((r) => r.json()),
       fetch("/api/meal-photos").then((r) => r.json()),
+      fetch("/api/weight-entries").then((r) => r.json()),
     ])
-      .then(([contextData, progressData, mealData]) => {
+      .then(([contextData, progressData, mealData, weightData]) => {
         setProfile(contextData.profile);
         setItems(contextData.contextItems);
         setProgressPhotos(progressData.photos ?? []);
         setMealPhotos(mealData.photos ?? []);
+        setWeightEntries(weightData.entries ?? []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -133,10 +143,23 @@ export default function DataPage() {
             <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
               <ProfileRow label="Email" value={profile.email} />
               {profile.age && <ProfileRow label="Age" value={`${profile.age}`} />}
-              {profile.weightKg && <ProfileRow label="Weight" value={`${profile.weightKg} kg`} />}
             </div>
           </section>
         )}
+
+        {/* Weight history */}
+        <WeightHistorySection
+          entries={weightEntries}
+          onAdd={(entry) => setWeightEntries((prev) => [entry, ...prev.filter((e) => e.date !== entry.date)])}
+          onDelete={async (id) => {
+            const res = await fetch("/api/weight-entries", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id }),
+            });
+            if (res.ok) setWeightEntries((prev) => prev.filter((e) => e.id !== id));
+          }}
+        />
 
         {/* Domain baselines */}
         {profile?.domainBaselines && (
@@ -329,6 +352,144 @@ function ContextCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function WeightHistorySection({
+  entries,
+  onAdd,
+  onDelete,
+}: {
+  entries: WeightEntryData[];
+  onAdd: (entry: WeightEntryData) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [weightInput, setWeightInput] = useState("");
+  const [dateInput, setDateInput] = useState(new Date().toISOString().slice(0, 10));
+  const [submitting, setSubmitting] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  const latest = sorted[0];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const kg = parseFloat(weightInput);
+    if (isNaN(kg) || kg < 20 || kg > 300) return;
+    setSubmitting(true);
+    const res = await fetch("/api/weight-entries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ weightKg: kg, date: dateInput }),
+    });
+    if (res.ok) {
+      const { entry } = await res.json();
+      onAdd(entry);
+      setWeightInput("");
+      setShowForm(false);
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Weight</h2>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          <Plus size={12} />
+          Log
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <input
+            type="number"
+            value={weightInput}
+            onChange={(e) => setWeightInput(e.target.value)}
+            placeholder="kg"
+            min={20}
+            max={300}
+            step={0.1}
+            className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+          />
+          <input
+            type="date"
+            value={dateInput}
+            onChange={(e) => setDateInput(e.target.value)}
+            className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-400 focus:border-zinc-500 focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={submitting || !weightInput}
+            className="rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-900 disabled:opacity-30 transition-opacity"
+          >
+            {submitting ? "..." : "Save"}
+          </button>
+        </form>
+      )}
+
+      {latest ? (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Scale size={12} className="text-zinc-500" />
+            <span className="text-xs text-zinc-500">Current</span>
+          </div>
+          <span className="text-lg font-semibold text-zinc-100">{latest.weightKg} kg</span>
+          <span className="ml-2 text-xs text-zinc-500">
+            {new Date(latest.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+          <p className="text-xs text-zinc-500">No weight entries yet. Log your first one above.</p>
+        </div>
+      )}
+
+      {sorted.length > 1 && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+          {sorted.map((entry, i) => {
+            const prev = sorted[i + 1];
+            const delta = prev ? Number((entry.weightKg - prev.weightKg).toFixed(1)) : null;
+            return (
+              <div key={entry.id} className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-zinc-500 w-16">
+                    {new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                  <span className="text-sm text-zinc-300">{entry.weightKg} kg</span>
+                  {delta != null && delta !== 0 && (
+                    <span className={`text-[11px] ${delta < 0 ? "text-green-400" : "text-amber-400"}`}>
+                      {delta > 0 ? "+" : ""}{delta}
+                    </span>
+                  )}
+                </div>
+                {confirmingId === entry.id ? (
+                  <button
+                    onClick={() => { onDelete(entry.id); setConfirmingId(null); }}
+                    onBlur={() => setConfirmingId(null)}
+                    className="rounded-lg bg-red-900/40 px-2 py-0.5 text-[11px] font-medium text-red-400 hover:bg-red-900/60 transition-colors"
+                  >
+                    Delete?
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingId(entry.id)}
+                    className="flex h-6 w-6 items-center justify-center rounded-lg text-zinc-700 hover:text-zinc-400 hover:bg-zinc-800 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -270,6 +270,21 @@ export function formatDailyHabit(data: Record<string, unknown>): FormattedRespon
   return { text: `✓ <b>Logged</b>\n${parts.join(' · ')}` };
 }
 
+export function formatWeightLog(data: Record<string, unknown>): FormattedResponse {
+  if (data.error) return { text: "Couldn't log weight right now. Try again in a moment." };
+
+  const entry = data.entry as Record<string, unknown> | undefined;
+  if (!entry) return { text: '✓ Weight logged.' };
+
+  const kg = Number(entry.weight_kg);
+  const deltaKg = data.deltaKg as number | null;
+  let text = `⚖️ <b>Weight logged</b>\n${kg} kg`;
+  if (deltaKg != null && deltaKg !== 0) {
+    text += ` (${deltaKg > 0 ? '+' : ''}${deltaKg} kg)`;
+  }
+  return { text };
+}
+
 export function formatTimer(data: Record<string, unknown>): FormattedResponse {
   const mins = data.minutes as number;
   const label = String(data.label ?? 'Timer');
@@ -397,6 +412,7 @@ export function formatToolOutput(toolName: string, output: Record<string, unknow
     case 'generate_plan': return formatPlanGenerated(output);
     case 'confirm_plan': return formatPlanConfirmed(output);
     case 'search_youtube': return formatYouTubeResults(output);
+    case 'log_weight': return formatWeightLog(output);
     default: return null;
   }
 }

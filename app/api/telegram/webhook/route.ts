@@ -235,7 +235,7 @@ async function handleLogCommand(chatId: number, userId: string, text: string): P
 
   if (parts.length === 0) {
     await sendMessage(chatId,
-      '<b>Usage</b>\n/log 8500 — log steps\n/log sleep 7.5 — sleep hours\n/log nutrition on — on-plan\n/log nutrition off — off-plan',
+      '<b>Usage</b>\n/log 8500 — log steps\n/log sleep 7.5 — sleep hours\n/log nutrition on — on-plan\n/log nutrition off — off-plan\n/log weight 75.5 — body weight (kg)',
     );
     return;
   }
@@ -265,12 +265,21 @@ async function handleLogCommand(chatId: number, userId: string, text: string): P
       await sendMessage(chatId, 'Usage: /log nutrition on  or  /log nutrition off');
       return;
     }
+  } else if (parts[0] === 'weight') {
+    const kg = parseFloat(parts[1]);
+    if (isNaN(kg)) {
+      await sendMessage(chatId, 'Usage: /log weight 75.5');
+      return;
+    }
+    const weightResult = await (tools.log_weight as unknown as ToolExec).execute({ weightKg: kg }, execOpts);
+    await sendFormatted(chatId, formatToolOutput('log_weight', weightResult as Record<string, unknown>));
+    return;
   } else {
     const arg = parts[0] === 'steps' ? parts[1] : parts[0];
     const steps = parseInt(String(arg), 10);
     if (isNaN(steps)) {
       await sendMessage(chatId,
-        '<b>Usage</b>\n/log 8500 — log steps\n/log sleep 7.5 — sleep hours\n/log nutrition on — on-plan\n/log nutrition off — off-plan',
+        '<b>Usage</b>\n/log 8500 — log steps\n/log sleep 7.5 — sleep hours\n/log nutrition on — on-plan\n/log nutrition off — off-plan\n/log weight 75.5 — body weight (kg)',
       );
       return;
     }

@@ -291,6 +291,18 @@ export type SessionDetailFor<D extends Domain> =
   never;
 
 // =============================================================================
+// Weight Entries (tracked over time)
+// =============================================================================
+
+export interface WeightEntry {
+  id: string;
+  userId: string;
+  date: string;
+  weightKg: number;
+  createdAt: string;
+}
+
+// =============================================================================
 // Daily Habits (tracked daily, not as sessions)
 // =============================================================================
 

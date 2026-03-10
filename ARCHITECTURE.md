@@ -97,7 +97,7 @@ How we build with AI. Derived from Anthropic's [Effective harnesses for long-run
 
 ## Database Schema (Supabase)
 
-10 tables, all with RLS:
+11 tables, all with RLS:
 - `user_profiles` -- id (FK auth.users), email, age, weight, domain_baselines, goals, constraints (legacy), onboarding_completed, telegram_chat_id, timezone (IANA, default 'UTC')
 - `user_context` -- user_id, category (physical/environment/equipment/schedule), content (text), scope (permanent/temporary), expires_at, active, source (onboarding/conversation). Categorized, time-scoped facts about the user that drive plan personalization.
 - `weekly_plans` -- user_id, week_start, status, intro_message, tracking_briefs (JSONB: personalized nutrition/sleep targets). Unique on (user_id, week_start).
@@ -108,6 +108,7 @@ How we build with AI. Derived from Anthropic's [Effective harnesses for long-run
 - `user_feedback` -- user_id, category (bug/feature_request/experience), content (AI summary), raw_quotes (text[], user's exact words), conversation_id (FK conversations). Collected via save_feedback tool or Feedback shortcut in CommandMenu.
 - `progress_photos` -- user_id, image_url, ai_analysis (text), notes, captured_at (date), conversation_id. AI-detected body composition selfies from chat, saved via save_progress_photo tool. Calorie/protein estimates are approximate (~).
 - `meal_photos` -- user_id, image_url, description, estimated_calories, estimated_protein_g, meal_type, captured_at, conversation_id. AI-detected meal photos from chat, saved via save_meal_photo tool.
+- `weight_entries` -- user_id, date, weight_kg. One entry per day per user. Latest entry syncs back to user_profiles.weight_kg. Logged via log_weight tool, Telegram /log weight, or Your Data page.
 
 Telegram-specific tables (no RLS, accessed via admin client):
 - `telegram_registration_tokens` -- token, telegram_chat_id, user_id, expires_at
@@ -130,6 +131,7 @@ Telegram-specific tables (no RLS, accessed via admin client):
 - `GET /api/cron/evening-checkin` -- evening check-in (9 PM UTC). Prompts for nutrition and steps via inline keyboards.
 - `GET/DELETE /api/progress-photos` -- CRUD for body composition progress photos (Your Data page)
 - `GET/DELETE /api/meal-photos` -- CRUD for meal photos (Your Data page)
+- `GET/POST/DELETE /api/weight-entries` -- CRUD for weight timeline entries (Your Data page)
 
 ### Middleware (`proxy.ts`)
 Redirects unauthenticated requests to `/login`. Public routes: login, signup, auth callbacks, all Telegram endpoints, registration pages, cron endpoints.
@@ -158,7 +160,7 @@ Registered via `setMyCommands` during setup. Available in Telegram's menu button
 - `/today` -- show today's sessions
 - `/week` -- weekly plan overview
 - `/progress` -- this week's progress
-- `/log` -- instant habit logging (`/log 8500` steps, `/log sleep 7.5`, `/log nutrition on|off`). Bypasses AI agent for zero latency.
+- `/log` -- instant habit logging (`/log 8500` steps, `/log sleep 7.5`, `/log nutrition on|off`, `/log weight 75.5`). Bypasses AI agent for zero latency.
 - `/web` -- login instructions for web dashboard
 
 ### Telegram Message Formatting

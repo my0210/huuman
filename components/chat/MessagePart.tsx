@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import type { UIMessage } from "ai";
 import { isToolUIPart, isFileUIPart, getToolName } from "ai";
-import { Camera, Pencil } from "lucide-react";
+import { Camera, Pencil, Scale } from "lucide-react";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { DraftPlanCard } from "@/components/cards/DraftPlanCard";
@@ -150,6 +150,8 @@ function ToolPart({
       return <SavedPhotoCard data={output} />;
     case "save_meal_photo":
       return <SavedMealCard data={output} />;
+    case "log_weight":
+      return <WeightLogCard data={output} />;
     default:
       return null;
   }
@@ -174,6 +176,7 @@ function LoadingCard({ toolName }: { toolName: string }) {
     search_youtube: "Searching videos...",
     save_progress_photo: "Saving progress photo...",
     save_meal_photo: "Logging meal...",
+    log_weight: "Logging weight...",
     get_progress_photos: "Loading progress photos...",
     get_meal_photos: "Loading meal log...",
   };
@@ -394,6 +397,39 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
           {protein != null && <span>~{protein}g protein</span>}
         </p>
       )}
+    </div>
+  );
+}
+
+function WeightLogCard({ data }: { data: Record<string, unknown> }) {
+  if (data.error) {
+    return (
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+        Couldn&apos;t log weight right now. Try again in a moment.
+      </div>
+    );
+  }
+
+  const entry = data.entry as Record<string, unknown> | undefined;
+  if (!entry) return null;
+
+  const weightKg = Number(entry.weight_kg);
+  const deltaKg = data.deltaKg as number | null;
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 space-y-1">
+      <div className="flex items-center gap-2">
+        <Scale size={12} className="text-zinc-500" />
+        <span className="text-xs font-medium text-zinc-400">Weight logged</span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-sm text-zinc-200">{weightKg} kg</span>
+        {deltaKg != null && deltaKg !== 0 && (
+          <span className={`text-xs ${deltaKg < 0 ? "text-green-400" : "text-amber-400"}`}>
+            {deltaKg > 0 ? "+" : ""}{deltaKg} kg
+          </span>
+        )}
+      </div>
     </div>
   );
 }

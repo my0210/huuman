@@ -380,6 +380,57 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     },
   });
 
+  const log_weight = tool({
+    description:
+      'Log a body weight entry. Use when the user reports their weight (e.g. "I weigh 75 kg", "weight is 165 lbs"). Stores one entry per day.',
+    inputSchema: z.object({
+      weightKg: z.number().min(20).max(300).describe('Weight in kilograms'),
+      date: z.string().optional().describe('Date to log for (YYYY-MM-DD). Defaults to today.'),
+    }),
+    execute: async ({ weightKg, date }: { weightKg: number; date?: string }) => {
+      const targetDate = date ?? getTodayISO(timezone);
+
+      const { data: entry, error } = await supabase
+        .from('weight_entries')
+        .upsert(
+          { user_id: userId, date: targetDate, weight_kg: weightKg },
+          { onConflict: 'user_id,date' },
+        )
+        .select()
+        .single();
+
+      if (error) return { error: error.message };
+
+      const { data: latest } = await supabase
+        .from('weight_entries')
+        .select('date')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (latest && latest.date <= targetDate) {
+        await supabase
+          .from('user_profiles')
+          .update({ weight_kg: weightKg })
+          .eq('id', userId);
+      }
+
+      const { data: prev } = await supabase
+        .from('weight_entries')
+        .select('weight_kg')
+        .eq('user_id', userId)
+        .lt('date', targetDate)
+        .order('date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const deltaKg = prev ? Number((weightKg - Number(prev.weight_kg)).toFixed(1)) : null;
+
+      return { entry, deltaKg };
+    },
+  });
+
   const adapt_plan = tool({
     description:
       'Modify upcoming planned sessions. Use when the user can\'t make a session, wants to reschedule, swap days, or change the plan. After adapting, call show_session to display the updated session.',
@@ -1152,6 +1203,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     log_session,
     show_progress,
     log_daily,
+    log_weight,
     adapt_plan,
     delete_session,
     generate_plan,
