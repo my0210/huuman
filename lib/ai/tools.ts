@@ -1032,7 +1032,11 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
       if (error) return { error: error.message };
 
-      return { saved: true, id: data.id, imageUrl, capturedAt: date };
+      return {
+        saved: true, id: data.id, imageUrl, capturedAt: date,
+        description, estimatedCalories: estimatedCalories ?? null,
+        estimatedProteinG: estimatedProteinG ?? null, mealType: mealType ?? null,
+      };
     },
   });
 

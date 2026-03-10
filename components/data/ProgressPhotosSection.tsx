@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Trash2, X, Plus } from "lucide-react";
+import { Trash2, X, Plus, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { compressImage, uploadChatImage } from "@/lib/images";
+import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
 
 export interface ProgressPhoto {
   id: string;
@@ -17,10 +17,12 @@ export function ProgressPhotosSection({
   photos,
   onDelete,
   onAdd,
+  onUpdate,
 }: {
   photos: ProgressPhoto[];
   onDelete: (id: string) => void;
   onAdd: (photo: ProgressPhoto) => void;
+  onUpdate: (id: string, fields: Partial<ProgressPhoto>) => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -82,45 +84,24 @@ export function ProgressPhotosSection({
       )}
 
       {expanded && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-2xl border border-zinc-800 bg-zinc-950">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
-              <span className="text-sm font-medium text-zinc-200">
-                {formatShortDate(expanded.capturedAt)}
-              </span>
-              <button
-                onClick={() => { setExpandedId(null); setConfirmingId(null); }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <img src={expanded.imageUrl} alt="Progress photo" className="w-full object-contain max-h-[50vh]" />
-            <div className="px-4 py-4 space-y-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Analysis</p>
-                <p className="text-sm text-zinc-300 leading-relaxed">{expanded.analysis}</p>
-              </div>
-              {expanded.notes && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Notes</p>
-                  <p className="text-sm text-zinc-400">{expanded.notes}</p>
-                </div>
-              )}
-              <div className="pt-2 border-t border-zinc-800">
-                {confirmingId !== expanded.id ? (
-                  <button onClick={() => setConfirmingId(expanded.id)} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
-                    <Trash2 size={12} /><span>Delete photo</span>
-                  </button>
-                ) : (
-                  <button onClick={() => handleDelete(expanded.id)} disabled={deletingId === expanded.id} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50">
-                    {deletingId === expanded.id ? "Deleting..." : "Confirm delete?"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProgressDetailModal
+          photo={expanded}
+          confirmingId={confirmingId}
+          deletingId={deletingId}
+          onClose={() => { setExpandedId(null); setConfirmingId(null); }}
+          onRequestDelete={() => setConfirmingId(expanded.id)}
+          onConfirmDelete={() => handleDelete(expanded.id)}
+          onUpdate={(fields) => {
+            onUpdate(expanded.id, fields);
+            if (fields.capturedAt) {
+              fetch("/api/progress-photos", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: expanded.id, capturedAt: fields.capturedAt }),
+              });
+            }
+          }}
+        />
       )}
 
       {showUpload && (
@@ -133,6 +114,78 @@ export function ProgressPhotosSection({
   );
 }
 
+function ProgressDetailModal({
+  photo,
+  confirmingId,
+  deletingId,
+  onClose,
+  onRequestDelete,
+  onConfirmDelete,
+  onUpdate,
+}: {
+  photo: ProgressPhoto;
+  confirmingId: string | null;
+  deletingId: string | null;
+  onClose: () => void;
+  onRequestDelete: () => void;
+  onConfirmDelete: () => void;
+  onUpdate: (fields: Partial<ProgressPhoto>) => void;
+}) {
+  const dateRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
+      <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-2xl border border-zinc-800 bg-zinc-950">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => dateRef.current?.showPicker()}
+              className="inline-flex items-center gap-1 text-sm font-medium text-zinc-200 hover:text-zinc-100 transition-colors"
+            >
+              <span>{formatShortDate(photo.capturedAt)}</span>
+              <Pencil size={10} className="text-zinc-500" />
+            </button>
+            <input
+              ref={dateRef}
+              type="date"
+              value={photo.capturedAt}
+              onChange={(e) => { if (e.target.value) onUpdate({ capturedAt: e.target.value }); }}
+              className="sr-only"
+            />
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <img src={photo.imageUrl} alt="Progress photo" className="w-full object-contain max-h-[50vh]" />
+        <div className="px-4 py-4 space-y-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Analysis</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">{photo.analysis}</p>
+          </div>
+          {photo.notes && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Notes</p>
+              <p className="text-sm text-zinc-400">{photo.notes}</p>
+            </div>
+          )}
+          <div className="pt-2 border-t border-zinc-800">
+            {confirmingId !== photo.id ? (
+              <button onClick={onRequestDelete} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
+                <Trash2 size={12} /><span>Delete photo</span>
+              </button>
+            ) : (
+              <button onClick={onConfirmDelete} disabled={deletingId === photo.id} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50">
+                {deletingId === photo.id ? "Deleting..." : "Confirm delete?"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploaded: (photo: ProgressPhoto) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -140,11 +193,13 @@ function UploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploaded:
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f || !f.type.startsWith("image/")) return;
     setFile(f);
     setPreview(URL.createObjectURL(f));
+    const exifDate = await extractExifDate(f);
+    if (exifDate) setDate(exifDate);
   };
 
   const handleSave = async () => {

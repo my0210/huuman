@@ -74,18 +74,24 @@ export async function PATCH(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id, capturedAt } = (await req.json()) as { id: string; capturedAt: string };
-  if (!id || !capturedAt) return NextResponse.json({ error: 'id and capturedAt are required' }, { status: 400 });
+  const { id, capturedAt, mealType } = (await req.json()) as { id: string; capturedAt?: string; mealType?: string };
+  if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
+
+  const updates: Record<string, unknown> = {};
+  if (capturedAt) updates.captured_at = capturedAt;
+  if (mealType !== undefined) updates.meal_type = mealType || null;
+
+  if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
 
   const { error } = await supabase
     .from('meal_photos')
-    .update({ captured_at: capturedAt })
+    .update(updates)
     .eq('id', id)
     .eq('user_id', user.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ updated: id, capturedAt });
+  return NextResponse.json({ updated: id, capturedAt, mealType });
 }
 
 export async function DELETE(req: Request) {

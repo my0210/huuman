@@ -170,6 +170,7 @@ export default function DataPage() {
             if (res.ok) setProgressPhotos((prev) => prev.filter((p) => p.id !== id));
           }}
           onAdd={(photo) => setProgressPhotos((prev) => [photo, ...prev])}
+          onUpdate={(id, fields) => setProgressPhotos((prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p))}
         />
 
         {/* Meal log */}
@@ -184,6 +185,7 @@ export default function DataPage() {
             if (res.ok) setMealPhotos((prev) => prev.filter((p) => p.id !== id));
           }}
           onAdd={(photo) => setMealPhotos((prev) => [photo, ...prev])}
+          onUpdate={(id, fields) => setMealPhotos((prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p))}
         />
 
         {/* Context items by category */}

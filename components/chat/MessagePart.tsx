@@ -270,6 +270,43 @@ function EditableDate({ date, onUpdate }: { date: string; onUpdate: (newDate: st
   );
 }
 
+const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+
+function EditableMealType({ value, onUpdate }: { value: string | null; onUpdate: (mt: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const label = value ? value.charAt(0).toUpperCase() + value.slice(1) : "Set type";
+
+  if (open) {
+    return (
+      <div className="flex gap-1">
+        {MEAL_TYPES.map((mt) => (
+          <button
+            key={mt}
+            onClick={() => { onUpdate(mt); setOpen(false); }}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+              mt === value
+                ? "bg-green-900/40 text-green-400"
+                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            {mt.charAt(0).toUpperCase() + mt.slice(1)}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setOpen(true)}
+      className="inline-flex items-center gap-1 rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500 hover:bg-green-900/50 transition-colors"
+    >
+      <span>{label}</span>
+      <Pencil size={8} />
+    </button>
+  );
+}
+
 function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
   const [date, setDate] = useState(data.capturedAt as string | undefined);
 
@@ -312,6 +349,7 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
 
 function SavedMealCard({ data }: { data: Record<string, unknown> }) {
   const [date, setDate] = useState(data.capturedAt as string | undefined);
+  const [mt, setMt] = useState(data.mealType as string | null ?? null);
 
   if (data.error) {
     return (
@@ -321,37 +359,34 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
     );
   }
 
+  const description = data.description as string | undefined;
   const cal = data.estimatedCalories as number | undefined;
   const protein = data.estimatedProteinG as number | undefined;
-  const mealType = data.mealType as string | undefined;
   const id = data.id as string | undefined;
 
-  const mealLabel = mealType
-    ? mealType.charAt(0).toUpperCase() + mealType.slice(1)
-    : null;
-
-  const handleDateUpdate = async (newDate: string) => {
-    setDate(newDate);
-    if (id) {
-      await fetch("/api/meal-photos", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, capturedAt: newDate }),
-      });
-    }
+  const patchMeal = async (fields: Record<string, unknown>) => {
+    if (!id) return;
+    await fetch("/api/meal-photos", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...fields }),
+    });
   };
 
   return (
-    <div className="rounded-xl border border-green-900/50 bg-green-950/30 px-4 py-3 space-y-1">
-      <div className="flex items-center gap-2">
-        {mealLabel && (
-          <span className="rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500">
-            {mealLabel}
-          </span>
-        )}
-        <span className="text-xs font-medium text-green-400">Meal logged</span>
-        {date && <EditableDate date={date} onUpdate={handleDateUpdate} />}
+    <div className="rounded-xl border border-green-900/50 bg-green-950/30 px-4 py-3 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-green-400">Meal logged</span>
+          {date && (
+            <EditableDate date={date} onUpdate={(d) => { setDate(d); patchMeal({ capturedAt: d }); }} />
+          )}
+        </div>
+        <EditableMealType value={mt} onUpdate={(v) => { setMt(v); patchMeal({ mealType: v }); }} />
       </div>
+      {description && (
+        <p className="text-[11px] text-zinc-400 line-clamp-2">{description}</p>
+      )}
       {(cal != null || protein != null) && (
         <p className="text-[11px] text-zinc-500">
           {cal != null && <span>~{cal} cal</span>}

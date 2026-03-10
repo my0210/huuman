@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Trash2, X, Plus } from "lucide-react";
+import { Trash2, X, Plus, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { compressImage, uploadChatImage } from "@/lib/images";
+import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
 
 export interface MealPhoto {
   id: string;
@@ -28,10 +28,12 @@ export function MealLogSection({
   photos,
   onDelete,
   onAdd,
+  onUpdate,
 }: {
   photos: MealPhoto[];
   onDelete: (id: string) => void;
   onAdd: (photo: MealPhoto) => void;
+  onUpdate: (id: string, fields: Partial<MealPhoto>) => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -112,53 +114,18 @@ export function MealLogSection({
       )}
 
       {expanded && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-2xl border border-zinc-800 bg-zinc-950">
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
-              <div className="flex items-center gap-2">
-                {expanded.mealType && (
-                  <span className="rounded-full bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-500">
-                    {expanded.mealType.charAt(0).toUpperCase() + expanded.mealType.slice(1)}
-                  </span>
-                )}
-                <span className="text-sm font-medium text-zinc-200">{formatShortDate(expanded.capturedAt)}</span>
-              </div>
-              <button
-                onClick={() => { setExpandedId(null); setConfirmingId(null); }}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <img src={expanded.imageUrl} alt="Meal photo" className="w-full object-contain max-h-[50vh]" />
-            <div className="px-4 py-4 space-y-3">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Description</p>
-                <p className="text-sm text-zinc-300 leading-relaxed">{expanded.description}</p>
-              </div>
-              {(expanded.estimatedCalories != null || expanded.estimatedProteinG != null) && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Estimates</p>
-                  <div className="flex gap-4">
-                    {expanded.estimatedCalories != null && <p className="text-sm text-zinc-300">~{expanded.estimatedCalories} cal</p>}
-                    {expanded.estimatedProteinG != null && <p className="text-sm text-zinc-300">~{expanded.estimatedProteinG}g protein</p>}
-                  </div>
-                </div>
-              )}
-              <div className="pt-2 border-t border-zinc-800">
-                {confirmingId !== expanded.id ? (
-                  <button onClick={() => setConfirmingId(expanded.id)} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
-                    <Trash2 size={12} /><span>Delete meal</span>
-                  </button>
-                ) : (
-                  <button onClick={() => handleDelete(expanded.id)} disabled={deletingId === expanded.id} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50">
-                    {deletingId === expanded.id ? "Deleting..." : "Confirm delete?"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <MealDetailModal
+          photo={expanded}
+          confirmingId={confirmingId}
+          deletingId={deletingId}
+          onClose={() => { setExpandedId(null); setConfirmingId(null); }}
+          onRequestDelete={() => setConfirmingId(expanded.id)}
+          onConfirmDelete={() => handleDelete(expanded.id)}
+          onUpdate={(fields) => {
+            onUpdate(expanded.id, fields);
+            patchMealPhoto(expanded.id, fields);
+          }}
+        />
       )}
 
       {showUpload && (
@@ -171,6 +138,110 @@ export function MealLogSection({
   );
 }
 
+async function patchMealPhoto(id: string, fields: Partial<MealPhoto>) {
+  const body: Record<string, unknown> = { id };
+  if (fields.capturedAt) body.capturedAt = fields.capturedAt;
+  if (fields.mealType !== undefined) body.mealType = fields.mealType;
+  await fetch("/api/meal-photos", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function MealDetailModal({
+  photo,
+  confirmingId,
+  deletingId,
+  onClose,
+  onRequestDelete,
+  onConfirmDelete,
+  onUpdate,
+}: {
+  photo: MealPhoto;
+  confirmingId: string | null;
+  deletingId: string | null;
+  onClose: () => void;
+  onRequestDelete: () => void;
+  onConfirmDelete: () => void;
+  onUpdate: (fields: Partial<MealPhoto>) => void;
+}) {
+  const dateRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm">
+      <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-t-2xl border border-zinc-800 bg-zinc-950">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => dateRef.current?.showPicker()}
+              className="inline-flex items-center gap-1 text-sm font-medium text-zinc-200 hover:text-zinc-100 transition-colors"
+            >
+              <span>{formatShortDate(photo.capturedAt)}</span>
+              <Pencil size={10} className="text-zinc-500" />
+            </button>
+            <input
+              ref={dateRef}
+              type="date"
+              value={photo.capturedAt}
+              onChange={(e) => { if (e.target.value) onUpdate({ capturedAt: e.target.value }); }}
+              className="sr-only"
+            />
+          </div>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <img src={photo.imageUrl} alt="Meal photo" className="w-full object-contain max-h-[50vh]" />
+        <div className="px-4 py-4 space-y-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">Meal type</p>
+            <div className="flex gap-2">
+              {MEAL_TYPES.map((mt) => (
+                <button
+                  key={mt}
+                  onClick={() => onUpdate({ mealType: mt })}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    mt === photo.mealType
+                      ? "bg-green-900/40 text-green-400 border border-green-800"
+                      : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300"
+                  }`}
+                >
+                  {mt.charAt(0).toUpperCase() + mt.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Description</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">{photo.description}</p>
+          </div>
+          {(photo.estimatedCalories != null || photo.estimatedProteinG != null) && (
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">Estimates</p>
+              <div className="flex gap-4">
+                {photo.estimatedCalories != null && <p className="text-sm text-zinc-300">~{photo.estimatedCalories} cal</p>}
+                {photo.estimatedProteinG != null && <p className="text-sm text-zinc-300">~{photo.estimatedProteinG}g protein</p>}
+              </div>
+            </div>
+          )}
+          <div className="pt-2 border-t border-zinc-800">
+            {confirmingId !== photo.id ? (
+              <button onClick={onRequestDelete} className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors">
+                <Trash2 size={12} /><span>Delete meal</span>
+              </button>
+            ) : (
+              <button onClick={onConfirmDelete} disabled={deletingId === photo.id} className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50">
+                {deletingId === photo.id ? "Deleting..." : "Confirm delete?"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MealUploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploaded: (photo: MealPhoto) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -179,11 +250,13 @@ function MealUploadSheet({ onClose, onUploaded }: { onClose: () => void; onUploa
   const [mealType, setMealType] = useState<string>("");
   const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f || !f.type.startsWith("image/")) return;
     setFile(f);
     setPreview(URL.createObjectURL(f));
+    const exifDate = await extractExifDate(f);
+    if (exifDate) setDate(exifDate);
   };
 
   const handleSave = async () => {
