@@ -79,11 +79,19 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
   // ---- Scroll to bottom on new messages ----
   useEffect(() => {
     if (!messages.length) return;
-    const behavior = initialScrollDone.current ? "smooth" : "auto";
-    initialScrollDone.current = true;
-    requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ behavior });
-    });
+    const el = scrollRef.current;
+    if (!el) return;
+
+    if (!initialScrollDone.current) {
+      initialScrollDone.current = true;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          el.scrollTop = el.scrollHeight;
+        });
+      });
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages.length]);
 
   // ---- Realtime subscription ----
