@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -9,6 +9,14 @@ import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
 
 export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const [languageChosen, setLanguageChosen] = useState(false);
   const [lang, setLang] = useState<LanguageCode>("en");
   const [email, setEmail] = useState("");
