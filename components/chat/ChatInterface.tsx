@@ -43,6 +43,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   const [hasMore, setHasMore] = useState(hasOlderMessages ?? false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const initialScrollDone = useRef(false);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -91,8 +92,12 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     const scrollEl = scrollRef.current;
     if (!scrollEl) return;
 
-    const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
-    if (distFromBottom > 150) return;
+    if (initialScrollDone.current) {
+      const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+      if (distFromBottom > 150) return;
+    } else {
+      initialScrollDone.current = true;
+    }
 
     const raf = requestAnimationFrame(() => {
       scrollEl.scrollTop = scrollEl.scrollHeight;
