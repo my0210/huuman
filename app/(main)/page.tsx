@@ -19,6 +19,7 @@ export default async function MainPage() {
 
   const dbMessages = await loadMessages(chatId, supabase);
   const initialMessages = convertToUIMessages(dbMessages);
+  const hasOlderMessages = dbMessages.length >= 100;
 
   const profile = profileResult.data;
 
@@ -26,6 +27,7 @@ export default async function MainPage() {
     <ChatInterface
       chatId={chatId}
       initialMessages={initialMessages}
+      hasOlderMessages={hasOlderMessages}
       userEmail={user!.email ?? ''}
       displayName={profile?.display_name ?? undefined}
       avatarUrl={profile?.avatar_url ?? undefined}

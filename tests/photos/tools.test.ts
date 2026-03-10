@@ -276,7 +276,7 @@ describe('get_meal_photos', () => {
 });
 
 describe('tool registration', () => {
-  it('registers all 23 tools including photo tools', () => {
+  it('registers all 24 tools including photo and history tools', () => {
     const supabase = createPhotoMockSupabase();
     const tools = createTools('user-1', supabase, 'conv-1', 'UTC');
     const names = Object.keys(tools);
@@ -285,7 +285,8 @@ describe('tool registration', () => {
     expect(names).toContain('get_progress_photos');
     expect(names).toContain('save_meal_photo');
     expect(names).toContain('get_meal_photos');
-    expect(names).toHaveLength(23);
+    expect(names).toContain('search_chat_history');
+    expect(names).toHaveLength(24);
   });
 });
 

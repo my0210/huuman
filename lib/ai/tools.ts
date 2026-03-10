@@ -337,14 +337,16 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       nutritionOnPlan: z.boolean().optional().describe('Whether nutrition was on-plan'),
       sleepHours: z.number().optional().describe('Hours of sleep last night'),
       sleepQuality: z.number().min(1).max(5).optional().describe('Sleep quality 1-5'),
+      date: z.string().optional().describe('Date to log for (YYYY-MM-DD). Defaults to today. Use when the user reports data for a past date.'),
     }),
-    execute: async ({ steps, nutritionOnPlan, sleepHours, sleepQuality }: {
+    execute: async ({ steps, nutritionOnPlan, sleepHours, sleepQuality, date }: {
       steps?: number;
       nutritionOnPlan?: boolean;
       sleepHours?: number;
       sleepQuality?: number;
+      date?: string;
     }) => {
-      const today = getTodayISO(timezone);
+      const targetDate = date ?? getTodayISO(timezone);
 
       const updates: Record<string, unknown> = {};
       if (steps !== undefined) updates.steps_actual = steps;
@@ -352,10 +354,10 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       if (sleepHours !== undefined) updates.sleep_hours = sleepHours;
       if (sleepQuality !== undefined) updates.sleep_quality = sleepQuality;
 
-      const { data, error } = await supabase
+      const { data: row, error } = await supabase
         .from('daily_habits')
         .upsert(
-          { user_id: userId, date: today, ...updates },
+          { user_id: userId, date: targetDate, ...updates },
           { onConflict: 'user_id,date' },
         )
         .select()
@@ -363,7 +365,18 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
       if (error) return { error: error.message };
 
-      return { logged: data };
+      if (sleepHours !== undefined) {
+        const sleepData: SleepCardDetail = {
+          hours: sleepHours,
+          quality: sleepQuality as 1 | 2 | 3 | 4 | 5 | undefined,
+        };
+        const { autoPost } = shouldAutoPostSleep(sleepData);
+        if (autoPost) {
+          postSleepCard(supabase, userId, sleepData).catch(() => {});
+        }
+      }
+
+      return { logged: row };
     },
   });
 
@@ -1063,6 +1076,70 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     },
   });
 
+  const search_chat_history = tool({
+    description:
+      'Search through the full conversation history with this user. Use when the user references something they said in a past conversation, asks "remember when I told you...", or when you need to recall a specific discussion. Returns matching messages with timestamps.',
+    inputSchema: z.object({
+      query: z.string().optional().describe('Text to search for in messages (case-insensitive). Omit to browse by date range.'),
+      from: z.string().optional().describe('Start date filter (YYYY-MM-DD)'),
+      to: z.string().optional().describe('End date filter (YYYY-MM-DD)'),
+      role: z.enum(['user', 'assistant']).optional().describe('Filter by message sender'),
+      limit: z.number().optional().describe('Max results (default 20, max 50)'),
+    }),
+    execute: async ({ query, from, to, role, limit }: {
+      query?: string;
+      from?: string;
+      to?: string;
+      role?: 'user' | 'assistant';
+      limit?: number;
+    }) => {
+      if (!conversationId) return { error: 'No conversation context available' };
+
+      const maxResults = Math.min(limit ?? 20, 50);
+
+      let dbQuery = supabase
+        .from('messages')
+        .select('id, role, parts, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (from) dbQuery = dbQuery.gte('created_at', `${from}T00:00:00`);
+      if (to) dbQuery = dbQuery.lte('created_at', `${to}T23:59:59`);
+      if (role) dbQuery = dbQuery.eq('role', role);
+
+      const { data, error } = await dbQuery;
+      if (error) return { error: error.message };
+
+      type RawPart = { type?: string; text?: string };
+
+      let results = (data ?? []).map(msg => {
+        const textParts = (msg.parts as RawPart[])
+          .filter(p => p.type === 'text' && p.text)
+          .map(p => p.text!);
+        return {
+          role: msg.role,
+          text: textParts.join('\n').slice(0, 500),
+          date: msg.created_at,
+        };
+      }).filter(m => m.text.length > 0);
+
+      if (query) {
+        const q = query.toLowerCase();
+        results = results.filter(m => m.text.toLowerCase().includes(q));
+      }
+
+      const matches = results.slice(0, maxResults).reverse();
+
+      return {
+        matches,
+        totalMatches: results.length,
+        showing: matches.length,
+        searchedMessages: data?.length ?? 0,
+      };
+    },
+  });
+
   return {
     show_today_plan,
     show_week_plan,
@@ -1087,6 +1164,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
     get_progress_photos,
     save_meal_photo,
     get_meal_photos,
+    search_chat_history,
   };
 }
 

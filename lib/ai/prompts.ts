@@ -60,7 +60,7 @@ You have tools for reading state, taking action, and verifying results. Tools ar
 ### Action tools
 - complete_session -- mark a planned session as done. Use for sessions matching the plan.
 - log_session -- record an activity that doesn't match any pending planned session. Extra work is good data.
-- log_daily -- record steps, nutrition, sleep
+- log_daily -- record steps, nutrition, sleep. Accepts an optional date for past entries ("I got 10k steps yesterday").
 - adapt_plan (skip/reschedule/modify), delete_session -- change individual sessions
 - generate_plan -- create a new weekly plan. Set draft=true for user review.
 - confirm_plan -- activate a draft after user approval

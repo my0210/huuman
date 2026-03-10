@@ -25,12 +25,13 @@ interface PendingImage {
 interface ChatInterfaceProps {
   chatId: string;
   initialMessages: UIMessage[];
+  hasOlderMessages?: boolean;
   userEmail?: string;
   displayName?: string;
   avatarUrl?: string;
 }
 
-export function ChatInterface({ chatId, initialMessages, userEmail, displayName, avatarUrl }: ChatInterfaceProps) {
+export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userEmail, displayName, avatarUrl }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
@@ -39,6 +40,8 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
   const [error, setError] = useState<string | null>(null);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hasMore, setHasMore] = useState(hasOlderMessages ?? false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,12 +91,48 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
     const scrollEl = scrollRef.current;
     if (!scrollEl) return;
 
+    const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+    if (distFromBottom > 150) return;
+
     const raf = requestAnimationFrame(() => {
       scrollEl.scrollTop = scrollEl.scrollHeight;
     });
 
     return () => cancelAnimationFrame(raf);
   }, [messages]);
+
+  const handleScrollUp = useCallback(async () => {
+    const el = scrollRef.current;
+    if (!el || !hasMore || loadingOlder || isLoading) return;
+    if (el.scrollTop > 80) return;
+
+    const earliest = messages.find(m => (m as unknown as { createdAt?: string | Date }).createdAt);
+    const cursor = earliest
+      ? new Date((earliest as unknown as { createdAt: string | Date }).createdAt).toISOString()
+      : undefined;
+    if (!cursor) return;
+
+    setLoadingOlder(true);
+    try {
+      const res = await fetch(`/api/chat/messages?chatId=${chatId}&before=${encodeURIComponent(cursor)}&limit=50`);
+      if (!res.ok) { setLoadingOlder(false); return; }
+      const data = await res.json();
+      const older: UIMessage[] = (data.messages ?? []).map((m: Record<string, unknown>) => ({
+        ...m,
+        createdAt: m.createdAt ? new Date(m.createdAt as string) : undefined,
+      }));
+
+      if (older.length === 0 || !data.hasMore) setHasMore(false);
+      if (older.length > 0) {
+        const prevHeight = el.scrollHeight;
+        setMessages(prev => [...older, ...prev]);
+        requestAnimationFrame(() => {
+          el.scrollTop = el.scrollHeight - prevHeight;
+        });
+      }
+    } catch { /* ignore */ }
+    setLoadingOlder(false);
+  }, [hasMore, loadingOlder, isLoading, messages, chatId, setMessages]);
 
   useEffect(() => {
     if (autoSentRef.current || initialMessages.length === 0) return;
@@ -210,7 +249,12 @@ export function ChatInterface({ chatId, initialMessages, userEmail, displayName,
 
       {/* Messages */}
       <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={scrollRef} onScroll={handleScrollUp} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {loadingOlder && (
+          <div className="flex justify-center py-2">
+            <Loader2 size={16} className="animate-spin text-zinc-500" />
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
             <p className="text-zinc-400 text-sm max-w-xs">

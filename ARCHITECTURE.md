@@ -27,7 +27,7 @@ AI longevity coach that generates weekly health plans and helps users execute th
     │     Shared Core       │
     │                       │
     │  createCoachAgent()   │  lib/ai/agent.ts
-    │  createTools()        │  lib/ai/tools.ts (19 tools)
+    │  createTools()        │  lib/ai/tools.ts (20 tools)
     │  generateWeeklyPlan() │  lib/ai/planGeneration.ts
     │  loadUserProfile()    │  lib/core/user.ts
     │  chat store functions │  lib/chat/store.ts
@@ -74,7 +74,7 @@ Bidirectional linking:
 - `validatePlan()` validates cardio/strength session rules
 
 ### AI agent
-`ToolLoopAgent` with `stepCountIs(10)` stop condition. The agent has 23 tools across three phases (gather context, take action, verify):
+`ToolLoopAgent` with `stepCountIs(10)` stop condition. The agent has 24 tools across three phases (gather context, take action, verify):
 - Web: tools return JSON, `MessagePart.tsx` maps toolName -> React card component
 - Telegram: tools return JSON, `formatters.ts` maps toolName -> text + inline keyboards
 
