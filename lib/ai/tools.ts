@@ -923,9 +923,10 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       imageUrl: z.string().describe('The image URL from the user message'),
       analysis: z.string().describe('Your visual analysis: posture, muscle definition, proportions, body fat distribution'),
       notes: z.string().optional().describe('Optional user-provided context (e.g. "12 weeks into cut")'),
+      capturedAt: z.string().optional().describe('Date the photo was taken (YYYY-MM-DD). Defaults to today. Use when the user says the photo is from a past date.'),
     }),
-    execute: async ({ imageUrl, analysis, notes }: { imageUrl: string; analysis: string; notes?: string }) => {
-      const today = getTodayISO(timezone);
+    execute: async ({ imageUrl, analysis, notes, capturedAt }: { imageUrl: string; analysis: string; notes?: string; capturedAt?: string }) => {
+      const date = capturedAt ?? getTodayISO(timezone);
 
       const { data, error } = await supabase
         .from('progress_photos')
@@ -934,7 +935,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
           image_url: imageUrl,
           ai_analysis: analysis,
           notes: notes ?? null,
-          captured_at: today,
+          captured_at: date,
           conversation_id: conversationId ?? null,
         })
         .select('id')
@@ -947,7 +948,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
 
-      return { saved: true, id: data.id, imageUrl, totalCount: count ?? 1 };
+      return { saved: true, id: data.id, imageUrl, totalCount: count ?? 1, capturedAt: date };
     },
   });
 
@@ -989,15 +990,17 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
       estimatedCalories: z.number().optional().describe('Rough calorie estimate'),
       estimatedProteinG: z.number().optional().describe('Rough protein estimate in grams'),
       mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).optional().describe('Meal type, inferred from time of day and content'),
+      capturedAt: z.string().optional().describe('Date the photo was taken (YYYY-MM-DD). Defaults to today. Use when the user says the photo is from a past date.'),
     }),
-    execute: async ({ imageUrl, description, estimatedCalories, estimatedProteinG, mealType }: {
+    execute: async ({ imageUrl, description, estimatedCalories, estimatedProteinG, mealType, capturedAt }: {
       imageUrl: string;
       description: string;
       estimatedCalories?: number;
       estimatedProteinG?: number;
       mealType?: string;
+      capturedAt?: string;
     }) => {
-      const today = getTodayISO(timezone);
+      const date = capturedAt ?? getTodayISO(timezone);
 
       const { data, error } = await supabase
         .from('meal_photos')
@@ -1008,7 +1011,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
           estimated_calories: estimatedCalories ?? null,
           estimated_protein_g: estimatedProteinG ?? null,
           meal_type: mealType ?? null,
-          captured_at: today,
+          captured_at: date,
           conversation_id: conversationId ?? null,
         })
         .select('id')
@@ -1016,7 +1019,7 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
       if (error) return { error: error.message };
 
-      return { saved: true, id: data.id, imageUrl };
+      return { saved: true, id: data.id, imageUrl, capturedAt: date };
     },
   });
 

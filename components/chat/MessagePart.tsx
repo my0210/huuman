@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef } from "react";
 import type { UIMessage } from "ai";
 import { isToolUIPart, isFileUIPart, getToolName } from "ai";
-import { Camera } from "lucide-react";
+import { Camera, Pencil } from "lucide-react";
 import { TodayPlanCard } from "@/components/cards/TodayPlanCard";
 import { WeekPlanCard } from "@/components/cards/WeekPlanCard";
 import { DraftPlanCard } from "@/components/cards/DraftPlanCard";
@@ -246,7 +246,33 @@ function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
   );
 }
 
+function EditableDate({ date, onUpdate }: { date: string; onUpdate: (newDate: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const label = new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  return (
+    <>
+      <button
+        onClick={() => inputRef.current?.showPicker()}
+        className="inline-flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+      >
+        <span>{label}</span>
+        <Pencil size={9} />
+      </button>
+      <input
+        ref={inputRef}
+        type="date"
+        value={date}
+        onChange={(e) => { if (e.target.value) onUpdate(e.target.value); }}
+        className="sr-only"
+      />
+    </>
+  );
+}
+
 function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
+  const [date, setDate] = useState(data.capturedAt as string | undefined);
+
   if (data.error) {
     return (
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
@@ -256,10 +282,25 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
   }
 
   const totalCount = data.totalCount as number | undefined;
+  const id = data.id as string | undefined;
+
+  const handleDateUpdate = async (newDate: string) => {
+    setDate(newDate);
+    if (id) {
+      await fetch("/api/progress-photos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, capturedAt: newDate }),
+      });
+    }
+  };
 
   return (
     <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 flex items-center justify-between">
-      <span className="text-xs font-medium text-emerald-400">Progress photo saved</span>
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-emerald-400">Progress photo saved</span>
+        {date && <EditableDate date={date} onUpdate={handleDateUpdate} />}
+      </div>
       {totalCount != null && (
         <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
           #{totalCount}
@@ -270,6 +311,8 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
 }
 
 function SavedMealCard({ data }: { data: Record<string, unknown> }) {
+  const [date, setDate] = useState(data.capturedAt as string | undefined);
+
   if (data.error) {
     return (
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
@@ -281,10 +324,22 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
   const cal = data.estimatedCalories as number | undefined;
   const protein = data.estimatedProteinG as number | undefined;
   const mealType = data.mealType as string | undefined;
+  const id = data.id as string | undefined;
 
   const mealLabel = mealType
     ? mealType.charAt(0).toUpperCase() + mealType.slice(1)
     : null;
+
+  const handleDateUpdate = async (newDate: string) => {
+    setDate(newDate);
+    if (id) {
+      await fetch("/api/meal-photos", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, capturedAt: newDate }),
+      });
+    }
+  };
 
   return (
     <div className="rounded-xl border border-green-900/50 bg-green-950/30 px-4 py-3 space-y-1">
@@ -295,6 +350,7 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
           </span>
         )}
         <span className="text-xs font-medium text-green-400">Meal logged</span>
+        {date && <EditableDate date={date} onUpdate={handleDateUpdate} />}
       </div>
       {(cal != null || protein != null) && (
         <p className="text-[11px] text-zinc-500">

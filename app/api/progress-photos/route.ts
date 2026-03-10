@@ -26,6 +26,58 @@ export async function GET() {
   });
 }
 
+export async function POST(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { imageUrl, capturedAt } = (await req.json()) as { imageUrl: string; capturedAt?: string };
+  if (!imageUrl) return NextResponse.json({ error: 'imageUrl is required' }, { status: 400 });
+
+  const { data, error } = await supabase
+    .from('progress_photos')
+    .insert({
+      user_id: user.id,
+      image_url: imageUrl,
+      ai_analysis: 'Uploaded directly',
+      captured_at: capturedAt ?? new Date().toISOString().slice(0, 10),
+    })
+    .select('id, image_url, ai_analysis, notes, captured_at, created_at')
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({
+    photo: {
+      id: data.id,
+      imageUrl: data.image_url,
+      analysis: data.ai_analysis,
+      notes: data.notes,
+      capturedAt: data.captured_at,
+      createdAt: data.created_at,
+    },
+  });
+}
+
+export async function PATCH(req: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { id, capturedAt } = (await req.json()) as { id: string; capturedAt: string };
+  if (!id || !capturedAt) return NextResponse.json({ error: 'id and capturedAt are required' }, { status: 400 });
+
+  const { error } = await supabase
+    .from('progress_photos')
+    .update({ captured_at: capturedAt })
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ updated: id, capturedAt });
+}
+
 export async function DELETE(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

@@ -169,6 +169,7 @@ export default function DataPage() {
             });
             if (res.ok) setProgressPhotos((prev) => prev.filter((p) => p.id !== id));
           }}
+          onAdd={(photo) => setProgressPhotos((prev) => [photo, ...prev])}
         />
 
         {/* Meal log */}
@@ -182,6 +183,7 @@ export default function DataPage() {
             });
             if (res.ok) setMealPhotos((prev) => prev.filter((p) => p.id !== id));
           }}
+          onAdd={(photo) => setMealPhotos((prev) => [photo, ...prev])}
         />
 
         {/* Context items by category */}
