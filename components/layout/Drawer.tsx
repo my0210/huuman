@@ -59,7 +59,7 @@ export function Drawer({
                     {title}
                   </h2>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-3">
                   {rightAction}
                   {!onBack && (
                     <button
