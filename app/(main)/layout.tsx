@@ -23,7 +23,7 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       <TimezoneSync />
       {children}
     </div>
