@@ -374,6 +374,7 @@ function WeightHistorySection({
   const [weightInput, setWeightInput] = useState("");
   const [dateInput, setDateInput] = useState(new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
@@ -381,19 +382,31 @@ function WeightHistorySection({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const kg = parseFloat(weightInput);
-    if (isNaN(kg) || kg < 20 || kg > 300) return;
+    setError(null);
+    const raw = weightInput.replace(",", ".");
+    const kg = parseFloat(raw);
+    if (isNaN(kg) || kg < 20 || kg > 300) {
+      setError("Enter a weight between 20–300 kg");
+      return;
+    }
     setSubmitting(true);
-    const res = await fetch("/api/weight-entries", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ weightKg: kg, date: dateInput }),
-    });
-    if (res.ok) {
-      const { entry } = await res.json();
-      onAdd(entry);
-      setWeightInput("");
-      setShowForm(false);
+    try {
+      const res = await fetch("/api/weight-entries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ weightKg: kg, date: dateInput }),
+      });
+      if (res.ok) {
+        const { entry } = await res.json();
+        onAdd(entry);
+        setWeightInput("");
+        setShowForm(false);
+      } else {
+        const body = await res.json().catch(() => null);
+        setError(body?.error ?? `Failed (${res.status})`);
+      }
+    } catch {
+      setError("Network error");
     }
     setSubmitting(false);
   };
@@ -435,6 +448,9 @@ function WeightHistorySection({
             {submitting ? "..." : "Save"}
           </button>
         </form>
+      )}
+      {error && (
+        <p className="text-xs text-red-400">{error}</p>
       )}
 
       {latest ? (
