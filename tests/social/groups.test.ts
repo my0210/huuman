@@ -80,7 +80,8 @@ describe('GET /api/groups', () => {
           // Call 2: all members for the groups (parallel Promise.all)
           group_members: [memberships, members],
           groups: [groups],
-          social_messages: [messages],
+          // Per-group: countQ is created before lastMsgQuery in flatMap
+          social_messages: [_count(1), messages[0]],
         },
       }),
     );

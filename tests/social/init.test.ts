@@ -53,9 +53,6 @@ describe('GET /api/social/init', () => {
         user_profiles: { display_name: 'Mehmet', username: null },
       },
     ];
-    const messages = [
-      { group_id: 'g-1', created_at: '2026-03-10T12:00:00Z' },
-    ];
 
     vi.mocked(createClient).mockResolvedValue(
       createSocialMockSupabase({
@@ -63,13 +60,13 @@ describe('GET /api/social/init', () => {
         tables: {
           // fetchGroupsWithUnread calls:
           //   1. group_members.select().eq() -> memberships
-          //   2. groups.select().in() -> groups
-          //   3. group_members.select().in() -> members (2nd call)
-          //   4. social_messages.select().in() -> messages
+          //   2. group_members.select().in() -> members (2nd call)
+          // Per-group unread count query on social_messages:
+          //   3. social_messages count query -> 1 unread
           // pendingResult:
           group_members: [memberships, members],
           groups: [groups],
-          social_messages: [messages],
+          social_messages: [_count(1)],
           friendships: [_count(2)],
         },
       }),
@@ -96,7 +93,7 @@ describe('GET /api/social/init', () => {
         tables: {
           group_members: [memberships],
           groups: [_error('DB error')],
-          social_messages: [[]],
+          social_messages: [_count(0)],
           friendships: [_count(0)],
         },
       }),

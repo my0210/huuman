@@ -77,7 +77,7 @@ export function createSocialMockSupabase(opts: {
     const data = nextData(table);
     const builder: Record<string, unknown> = {};
     const chainMethods = [
-      'select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'gt',
+      'select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'gt', 'is',
       'or', 'not', 'order', 'limit', 'single', 'maybeSingle',
     ];
 
