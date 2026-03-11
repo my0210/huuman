@@ -20,6 +20,9 @@ interface GroupData {
   name: string;
   members: GroupMember[];
   unreadCount: number;
+  is_dm?: boolean;
+  displayName?: string;
+  lastMessage?: { content?: string; messageType: string; createdAt: string } | null;
 }
 
 export default function GroupsPage() {
@@ -89,9 +92,18 @@ export default function GroupsPage() {
                 ))}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text-primary truncate">{group.name}</p>
-                <p className="text-xs text-text-muted mt-0.5 truncate">{memberPreview(group.members)}</p>
+                <p className="text-sm font-medium text-text-primary truncate">{group.displayName ?? group.name}</p>
+                <p className="text-xs text-text-muted mt-0.5 truncate">
+                  {group.lastMessage
+                    ? lastMessagePreview(group.lastMessage)
+                    : memberPreview(group.members)}
+                </p>
               </div>
+              {group.lastMessage && (
+                <span className="text-[10px] text-text-muted flex-none mr-2">
+                  {formatRelativeTime(group.lastMessage.createdAt)}
+                </span>
+              )}
               {group.unreadCount > 0 ? (
                 <span className="min-w-[20px] h-5 rounded-full bg-semantic-info text-[11px] font-bold text-white flex items-center justify-center px-1.5">
                   {group.unreadCount}
@@ -111,6 +123,33 @@ export default function GroupsPage() {
       />
     </div>
   );
+}
+
+function lastMessagePreview(msg: { content?: string; messageType: string }): string {
+  switch (msg.messageType) {
+    case "text": return msg.content?.slice(0, 50) || "Message";
+    case "voice": return "🎙 Voice message";
+    case "photo": return "📷 Photo";
+    case "session_card": return "💪 Completed a session";
+    case "sleep_card": return "😴 Logged sleep";
+    case "meal_card": return "🍽 Shared a meal";
+    case "commitment_card": return "🎯 Made a commitment";
+    default: return "Message";
+  }
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+  if (diffMin < 1) return "now";
+  if (diffMin < 60) return `${diffMin}m`;
+  if (diffHr < 24) return `${diffHr}h`;
+  if (diffDay < 7) return `${diffDay}d`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function memberPreview(members: GroupMember[]): string {

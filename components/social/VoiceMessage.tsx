@@ -3,10 +3,39 @@
 import { useState, useRef, useCallback } from "react";
 import { Play, Pause } from "lucide-react";
 import type { SocialMessage } from "@/lib/types";
+import { Avatar } from "@/components/ui/Avatar";
+import ReactionRow from "./ReactionRow";
 
 interface VoiceMessageProps {
   message: SocialMessage;
   isOwn: boolean;
+  isFirstInGroup: boolean;
+  isLastInGroup: boolean;
+  onReact: (emoji: string) => void;
+  onReply?: () => void;
+  onDelete?: () => void;
+  onCopy?: () => void;
+  readCount?: number;
+}
+
+function ReadStatus({ messageId, readCount = 0 }: { messageId: string; readCount?: number }) {
+  const isSending = messageId.startsWith("temp-");
+  const isRead = readCount > 0;
+
+  if (isSending) {
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 11" className="text-text-muted flex-none">
+        <path d="M11 1L5.5 8L3 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="16" height="11" viewBox="0 0 16 11" className={`flex-none ${isRead ? "text-semantic-info" : "text-text-muted"}`}>
+      <path d="M8.5 1L3 8L0.5 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M14 1L8.5 8L7 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
 }
 
 function formatTime(iso: string) {
@@ -21,11 +50,21 @@ function formatDuration(ms?: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function VoiceMessage({ message, isOwn }: VoiceMessageProps) {
+export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0 }: VoiceMessageProps) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showActions, setShowActions] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number>(0);
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePointerDown = () => {
+    longPressRef.current = setTimeout(() => setShowActions(true), 500);
+  };
+  const handlePointerUp = () => {
+    if (longPressRef.current) clearTimeout(longPressRef.current);
+    longPressRef.current = null;
+  };
 
   const tick = useCallback(() => {
     const audio = audioRef.current;
@@ -62,48 +101,89 @@ export default function VoiceMessage({ message, isOwn }: VoiceMessageProps) {
 
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[75%] rounded-2xl px-3 py-2 ${
-          isOwn
-            ? "rounded-br-md bg-zinc-800"
-            : "rounded-bl-md bg-zinc-900 border border-zinc-800"
-        }`}
-      >
-        {!isOwn && message.sender?.displayName && (
-          <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1.5">
-            {message.sender.displayName}
-          </p>
-        )}
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={toggle}
-            className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-zinc-700 text-zinc-200 hover:bg-zinc-600 transition-colors"
-          >
-            {playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
-          </button>
-          {/* Waveform placeholder */}
-          <div className="relative flex-1 h-6 flex items-center gap-[2px]">
-            {Array.from({ length: 24 }).map((_, i) => {
-              const h = 30 + Math.sin(i * 0.7) * 40 + Math.cos(i * 1.3) * 30;
-              const filled = i / 24 <= progress;
-              return (
-                <div
-                  key={i}
-                  className={`w-[3px] rounded-full transition-colors ${
-                    filled ? "bg-zinc-300" : "bg-zinc-600"
-                  }`}
-                  style={{ height: `${Math.max(15, Math.min(100, h))}%` }}
-                />
-              );
-            })}
-          </div>
-          <span className="text-[10px] text-zinc-500 flex-none tabular-nums">
-            {formatDuration(message.mediaDurationMs)}
-          </span>
+      {!isOwn && (
+        <div className="w-7 flex-none flex items-end mr-2">
+          {isLastInGroup && (
+            <Avatar name={message.sender?.displayName} size="sm" />
+          )}
         </div>
-        <p className={`text-[10px] mt-1 ${isOwn ? "text-zinc-500 text-right" : "text-zinc-600"}`}>
-          {formatTime(message.createdAt)}
-        </p>
+      )}
+      <div className="flex flex-col max-w-[70%]">
+        {showActions && (
+          <div className="flex items-center gap-1 mb-1">
+            {onReply && (
+              <button onClick={() => { onReply(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
+                Reply
+              </button>
+            )}
+            {onCopy && (
+              <button onClick={() => { onCopy(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
+                Copy
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => { onDelete(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-semantic-error active:bg-surface-elevated transition-colors">
+                Delete
+              </button>
+            )}
+            <button onClick={() => setShowActions(false)} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-muted active:bg-surface-elevated transition-colors">
+              ✕
+            </button>
+          </div>
+        )}
+        <div
+          className={`rounded-2xl px-3 py-2 ${
+            isOwn
+              ? `bg-surface-overlay ${isLastInGroup ? "rounded-br-md" : ""}`
+              : `bg-surface-raised border border-border-default ${isLastInGroup ? "rounded-bl-md" : ""}`
+          }`}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        >
+          {isFirstInGroup && !isOwn && message.sender?.displayName && (
+            <p className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary mb-1.5">
+              {message.sender.displayName}
+            </p>
+          )}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={toggle}
+              className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-surface-elevated text-text-primary active:bg-surface-elevated transition-colors"
+            >
+              {playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+            </button>
+            <div className="relative flex-1 h-6 flex items-center gap-[2px]">
+              {Array.from({ length: 24 }).map((_, i) => {
+                const h = 30 + Math.sin(i * 0.7) * 40 + Math.cos(i * 1.3) * 30;
+                const filled = i / 24 <= progress;
+                return (
+                  <div
+                    key={i}
+                    className={`w-[3px] rounded-full transition-colors ${
+                      filled ? "bg-text-secondary" : "bg-surface-elevated"
+                    }`}
+                    style={{ height: `${Math.max(15, Math.min(100, h))}%` }}
+                  />
+                );
+              })}
+            </div>
+            <span className="text-[10px] text-text-tertiary flex-none tabular-nums">
+              {formatDuration(message.mediaDurationMs)}
+            </span>
+          </div>
+          {isLastInGroup && (
+            <div className={`flex items-center gap-1 mt-1 ${isOwn ? "justify-end" : ""}`}>
+              <span className={`text-[10px] ${isOwn ? "text-text-tertiary" : "text-text-muted"}`}>
+                {formatTime(message.createdAt)}
+              </span>
+              {isOwn && <ReadStatus messageId={message.id} readCount={readCount} />}
+            </div>
+          )}
+        </div>
+        {isLastInGroup && (
+          <ReactionRow messageId={message.id} reactions={message.reactions ?? []} onReact={onReact} />
+        )}
       </div>
     </div>
   );

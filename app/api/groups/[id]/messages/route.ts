@@ -39,10 +39,14 @@ export async function GET(
       detail,
       media_url,
       media_duration_ms,
+      reply_to_id,
+      edited_at,
+      deleted_at,
       created_at,
       sender:user_profiles!social_messages_user_id_fkey(display_name)
     `)
     .eq('group_id', groupId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -59,14 +63,21 @@ export async function GET(
   const messageIds = (messages ?? []).map((m) => m.id);
 
   let reactionsByMessage = new Map<string, Record<string, { count: number; userReacted: boolean }>>();
+  const readCountByMessage = new Map<string, number>();
 
   if (messageIds.length > 0) {
-    const { data: reactions } = await supabase
-      .from('message_reactions')
-      .select('message_id, emoji, user_id')
-      .in('message_id', messageIds);
+    const [reactionsRes, readsRes] = await Promise.all([
+      supabase
+        .from('message_reactions')
+        .select('message_id, emoji, user_id')
+        .in('message_id', messageIds),
+      supabase
+        .from('message_reads')
+        .select('message_id')
+        .in('message_id', messageIds),
+    ]);
 
-    for (const r of reactions ?? []) {
+    for (const r of reactionsRes.data ?? []) {
       const msgReactions = reactionsByMessage.get(r.message_id) ?? {};
       if (!msgReactions[r.emoji]) {
         msgReactions[r.emoji] = { count: 0, userReacted: false };
@@ -76,6 +87,10 @@ export async function GET(
         msgReactions[r.emoji].userReacted = true;
       }
       reactionsByMessage.set(r.message_id, msgReactions);
+    }
+
+    for (const r of readsRes.data ?? []) {
+      readCountByMessage.set(r.message_id, (readCountByMessage.get(r.message_id) ?? 0) + 1);
     }
   }
 
@@ -88,9 +103,13 @@ export async function GET(
     detail: m.detail,
     mediaUrl: m.media_url,
     mediaDurationMs: m.media_duration_ms,
+    replyToId: m.reply_to_id,
+    editedAt: m.edited_at,
+    deletedAt: m.deleted_at,
     createdAt: m.created_at,
     sender: m.sender,
     reactions: reactionsByMessage.get(m.id) ?? {},
+    readCount: readCountByMessage.get(m.id) ?? 0,
   }));
 
   return NextResponse.json({ messages: enriched });
@@ -120,7 +139,7 @@ export async function POST(
     return NextResponse.json({ error: 'Not a member of this group' }, { status: 403 });
   }
 
-  const { messageType, content, detail, mediaUrl, mediaDurationMs } = await request.json();
+  const { messageType, content, detail, mediaUrl, mediaDurationMs, replyToId } = await request.json();
 
   if (!messageType || typeof messageType !== 'string') {
     return NextResponse.json({ error: 'messageType is required' }, { status: 400 });
@@ -136,6 +155,7 @@ export async function POST(
       detail: detail ?? null,
       media_url: mediaUrl ?? null,
       media_duration_ms: mediaDurationMs ?? null,
+      reply_to_id: replyToId ?? null,
     })
     .select()
     .single();
@@ -151,4 +171,55 @@ export async function POST(
   } catch { /* broadcast is best-effort */ }
 
   return NextResponse.json({ message }, { status: 201 });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id: groupId } = await params;
+  const { messageId } = await request.json();
+
+  if (!messageId || typeof messageId !== 'string') {
+    return NextResponse.json({ error: 'messageId is required' }, { status: 400 });
+  }
+
+  const { data: message } = await supabase
+    .from('social_messages')
+    .select('id, user_id')
+    .eq('id', messageId)
+    .eq('group_id', groupId)
+    .single();
+
+  if (!message) {
+    return NextResponse.json({ error: 'Message not found' }, { status: 404 });
+  }
+
+  if (message.user_id !== user.id) {
+    return NextResponse.json({ error: 'Can only delete your own messages' }, { status: 403 });
+  }
+
+  const { error } = await supabase
+    .from('social_messages')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', messageId);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  try {
+    const channel = supabase.channel(`group:${groupId}`);
+    await channel.send({ type: 'broadcast', event: 'delete_message', payload: { messageId } });
+    supabase.removeChannel(channel);
+  } catch { /* best-effort */ }
+
+  return NextResponse.json({ deleted: true });
 }

@@ -435,9 +435,13 @@ export interface SocialMessage {
   detail?: SessionCardDetail | SleepCardDetail | MealCardDetail | CommitmentCardDetail;
   mediaUrl?: string;
   mediaDurationMs?: number;
+  replyToId?: string;
+  editedAt?: string;
+  deletedAt?: string;
   createdAt: string;
   sender?: { displayName?: string; username?: string };
   reactions?: ReactionSummary[];
+  readCount?: number;
 }
 
 export interface ReactionSummary {

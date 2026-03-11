@@ -38,6 +38,7 @@ export function GroupChatDrawer({
   const [group, setGroup] = useState<GroupData | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(0);
 
   const fetchGroup = useCallback(async () => {
     const res = await fetch("/api/groups");
@@ -80,6 +81,12 @@ export function GroupChatDrawer({
                   <span className="flex items-center gap-1 text-xs text-text-muted mr-1">
                     <Users size={12} />
                     {group.members.length}
+                    {onlineCount > 0 && (
+                      <span className="flex items-center gap-1 text-semantic-success">
+                        <span className="h-1.5 w-1.5 rounded-full bg-semantic-success" />
+                        {onlineCount}
+                      </span>
+                    )}
                   </span>
                   <IconButton
                     label="Settings"
@@ -111,7 +118,7 @@ export function GroupChatDrawer({
                 </button>
               </div>
             ) : (
-              <GroupChat groupId={group.id} currentUserId={currentUserId} />
+              <GroupChat groupId={group.id} currentUserId={currentUserId} onOnlineCountChange={setOnlineCount} />
             )}
           </div>
         </Sheet.Body>

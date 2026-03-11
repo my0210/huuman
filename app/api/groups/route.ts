@@ -24,27 +24,36 @@ export async function GET() {
 
   const groupIds = memberships.map((m) => m.group_id);
 
-  const [groupsRes, membersRes, messagesRes] = await Promise.all([
+  const [groupsRes, membersRes, ...unreadAndLast] = await Promise.all([
     supabase.from('groups').select('*').in('id', groupIds),
     supabase
       .from('group_members')
       .select('group_id, user_id, role, user_profiles(id, display_name, username)')
       .in('group_id', groupIds),
-    supabase
-      .from('social_messages')
-      .select('id, group_id, user_id, message_type, content, created_at')
-      .in('group_id', groupIds)
-      .order('created_at', { ascending: false })
-      .limit(50),
+    ...memberships.flatMap((m) => {
+      let countQ = supabase
+        .from('social_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('group_id', m.group_id)
+        .is('deleted_at', null);
+      if (m.last_read_at) countQ = countQ.gt('created_at', m.last_read_at);
+      return [
+        supabase
+          .from('social_messages')
+          .select('id, group_id, user_id, message_type, content, created_at')
+          .eq('group_id', m.group_id)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        countQ,
+      ];
+    }),
   ]);
 
   if (groupsRes.error) {
     return NextResponse.json({ error: groupsRes.error.message }, { status: 500 });
   }
-
-  const lastReadMap = new Map(
-    memberships.map((m) => [m.group_id, m.last_read_at]),
-  );
 
   const membersByGroup = new Map<string, Array<{ id: string; display_name: string; username: string; role: string }>>();
   for (const m of membersRes.data ?? []) {
@@ -62,26 +71,38 @@ export async function GET() {
   type MsgRow = { id: string; group_id: string; user_id: string; message_type: string; content: string | null; created_at: string };
   const lastMessageByGroup = new Map<string, MsgRow>();
   const unreadByGroup = new Map<string, number>();
-  for (const msg of messagesRes.data ?? []) {
-    if (!lastMessageByGroup.has(msg.group_id)) {
-      lastMessageByGroup.set(msg.group_id, msg);
-    }
-    const lastRead = lastReadMap.get(msg.group_id);
-    if (!lastRead || new Date(msg.created_at) > new Date(lastRead)) {
-      unreadByGroup.set(msg.group_id, (unreadByGroup.get(msg.group_id) ?? 0) + 1);
-    }
+  for (let i = 0; i < memberships.length; i++) {
+    const lastRes = unreadAndLast[i * 2] as { data: MsgRow | null };
+    const countRes = unreadAndLast[i * 2 + 1] as { count: number | null };
+    const m = memberships[i];
+    if (lastRes?.data) lastMessageByGroup.set(m.group_id, lastRes.data);
+    unreadByGroup.set(m.group_id, countRes?.count ?? 0);
   }
 
   const groups = (groupsRes.data ?? []).map((g) => {
     const lastMsg = lastMessageByGroup.get(g.id);
+    const members = membersByGroup.get(g.id) ?? [];
+    let displayName = g.name;
+    if (g.is_dm && members.length === 2) {
+      const other = members.find((m) => m.id !== user.id);
+      if (other) displayName = other.display_name || other.username || 'Unknown';
+    }
     return {
       ...g,
+      is_dm: g.is_dm,
+      displayName,
       unreadCount: unreadByGroup.get(g.id) ?? 0,
-      members: membersByGroup.get(g.id) ?? [],
+      members,
       lastMessage: lastMsg
         ? { id: lastMsg.id, senderId: lastMsg.user_id, messageType: lastMsg.message_type, content: lastMsg.content, createdAt: lastMsg.created_at }
         : null,
     };
+  });
+
+  groups.sort((a, b) => {
+    const aTime = a.lastMessage?.createdAt ?? a.created_at;
+    const bTime = b.lastMessage?.createdAt ?? b.created_at;
+    return new Date(bTime).getTime() - new Date(aTime).getTime();
   });
 
   return NextResponse.json({ groups });

@@ -32,14 +32,14 @@ export default function ReactionRow({ messageId, reactions, onReact }: ReactionR
           <button
             key={`${messageId}-preset-${emoji}`}
             onClick={() => onReact(emoji)}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-sm hover:bg-zinc-800 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-sm active:bg-surface-elevated transition-colors"
           >
             {emoji}
           </button>
         ))}
         <button
           onClick={() => setShowPicker(!showPicker)}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300 transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-text-tertiary active:bg-surface-elevated active:text-text-secondary transition-colors"
         >
           <Plus size={14} />
         </button>
@@ -55,7 +55,7 @@ export default function ReactionRow({ messageId, reactions, onReact }: ReactionR
             onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
             placeholder="Emoji…"
             maxLength={4}
-            className="w-16 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-center text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+            className="w-16 rounded-md border border-border-default bg-surface-overlay px-2 py-1 text-center text-sm text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none"
             autoFocus
           />
         </div>
@@ -70,8 +70,8 @@ export default function ReactionRow({ messageId, reactions, onReact }: ReactionR
               onClick={() => onReact(r.emoji)}
               className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-colors ${
                 r.reacted
-                  ? "border border-zinc-600 bg-zinc-800 text-zinc-200"
-                  : "border border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
+                  ? "border border-border-strong bg-surface-overlay text-text-primary"
+                  : "border border-border-default bg-surface-raised text-text-secondary active:border-border-strong"
               }`}
             >
               <span>{r.emoji}</span>

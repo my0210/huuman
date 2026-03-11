@@ -33,8 +33,12 @@ export function normalizeMessage(m: Record<string, unknown>): SocialMessage {
     detail: (m.detail ?? undefined) as SocialMessage['detail'],
     mediaUrl: (m.mediaUrl ?? m.media_url ?? undefined) as string | undefined,
     mediaDurationMs: (m.mediaDurationMs ?? m.media_duration_ms ?? undefined) as number | undefined,
+    replyToId: (m.replyToId ?? m.reply_to_id ?? undefined) as string | undefined,
+    editedAt: (m.editedAt ?? m.edited_at ?? undefined) as string | undefined,
+    deletedAt: (m.deletedAt ?? m.deleted_at ?? undefined) as string | undefined,
     createdAt: (m.createdAt ?? m.created_at) as string,
     sender: normalizeSender(m.sender),
     reactions: normalizeReactions(m.reactions as RawReactionMap | ReactionSummary[] | undefined),
+    readCount: (m.readCount ?? m.read_count ?? 0) as number,
   };
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Users, Plus } from "lucide-react";
 import { Drawer } from "@/components/layout/Drawer";
 import { Avatar } from "@/components/ui/Avatar";
+import { IconButton } from "@/components/ui/IconButton";
 
 interface GroupMember {
   id: string;
@@ -17,6 +18,8 @@ interface GroupData {
   name: string;
   members: GroupMember[];
   unreadCount: number;
+  is_dm?: boolean;
+  displayName?: string;
   lastMessage?: {
     content?: string;
     messageType: string;
@@ -57,23 +60,20 @@ export function GroupListDrawer({
       onClose={onClose}
       title="Groups"
       rightAction={
-        <button
-          onClick={onOpenFriends}
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
-        >
+        <IconButton label="Friends" size="sm" onClick={onOpenFriends}>
           <Users size={14} />
-        </button>
+        </IconButton>
       }
     >
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border-default border-t-text-muted" />
         </div>
       ) : (
         <div className="px-4 py-4 space-y-3">
           <button
             onClick={onOpenCreateGroup}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/30 px-4 py-3 text-sm text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 hover:bg-zinc-900/50 transition-colors"
+            className="flex w-full items-center justify-center gap-2 rounded-radius-lg border border-dashed border-border-default bg-surface-raised px-4 py-3 text-sm text-text-secondary active:text-text-primary active:border-border-strong active:bg-surface-overlay transition-colors"
           >
             <Plus size={16} />
             Create new group
@@ -81,21 +81,21 @@ export function GroupListDrawer({
 
           {groups.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Users size={32} className="text-zinc-700 mb-3" />
-              <p className="text-sm text-zinc-300">Get started</p>
-              <p className="text-xs text-zinc-500 mt-1 max-w-[240px]">
+              <Users size={32} className="text-text-muted mb-3" />
+              <p className="text-sm text-text-secondary">Get started</p>
+              <p className="text-xs text-text-tertiary mt-1 max-w-[240px]">
                 Add friends first, then create a group to share workouts and
                 stay motivated together
               </p>
               <button
                 onClick={onOpenFriends}
-                className="mt-4 rounded-xl bg-zinc-100 px-5 py-2 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
+                className="mt-4 rounded-radius-lg bg-text-primary px-5 py-2 text-sm font-medium text-surface-base active:bg-white transition-colors"
               >
                 Find friends
               </button>
               <button
                 onClick={onOpenCreateGroup}
-                className="mt-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="mt-2 text-xs text-text-tertiary active:text-text-secondary transition-colors"
               >
                 or create a group directly
               </button>
@@ -105,7 +105,7 @@ export function GroupListDrawer({
               <button
                 key={group.id}
                 onClick={() => onOpenGroup(group.id)}
-                className="flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-left hover:bg-zinc-900 transition-colors"
+                className="flex w-full items-center gap-3 rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-left active:bg-surface-overlay transition-colors"
               >
                 <div className="flex -space-x-1.5 flex-none">
                   {group.members.slice(0, 3).map((m) => (
@@ -113,18 +113,25 @@ export function GroupListDrawer({
                       key={m.id}
                       name={m.display_name || m.username}
                       size="sm"
-                      className="ring-1 ring-zinc-950"
+                      className="ring-1 ring-surface-base"
                     />
                   ))}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-zinc-200 truncate">
-                    {group.name}
+                  <p className="text-sm font-medium text-text-primary truncate">
+                    {group.displayName ?? group.name}
                   </p>
-                  <p className="text-xs text-zinc-500 mt-0.5 truncate">
-                    {memberPreview(group.members)}
+                  <p className="text-xs text-text-muted mt-0.5 truncate">
+                    {group.lastMessage
+                      ? lastMessagePreview(group.lastMessage)
+                      : memberPreview(group.members)}
                   </p>
                 </div>
+                {group.lastMessage && (
+                  <span className="text-[10px] text-text-muted flex-none mr-2">
+                    {formatRelativeTime(group.lastMessage.createdAt)}
+                  </span>
+                )}
                 <UnreadBadge count={group.unreadCount} />
               </button>
             ))
@@ -133,6 +140,33 @@ export function GroupListDrawer({
       )}
     </Drawer>
   );
+}
+
+function lastMessagePreview(msg: { content?: string; messageType: string }): string {
+  switch (msg.messageType) {
+    case "text": return msg.content?.slice(0, 50) || "Message";
+    case "voice": return "🎙 Voice message";
+    case "photo": return "📷 Photo";
+    case "session_card": return "💪 Completed a session";
+    case "sleep_card": return "😴 Logged sleep";
+    case "meal_card": return "🍽 Shared a meal";
+    case "commitment_card": return "🎯 Made a commitment";
+    default: return "Message";
+  }
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMs / 3600000);
+  const diffDay = Math.floor(diffMs / 86400000);
+  if (diffMin < 1) return "now";
+  if (diffMin < 60) return `${diffMin}m`;
+  if (diffHr < 24) return `${diffHr}h`;
+  if (diffDay < 7) return `${diffDay}d`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function memberPreview(members: GroupMember[]): string {
@@ -145,10 +179,10 @@ function memberPreview(members: GroupMember[]): string {
 
 function UnreadBadge({ count }: { count: number }) {
   if (count === 0) {
-    return <span className="text-xs text-zinc-600">--</span>;
+    return <span className="text-xs text-text-muted">--</span>;
   }
   return (
-    <span className="min-w-[20px] h-5 rounded-full bg-blue-500 text-[11px] font-bold text-white flex items-center justify-center px-1.5">
+    <span className="min-w-[20px] h-5 rounded-full bg-semantic-info text-[11px] font-bold text-white flex items-center justify-center px-1.5">
       {count}
     </span>
   );

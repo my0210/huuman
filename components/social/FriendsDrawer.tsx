@@ -9,9 +9,12 @@ import {
   X,
   UserPlus,
   Loader2,
+  MessageCircle,
 } from "lucide-react";
 import { Drawer } from "@/components/layout/Drawer";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
 
 interface FriendUser {
   id: string;
@@ -40,6 +43,7 @@ interface FriendsDrawerProps {
   onClose: () => void;
   onBack: () => void;
   currentUserId: string;
+  onOpenDm?: (groupId: string) => void;
 }
 
 export function FriendsDrawer({
@@ -47,6 +51,7 @@ export function FriendsDrawer({
   onClose,
   onBack,
   currentUserId,
+  onOpenDm,
 }: FriendsDrawerProps) {
   const [friends, setFriends] = useState<FriendEntry[]>([]);
   const [pendingReceived, setPendingReceived] = useState<FriendEntry[]>([]);
@@ -98,46 +103,59 @@ export function FriendsDrawer({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleStartDm = async (recipientId: string) => {
+    const res = await fetch("/api/dm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recipientId }),
+    });
+    if (res.ok) {
+      const { groupId } = await res.json();
+      onOpenDm?.(groupId);
+    }
+  };
+
   return (
     <Drawer open={open} onClose={onClose} title="Friends" onBack={onBack}>
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-border-default border-t-text-muted" />
         </div>
       ) : (
         <div className="flex flex-col" style={{ minHeight: "100%" }}>
           <div className="flex-1 px-4 py-6 space-y-8">
             {pendingReceived.length > 0 && (
               <section className="space-y-3">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                   Requests
                 </h2>
                 <div className="space-y-2">
                   {pendingReceived.map((req) => (
                     <div
                       key={req.friendshipId}
-                      className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                      className="flex items-center gap-3 rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3"
                     >
                       <Avatar
                         name={req.user.display_name || req.user.email}
                         size="md"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 truncate">
+                        <p className="text-sm text-text-primary truncate">
                           {req.user.display_name || req.user.email}
                         </p>
                       </div>
-                      <button
+                      <Button
+                        variant="primary"
+                        size="sm"
                         onClick={() => handleAccept(req.friendshipId)}
                         disabled={acceptingId === req.friendshipId}
-                        className="rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-white transition-colors disabled:opacity-50"
                       >
                         {acceptingId === req.friendshipId ? (
                           <Loader2 size={12} className="animate-spin" />
                         ) : (
                           "Accept"
                         )}
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -146,24 +164,24 @@ export function FriendsDrawer({
 
             {pendingSent.length > 0 && (
               <section className="space-y-3">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                   Sent
                 </h2>
                 <div className="space-y-2">
                   {pendingSent.map((req) => (
                     <div
                       key={req.friendshipId}
-                      className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                      className="flex items-center gap-3 rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3"
                     >
                       <Avatar
                         name={req.user.display_name || req.user.email}
                         size="md"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 truncate">
+                        <p className="text-sm text-text-primary truncate">
                           {req.user.display_name || req.user.email}
                         </p>
-                        <p className="text-xs text-zinc-500">Pending</p>
+                        <p className="text-xs text-text-tertiary">Pending</p>
                       </div>
                     </div>
                   ))}
@@ -172,13 +190,13 @@ export function FriendsDrawer({
             )}
 
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                 Friends
               </h2>
               {friends.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-sm text-zinc-500">No friends yet</p>
-                  <p className="text-xs text-zinc-600 mt-1">
+                  <p className="text-sm text-text-tertiary">No friends yet</p>
+                  <p className="text-xs text-text-muted mt-1">
                     Share your link or search to connect
                   </p>
                 </div>
@@ -187,21 +205,29 @@ export function FriendsDrawer({
                   {friends.map((f) => (
                     <div
                       key={f.friendshipId}
-                      className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+                      className="flex items-center gap-3 rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3"
                     >
                       <Avatar
                         name={f.user.display_name || f.user.email}
                         size="md"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 truncate">
+                        <p className="text-sm text-text-primary truncate">
                           {f.user.display_name || f.user.email}
                         </p>
-                        <p className="text-xs text-zinc-500">
+                        <p className="text-xs text-text-tertiary">
                           connected{" "}
                           {formatRelativeTime(f.acceptedAt || f.createdAt)}
                         </p>
                       </div>
+                      <IconButton
+                        label="Message"
+                        size="sm"
+                        onClick={() => handleStartDm(f.user.id)}
+                        className="h-7 w-7"
+                      >
+                        <MessageCircle size={14} />
+                      </IconButton>
                     </div>
                   ))}
                 </div>
@@ -211,36 +237,38 @@ export function FriendsDrawer({
             <div className="h-4" />
           </div>
 
-          <div className="sticky bottom-0 border-t border-zinc-800 bg-zinc-950 px-4 py-4 space-y-3">
+          <div className="sticky bottom-0 border-t border-border-default bg-surface-base px-4 py-4 space-y-3">
             <button
               onClick={handleCopyLink}
-              className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-left hover:bg-zinc-800/80 transition-colors"
+              className="flex w-full items-center justify-between rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-left active:bg-surface-elevated transition-colors"
             >
-              <span className="text-sm text-zinc-300 truncate">
+              <span className="text-sm text-text-secondary truncate">
                 {personalLink}
               </span>
               {copied ? (
-                <Check size={16} className="flex-none text-emerald-400" />
+                <Check size={16} className="flex-none text-semantic-success" />
               ) : (
-                <Copy size={16} className="flex-none text-zinc-500" />
+                <Copy size={16} className="flex-none text-text-tertiary" />
               )}
             </button>
 
             <div className="flex gap-2">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => setQrOpen(true)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                className="flex-1 gap-2"
               >
                 <QrCode size={16} />
                 Show QR code
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => setSearchOpen(true)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                className="flex-1 gap-2"
               >
                 <Search size={16} />
                 Search
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -279,29 +307,31 @@ function QrModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="relative mx-4 w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-        <button
+      <div className="relative mx-4 w-full max-w-sm rounded-2xl border border-border-default bg-surface-raised p-6">
+        <IconButton
+          label="Close"
+          size="sm"
           onClick={onClose}
-          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="absolute right-4 top-4 h-8 w-8"
         >
           <X size={16} />
-        </button>
+        </IconButton>
 
-        <h2 className="text-sm font-semibold text-zinc-100 mb-6">
+        <h2 className="text-sm font-semibold text-text-primary mb-6">
           Your QR code
         </h2>
 
         <div className="flex flex-col items-center gap-4">
           {QRCode ? (
-            <div className="rounded-xl bg-white p-4">
+            <div className="rounded-radius-lg bg-white p-4">
               <QRCode value={link} size={200} />
             </div>
           ) : (
-            <div className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-8 text-center">
-              <p className="text-sm text-zinc-300 break-all">{link}</p>
+            <div className="rounded-radius-lg border border-border-default bg-surface-overlay px-4 py-8 text-center">
+              <p className="text-sm text-text-secondary break-all">{link}</p>
             </div>
           )}
-          <p className="text-xs text-zinc-500">{link}</p>
+          <p className="text-xs text-text-tertiary">{link}</p>
         </div>
       </div>
     </div>
@@ -379,15 +409,17 @@ function SearchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-zinc-950/95 backdrop-blur-sm">
-      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
-        <button
+    <div className="fixed inset-0 z-[60] flex flex-col bg-surface-base backdrop-blur-sm">
+      <header className="flex-none border-b border-border-default px-4 py-3 flex items-center gap-3">
+        <IconButton
+          label="Close"
+          size="sm"
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+          className="h-8 w-8"
         >
           <X size={16} />
-        </button>
-        <h1 className="text-lg font-semibold text-zinc-100">
+        </IconButton>
+        <h1 className="text-lg font-semibold text-text-primary">
           Search for friends
         </h1>
       </header>
@@ -402,19 +434,19 @@ function SearchModal({
             search(e.target.value);
           }}
           placeholder="Search by name or username..."
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+          className="w-full rounded-radius-lg border border-border-default bg-surface-raised px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none"
         />
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {searching && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 size={20} className="animate-spin text-zinc-500" />
+            <Loader2 size={20} className="animate-spin text-text-tertiary" />
           </div>
         )}
 
         {!searching && query && results.length === 0 && (
-          <p className="text-center text-sm text-zinc-500 py-8">
+          <p className="text-center text-sm text-text-tertiary py-8">
             No users found
           </p>
         )}
@@ -422,27 +454,29 @@ function SearchModal({
         {results.map((user) => (
           <div
             key={user.id}
-            className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3"
+            className="flex items-center gap-3 rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3"
           >
             <Avatar
               name={user.display_name || user.username || "?"}
               size="md"
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-zinc-200 truncate">
+              <p className="text-sm text-text-primary truncate">
                 {user.display_name || user.username}
               </p>
               {user.username && user.display_name && (
-                <p className="text-xs text-zinc-500">@{user.username}</p>
+                <p className="text-xs text-text-tertiary">@{user.username}</p>
               )}
             </div>
             {sentIds.has(user.id) ? (
-              <span className="text-xs text-zinc-500">Sent</span>
+              <span className="text-xs text-text-tertiary">Sent</span>
             ) : (
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => handleConnect(user.id)}
                 disabled={sendingTo === user.id}
-                className="flex items-center gap-1.5 rounded-xl bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-900 hover:bg-white transition-colors disabled:opacity-50"
+                className="gap-1.5"
               >
                 {sendingTo === user.id ? (
                   <Loader2 size={12} className="animate-spin" />
@@ -452,7 +486,7 @@ function SearchModal({
                     Connect
                   </>
                 )}
-              </button>
+              </Button>
             )}
           </div>
         ))}

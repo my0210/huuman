@@ -1,61 +1,121 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { Clock } from "lucide-react";
 import type { SocialMessage, CommitmentCardDetail, Domain } from "@/lib/types";
 import ReactionRow from "./ReactionRow";
 
 const DOMAIN_TW: Record<string, { text: string; bg: string }> = {
-  cardio:      { text: "text-red-400",    bg: "bg-red-400/10" },
-  strength:    { text: "text-orange-400",  bg: "bg-orange-400/10" },
-  mindfulness: { text: "text-cyan-400",    bg: "bg-cyan-400/10" },
-  nutrition:   { text: "text-green-400",   bg: "bg-green-400/10" },
-  sleep:       { text: "text-violet-400",  bg: "bg-violet-400/10" },
+  cardio:      { text: "text-domain-cardio",      bg: "bg-domain-cardio-muted" },
+  strength:    { text: "text-domain-strength",    bg: "bg-domain-strength-muted" },
+  mindfulness: { text: "text-domain-mindfulness",  bg: "bg-domain-mindfulness-muted" },
+  nutrition:   { text: "text-domain-nutrition",    bg: "bg-domain-nutrition-muted" },
+  sleep:       { text: "text-domain-sleep",        bg: "bg-domain-sleep-muted" },
 };
 
 interface CommitmentCardMessageProps {
   message: SocialMessage;
   onReact: (emoji: string) => void;
+  onReply?: () => void;
+  onDelete?: () => void;
+  onCopy?: () => void;
+  isOwn?: boolean;
+  readCount?: number;
+}
+
+function ReadStatus({ messageId, readCount = 0 }: { messageId: string; readCount?: number }) {
+  const isSending = messageId.startsWith("temp-");
+  const isRead = readCount > 0;
+
+  if (isSending) {
+    return (
+      <svg width="16" height="11" viewBox="0 0 16 11" className="text-text-muted flex-none">
+        <path d="M11 1L5.5 8L3 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="16" height="11" viewBox="0 0 16 11" className={`flex-none ${isRead ? "text-semantic-info" : "text-text-muted"}`}>
+      <path d="M8.5 1L3 8L0.5 5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M14 1L8.5 8L7 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
 }
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function CommitmentCardMessage({ message, onReact }: CommitmentCardMessageProps) {
+export default function CommitmentCardMessage({ message, onReact, onReply, onDelete, onCopy, isOwn, readCount = 0 }: CommitmentCardMessageProps) {
   const detail = message.detail as CommitmentCardDetail | undefined;
   if (!detail) return null;
+
+  const [showActions, setShowActions] = useState(false);
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handlePointerDown = () => {
+    longPressRef.current = setTimeout(() => setShowActions(true), 500);
+  };
+  const handlePointerUp = () => {
+    if (longPressRef.current) clearTimeout(longPressRef.current);
+    longPressRef.current = null;
+  };
 
   const tw = DOMAIN_TW[detail.domain] ?? DOMAIN_TW.cardio;
 
   return (
     <div className="max-w-[85%]">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+      {showActions && (
+        <div className="flex items-center gap-1 mb-1">
+          {onReply && (
+            <button onClick={() => { onReply(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
+              Reply
+            </button>
+          )}
+          {onCopy && (
+            <button onClick={() => { onCopy(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
+              Copy
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={() => { onDelete(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-semantic-error active:bg-surface-elevated transition-colors">
+              Delete
+            </button>
+          )}
+          <button onClick={() => setShowActions(false)} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-muted active:bg-surface-elevated transition-colors">
+            ✕
+          </button>
+        </div>
+      )}
+      <div className="rounded-xl border border-border-default bg-surface-raised overflow-hidden" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
         {/* Header */}
-        <div className="px-4 py-3 border-b border-zinc-800/50 flex items-center gap-2">
+        <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
           <div className={`flex h-5 w-5 items-center justify-center rounded-full ${tw.bg}`}>
             <Clock size={12} className={tw.text} />
           </div>
-          <span className="text-sm font-semibold text-zinc-200">{detail.title}</span>
+          <span className="text-sm font-semibold text-text-primary">{detail.title}</span>
         </div>
 
         {/* Content */}
         <div className="px-4 py-3 space-y-2">
-          <div className="flex flex-wrap gap-3 text-xs text-zinc-400">
+          <div className="flex flex-wrap gap-3 text-xs text-text-secondary">
             {detail.time && <span>{detail.time}</span>}
             {detail.place && <span>{detail.place}</span>}
           </div>
 
           {detail.sessionPreview && (
-            <p className="text-xs text-zinc-500 italic">{detail.sessionPreview}</p>
+            <p className="text-xs text-text-tertiary italic">{detail.sessionPreview}</p>
           )}
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-[10px] text-zinc-600">
+            <span className="text-[10px] text-text-muted">
               {message.sender?.displayName}
             </span>
-            <span className="text-[10px] text-zinc-600">
-              {formatTime(message.createdAt)}
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-text-muted">{formatTime(message.createdAt)}</span>
+              {isOwn && <ReadStatus messageId={message.id} readCount={readCount} />}
+            </div>
           </div>
         </div>
       </div>

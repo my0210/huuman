@@ -43,23 +43,25 @@ async function fetchGroupsWithUnread(
 
   const groupIds = memberships.map((m) => m.group_id);
 
-  const [groupsRes, membersRes, unreadRes] = await Promise.all([
+  const [groupsRes, membersRes, ...unreadCounts] = await Promise.all([
     supabase.from('groups').select('*').in('id', groupIds),
     supabase
       .from('group_members')
       .select('group_id, user_id, role, user_profiles(display_name, username)')
       .in('group_id', groupIds),
-    supabase
-      .from('social_messages')
-      .select('group_id, created_at')
-      .in('group_id', groupIds),
+    ...memberships.map(async (m) => {
+      let q = supabase
+        .from('social_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('group_id', m.group_id)
+        .is('deleted_at', null);
+      if (m.last_read_at) q = q.gt('created_at', m.last_read_at);
+      const { count } = await q;
+      return { groupId: m.group_id, count: count ?? 0 };
+    }),
   ]);
 
   if (groupsRes.error) return { data: [], error: groupsRes.error.message };
-
-  const lastReadMap = new Map(
-    memberships.map((m) => [m.group_id, m.last_read_at]),
-  );
 
   const membersByGroup = new Map<string, Array<{ display_name: string; username: string; role: string }>>();
   for (const m of membersRes.data ?? []) {
@@ -73,13 +75,9 @@ async function fetchGroupsWithUnread(
     membersByGroup.set(m.group_id, list);
   }
 
-  const unreadByGroup = new Map<string, number>();
-  for (const msg of unreadRes.data ?? []) {
-    const lastRead = lastReadMap.get(msg.group_id);
-    if (!lastRead || new Date(msg.created_at) > new Date(lastRead)) {
-      unreadByGroup.set(msg.group_id, (unreadByGroup.get(msg.group_id) ?? 0) + 1);
-    }
-  }
+  const unreadByGroup = new Map(
+    (unreadCounts as { groupId: string; count: number }[]).map((u) => [u.groupId, u.count]),
+  );
 
   const groups = (groupsRes.data ?? []).map((g) => ({
     ...g,

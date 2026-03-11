@@ -18,6 +18,8 @@ interface GroupData {
   id: string;
   name: string;
   members: Member[];
+  is_dm?: boolean;
+  displayName?: string;
 }
 
 export default function GroupDetailPage({
@@ -98,7 +100,7 @@ export default function GroupDetailPage({
             <ArrowLeft size={16} />
           </IconButton>
           <h1 className="text-sm font-semibold text-text-primary truncate max-w-48">
-            {group.name}
+            {group.displayName ?? group.name}
           </h1>
         </div>
         <div className="flex items-center gap-1">
