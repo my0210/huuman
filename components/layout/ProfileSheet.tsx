@@ -10,7 +10,6 @@ import {
   LogOut,
   Check,
   Camera,
-  Users,
   MessageSquarePlus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -202,19 +201,6 @@ export function ProfileSheet({
               </div>
             </div>
           </div>
-
-          <button
-            onClick={() => { close(); router.push("/friends/manage"); }}
-            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors"
-          >
-            <Users size={16} className="flex-none text-text-tertiary" />
-            <div>
-              <p className="font-medium">Friends</p>
-              <p className="text-xs text-text-muted">Add and manage friends</p>
-            </div>
-          </button>
-
-          <div className="border-t border-border-subtle my-2" />
 
           <button
             onClick={() => setView("language")}

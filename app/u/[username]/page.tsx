@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ConnectButton } from "./ConnectButton";
 
 interface Props {
   params: Promise<{ username: string }>;
@@ -33,10 +32,10 @@ export async function generateMetadata({ params }: Props) {
 
   return {
     title: `${displayName} on huuman`,
-    description: `Connect with ${displayName} on huuman`,
+    description: `${displayName} on huuman`,
     openGraph: {
       title: `${displayName} on huuman`,
-      description: `Connect with ${displayName} on huuman`,
+      description: `${displayName} on huuman`,
     },
   };
 }
@@ -48,13 +47,8 @@ export default async function PublicProfilePage({ params }: Props) {
 
   if (!profile) notFound();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const displayName = profile.display_name || "User";
   const initial = displayName.charAt(0).toUpperCase();
-  const isSelf = user?.id === profile.id;
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-zinc-950 px-4">
@@ -72,21 +66,6 @@ export default async function PublicProfilePage({ params }: Props) {
         )}
 
         <h1 className="text-lg font-semibold text-zinc-100">{displayName}</h1>
-
-        <div className="mt-8">
-          {isSelf ? (
-            <p className="text-sm text-zinc-500">This is you</p>
-          ) : user ? (
-            <ConnectButton recipientId={profile.id} />
-          ) : (
-            <a
-              href={`/login?connect=${encodeURIComponent(profile.id)}`}
-              className="inline-flex items-center justify-center rounded-xl bg-zinc-100 px-6 py-3 text-sm font-medium text-zinc-900 hover:bg-white transition-colors"
-            >
-              Join huuman to connect
-            </a>
-          )}
-        </div>
 
         <p className="mt-6 text-xs text-zinc-600">
           huuman -- AI longevity coach

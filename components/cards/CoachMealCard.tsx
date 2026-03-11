@@ -1,7 +1,6 @@
 "use client";
 
 import { MealCardContent } from "./MealCardContent";
-import { GroupShareButton } from "./GroupShareButton";
 import type { MealCardDetail } from "@/lib/types";
 
 function extractDetail(data: Record<string, unknown>): MealCardDetail {
@@ -29,10 +28,5 @@ export function CoachMealCard({
 
   const detail = extractDetail(data);
 
-  return (
-    <div>
-      <MealCardContent detail={detail} />
-      <GroupShareButton type="meal_card" detail={detail} />
-    </div>
-  );
+  return <MealCardContent detail={detail} />;
 }

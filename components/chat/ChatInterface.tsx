@@ -9,7 +9,6 @@ import { motion } from "framer-motion";
 import { spring, press } from "@/lib/motion";
 import { haptics } from "@/lib/haptics";
 import { CommandMenu } from "./CommandMenu";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MessagePart } from "./MessagePart";
 import { ChatActionsProvider } from "./ChatActions";
@@ -17,7 +16,6 @@ import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
 import { compressImage, uploadChatImage } from "@/lib/images";
 import { ProfileSheet } from "@/components/layout/ProfileSheet";
-import SocialBadge from "@/components/layout/SocialBadge";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
 
@@ -43,7 +41,6 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [hasMore, setHasMore] = useState(hasOlderMessages ?? false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -51,7 +48,6 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   const prevScrollHeightRef = useRef(0);
   const autoSentRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
 
   const transport = useMemo(
     () =>
@@ -234,17 +230,6 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     setPendingImages([]);
   };
 
-  useEffect(() => {
-    fetch("/api/social/init")
-      .then((res) => res.json())
-      .then((data) => {
-        const groups = data.groups ?? [];
-        const total = groups.reduce((sum: number, g: { unreadCount?: number }) => sum + (g.unreadCount ?? 0), 0);
-        setUnreadCount(total);
-      })
-      .catch(() => {});
-  }, []);
-
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
       {/* Header */}
@@ -253,7 +238,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           <Avatar src={avatarUrl} name={displayName || userEmail} size="md" />
         </button>
         <h1 className="text-lg font-heading font-medium text-text-primary tracking-tight">huuman</h1>
-        <SocialBadge unreadCount={unreadCount} onClick={() => router.push('/groups')} />
+        <div className="w-9" />
       </header>
 
       <ProfileSheet

@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { transition } from "@/lib/motion";
 import LanguageSelector from "@/components/auth/LanguageSelector";
@@ -27,8 +27,6 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const connectId = searchParams.get("connect");
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,14 +52,6 @@ function SignupForm() {
       if (result.error) {
         setError(result.error.message);
         return;
-      }
-
-      if (connectId) {
-        fetch("/api/friends", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recipientId: connectId }),
-        }).catch(() => {});
       }
 
       router.push("/");
@@ -125,7 +115,7 @@ function SignupForm() {
 
           <p className="text-center text-xs text-text-muted">
             {t("signup.hasAccount", lang)}{" "}
-            <a href={connectId ? `/login?connect=${encodeURIComponent(connectId)}` : "/login"} className="text-text-secondary">
+            <a href="/login" className="text-text-secondary">
               {t("signup.signin", lang)}
             </a>
           </p>

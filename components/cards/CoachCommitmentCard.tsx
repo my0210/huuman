@@ -1,7 +1,6 @@
 "use client";
 
 import { CommitmentCardContent } from "./CommitmentCardContent";
-import { GroupShareButton } from "./GroupShareButton";
 import type { CommitmentCardDetail, Domain } from "@/lib/types";
 
 function extractDetail(
@@ -35,10 +34,5 @@ export function CoachCommitmentCard({
   const detail = extractDetail(data);
   if (!detail) return null;
 
-  return (
-    <div>
-      <CommitmentCardContent detail={detail} />
-      <GroupShareButton type="commitment_card" detail={detail} />
-    </div>
-  );
+  return <CommitmentCardContent detail={detail} />;
 }

@@ -79,7 +79,7 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     type: 'name',
     title: 'What should we call you?',
-    subtitle: 'This is how you\'ll appear to friends',
+    subtitle: 'This is how your coach will address you',
   },
 
   // Step 2: Cardio methodology

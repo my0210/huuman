@@ -2,7 +2,7 @@
 
 AI longevity coach that generates weekly health plans and helps users execute them. The plan contains **sessions** (cardio, strength, mindfulness) that users execute, plus **tracking briefs** -- personalized nutrition/sleep targets generated once per week and tracked daily.
 
-> **Note:** Telegram bot integration has been archived to `_telegram_archive/`. The codebase is currently web-only.
+> **Note:** Telegram bot integration has been archived to `_telegram_archive/`. Social features (friends, group chat) have been archived to `_social_archive/`. The codebase is currently web-only, focused on the AI coach experience.
 
 ## Stack
 

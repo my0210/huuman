@@ -1,27 +1,17 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
-  );
-}
-
-function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const connectId = searchParams.get("connect");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,14 +31,6 @@ function LoginForm() {
       if (result.error) {
         setError(result.error.message);
         return;
-      }
-
-      if (connectId) {
-        fetch("/api/friends", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recipientId: connectId }),
-        }).catch(() => {});
       }
 
       router.push("/");
@@ -100,7 +82,7 @@ function LoginForm() {
 
         <p className="text-center text-xs text-text-muted">
           No account?{" "}
-          <a href={connectId ? `/signup?connect=${encodeURIComponent(connectId)}` : "/signup"} className="text-text-secondary">
+          <a href="/signup" className="text-text-secondary">
             Sign up
           </a>
         </p>
