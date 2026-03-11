@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const satoshi = localFont({
-  src: "../public/fonts/Satoshi-Variable.woff2",
-  variable: "--font-satoshi",
-  display: "swap",
-});
+// const satoshi = localFont({
+//   src: "../public/fonts/Satoshi-Variable.woff2",
+//   variable: "--font-satoshi",
+//   display: "swap",
+// });
 
 export const metadata: Metadata = {
   title: "huuman",
@@ -39,12 +39,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-import { useCircadianTheme } from "@/lib/hooks/useCircadianTheme";
-
-function ThemeProvider({ children }: { children: React.ReactNode }) {
-  useCircadianTheme();
-  return <>{children}</>;
-}
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
 export default function RootLayout({
   children,
@@ -54,7 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${geistMono.variable} ${satoshi.variable} antialiased bg-surface-base text-text-primary`}
+        className={`${inter.variable} ${geistMono.variable} antialiased bg-surface-base text-text-primary`}
       >
         <ThemeProvider>{children}</ThemeProvider>
         <Toaster
