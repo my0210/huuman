@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Trash2, Send, Scale, Plus, ChevronRight, Camera, Utensils } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
 import { DOMAIN_META } from "@/lib/types";
 import type { ContextCategory, ContextScope, DomainBaselines } from "@/lib/types";
 import { formatSingleDomainBaseline } from "@/lib/onboarding/formatBaselines";
@@ -339,12 +340,13 @@ function ContextCard({
 
         <div className="flex-none pt-0.5">
           {!confirming ? (
-            <button
+            <IconButton
+              label="Delete"
+              size="sm"
               onClick={onRequestDelete}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800 transition-colors"
             >
               <Trash2 size={14} />
-            </button>
+            </IconButton>
           ) : (
             <button
               onClick={onConfirmDelete}

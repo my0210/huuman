@@ -134,9 +134,9 @@ export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInG
           <div className="flex items-center gap-2.5">
             <button
               onClick={toggle}
-              className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-surface-elevated text-text-primary active:bg-surface-elevated transition-colors"
+              className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-surface-elevated text-text-primary active:opacity-80 transition-colors"
             >
-              {playing ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
+              {playing ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
             </button>
             <div className="relative flex-1 h-6 flex items-center gap-[2px]">
               {Array.from({ length: 24 }).map((_, i) => {

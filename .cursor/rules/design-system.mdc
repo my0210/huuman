@@ -68,7 +68,8 @@ Import from `@/lib/motion`. Never define inline spring/transition values.
 ### Press feedback (whileTap)
 - `press.button` (scale: 0.97) -- all tappable buttons
 - `press.card` (scale: 0.99) -- tappable cards
-- `press.icon` (scale: 0.9) -- icon-only buttons
+- `press.compact` (scale: 0.95) -- inline/contextual buttons (between button and icon)
+- `press.icon` (scale: 0.92) -- icon-only buttons
 
 ### Transitions
 - `transition.fade` -- opacity changes (150ms)
@@ -85,6 +86,8 @@ Import from `@/lib/haptics`. Call on meaningful interactions.
 - `haptics.medium()` -- button taps, sheet open/close
 - `haptics.heavy()` -- destructive actions
 - `haptics.success()` -- session completed, plan generated
+
+**iOS Safari caveat:** `navigator.vibrate()` is not supported on iOS Safari. All haptics calls are silent there. To compensate, `Button` and `IconButton` include `active:brightness-110/125` CSS for visual press feedback that works on all platforms without JS.
 
 ## Components (components/ui/)
 
@@ -104,6 +107,14 @@ Always use these instead of raw HTML elements:
 
 Toast: call `toast()` / `toast.success()` / `toast.error()` from `sonner`. Toaster is mounted in root layout.
 
+## Touch targets
+
+All standalone tappable elements must be at least **44px** in both dimensions (Apple HIG minimum). When the visual element must be smaller, use `min-h-[44px] min-w-[44px]` to keep the hit area accessible.
+
+- `IconButton` sm = 36px visual + 44px hit area, md = 44px, lg = 48px
+- `Button` sm/md enforce `min-h-[44px]`
+- Never create a raw `<button>` with `h-7` / `h-8` -- use `IconButton` or `Button`
+
 ## Anti-patterns (NEVER do these)
 
 1. **Never use raw zinc values** -- use semantic tokens (`bg-surface-raised` not `bg-zinc-900/50`)
@@ -113,6 +124,7 @@ Toast: call `toast()` / `toast.success()` / `toast.error()` from `sonner`. Toast
 5. **Never use spinners for loading** -- use `<Skeleton>` components
 6. **Never hardcode spacing** -- use the 4px grid via Tailwind spacing utilities
 7. **Never forget safe-area padding** -- bottom bars need `pb-[env(safe-area-inset-bottom)]`
+8. **Never create touch targets below 44px** -- use `IconButton`/`Button` which enforce minimums
 
 ## Domain color mapping
 

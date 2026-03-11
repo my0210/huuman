@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
+import { IconButton } from "@/components/ui/IconButton";
 
 interface FriendUser {
   id: string;
@@ -100,12 +101,13 @@ export default function FriendsManagePage() {
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
-        <button
+        <IconButton
+          label="Back"
+          size="sm"
           onClick={() => router.push("/")}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         >
           <ArrowLeft size={16} />
-        </button>
+        </IconButton>
         <h1 className="text-sm font-semibold text-zinc-100">Friends</h1>
       </header>
 
@@ -238,9 +240,9 @@ function QrModal({ link, onClose }: { link: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="relative mx-4 w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-        <button onClick={onClose} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+        <IconButton label="Close" size="sm" onClick={onClose} className="absolute right-4 top-4">
           <X size={16} />
-        </button>
+        </IconButton>
         <h2 className="text-sm font-semibold text-zinc-100 mb-6">Your QR code</h2>
         <div className="flex flex-col items-center gap-4">
           {QRCode ? (
@@ -295,9 +297,9 @@ function SearchModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-zinc-950/95 backdrop-blur-sm">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
-        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+        <IconButton label="Close" size="sm" onClick={onClose}>
           <X size={16} />
-        </button>
+        </IconButton>
         <h1 className="text-sm font-semibold text-zinc-100">Search for friends</h1>
       </header>
       <div className="px-4 pt-4">

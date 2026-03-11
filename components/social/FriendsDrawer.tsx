@@ -224,9 +224,8 @@ export function FriendsDrawer({
                         label="Message"
                         size="sm"
                         onClick={() => handleStartDm(f.user.id)}
-                        className="h-7 w-7"
                       >
-                        <MessageCircle size={14} />
+                        <MessageCircle size={16} />
                       </IconButton>
                     </div>
                   ))}
@@ -312,7 +311,7 @@ function QrModal({
           label="Close"
           size="sm"
           onClick={onClose}
-          className="absolute right-4 top-4 h-8 w-8"
+          className="absolute right-4 top-4"
         >
           <X size={16} />
         </IconButton>
@@ -415,7 +414,6 @@ function SearchModal({
           label="Close"
           size="sm"
           onClick={onClose}
-          className="h-8 w-8"
         >
           <X size={16} />
         </IconButton>

@@ -9,7 +9,8 @@ export const spring = {
 export const press = {
   button: { scale: 0.97 } as TargetAndTransition,
   card: { scale: 0.99 } as TargetAndTransition,
-  icon: { scale: 0.9 } as TargetAndTransition,
+  compact: { scale: 0.95 } as TargetAndTransition,
+  icon: { scale: 0.92 } as TargetAndTransition,
 } as const;
 
 export const transition = {

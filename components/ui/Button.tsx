@@ -25,8 +25,8 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-sm rounded-radius-sm",
-  md: "px-4 py-2.5 text-sm rounded-radius-md",
+  sm: "px-3 py-2 text-sm rounded-radius-sm min-h-[44px]",
+  md: "px-4 py-3 text-sm rounded-radius-md min-h-[44px]",
   lg: "px-5 py-3 text-base rounded-radius-md",
 };
 
@@ -54,7 +54,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           onClick?.(e);
         }}
         disabled={disabled}
-        className={`${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : ""} inline-flex items-center justify-center transition-opacity disabled:opacity-40 ${className}`}
+        className={`${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : ""} inline-flex items-center justify-center active:brightness-110 transition-opacity disabled:opacity-40 ${className}`}
         {...props}
       >
         {children}

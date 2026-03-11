@@ -13,8 +13,8 @@ interface IconButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
 }
 
 const sizeClasses: Record<IconButtonSize, string> = {
-  sm: "h-7 w-7 rounded-radius-sm",
-  md: "h-10 w-10 rounded-radius-md",
+  sm: "h-9 w-9 min-h-[44px] min-w-[44px] rounded-radius-sm",
+  md: "h-11 w-11 rounded-radius-md",
   lg: "h-12 w-12 rounded-radius-md",
 };
 
@@ -34,7 +34,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           onClick?.(e);
         }}
         disabled={disabled}
-        className={`${sizeClasses[size]} flex items-center justify-center text-text-tertiary active:text-text-secondary transition-colors disabled:opacity-40 ${className}`}
+        className={`${sizeClasses[size]} flex items-center justify-center text-text-tertiary active:text-text-secondary active:brightness-125 transition-colors disabled:opacity-40 ${className}`}
         {...props}
       >
         {children}

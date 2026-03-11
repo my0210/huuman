@@ -4,6 +4,7 @@ import { Drawer } from "vaul";
 import { haptics } from "@/lib/haptics";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
+import { IconButton } from "./IconButton";
 
 interface SheetProps {
   open: boolean;
@@ -25,8 +26,8 @@ export function Sheet({ open, onOpenChange, children, snapPoints }: SheetProps) 
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-black/60" />
         <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] flex-col rounded-t-2xl border-t border-x border-border-default bg-surface-overlay outline-none">
-          <div className="flex justify-center pt-2 pb-1">
-            <Drawer.Handle className="h-1 w-10 rounded-full bg-surface-elevated" />
+          <div className="flex justify-center py-3">
+            <Drawer.Handle className="h-1.5 w-12 rounded-full bg-surface-elevated" />
           </div>
           {children}
         </Drawer.Content>
@@ -65,12 +66,9 @@ function SheetHeader({
       <div className="flex items-center gap-3">
         {rightAction}
         {onClose && (
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-radius-sm text-text-tertiary active:text-text-secondary transition-colors"
-          >
-            <X size={14} />
-          </button>
+          <IconButton label="Close" size="sm" onClick={onClose}>
+            <X size={16} />
+          </IconButton>
         )}
       </div>
     </div>

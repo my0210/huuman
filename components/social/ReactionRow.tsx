@@ -32,16 +32,16 @@ export default function ReactionRow({ messageId, reactions, onReact }: ReactionR
           <button
             key={`${messageId}-preset-${emoji}`}
             onClick={() => onReact(emoji)}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-sm active:bg-surface-elevated transition-colors"
+            className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-sm active:bg-surface-elevated transition-colors"
           >
             {emoji}
           </button>
         ))}
         <button
           onClick={() => setShowPicker(!showPicker)}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-text-tertiary active:bg-surface-elevated active:text-text-secondary transition-colors"
+          className="flex h-9 w-9 min-h-[44px] min-w-[44px] items-center justify-center rounded-full text-text-tertiary active:bg-surface-elevated active:text-text-secondary transition-colors"
         >
-          <Plus size={14} />
+          <Plus size={16} />
         </button>
       </div>
 

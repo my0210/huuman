@@ -383,9 +383,9 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
                   type="button"
                   onClick={() => removeImage(i)}
                   disabled={uploading}
-                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                  className="absolute -top-2 -right-2 flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface-elevated text-text-secondary transition-opacity disabled:opacity-30"
                 >
-                  <X size={10} />
+                  <X size={12} />
                 </button>
               </div>
             ))}
@@ -425,15 +425,14 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           >
             <Camera size={18} />
           </IconButton>
-          <motion.button
+          <IconButton
+            label="Send"
             type="submit"
-            whileTap={press.button}
-            transition={spring.snappy}
             disabled={(!input.trim() && pendingImages.length === 0) || isLoading || uploading}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-radius-md bg-text-primary text-surface-base disabled:opacity-30 transition-opacity"
+            className="h-11 w-11 flex-none bg-text-primary text-surface-base"
           >
             {uploading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-          </motion.button>
+          </IconButton>
         </div>
       </form>
     </div>

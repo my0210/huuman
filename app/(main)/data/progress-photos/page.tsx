@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Trash2, Camera, Pencil } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
 import { motion } from "framer-motion";
 import { Drawer } from "@/components/layout/Drawer";
 import { createClient } from "@/lib/supabase/client";
@@ -103,25 +104,27 @@ export default function ProgressPhotosPage() {
     <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
       <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button
+          <IconButton
+            label="Back"
+            size="sm"
             onClick={() => router.push("/data")}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           >
             <ArrowLeft size={16} />
-          </button>
-          <h1 className="text-lg font-semibold text-zinc-100">
+          </IconButton>
+          <h1 className="text-lg font-semibold text-text-primary">
             Progress Photos
             {photos.length > 0 && (
-              <span className="text-sm font-normal text-zinc-500 ml-2">{photos.length}</span>
+              <span className="text-sm font-normal text-text-muted ml-2">{photos.length}</span>
             )}
           </h1>
         </div>
-        <button
+        <IconButton
+          label="Add photo"
+          size="sm"
           onClick={() => setShowUpload(true)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
         >
           <Plus size={16} />
-        </button>
+        </IconButton>
       </header>
 
       <div className="flex-1 overflow-y-auto scrollbar-none">
