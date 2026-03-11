@@ -46,15 +46,8 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  try {
-    const channel = supabase.channel(`group:${groupId}`);
-    await channel.send({
-      type: 'broadcast',
-      event: 'messages_read',
-      payload: { messageIds: capped, userId: user.id },
-    });
-    supabase.removeChannel(channel);
-  } catch { /* best-effort */ }
+  const { broadcast } = await import('@/lib/supabase/broadcast');
+  await broadcast(`group:${groupId}`, 'messages_read', { messageIds: capped, userId: user.id });
 
   await supabase
     .from('group_members')

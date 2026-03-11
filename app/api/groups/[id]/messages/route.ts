@@ -164,11 +164,8 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  try {
-    const channel = supabase.channel(`group:${groupId}`);
-    await channel.send({ type: 'broadcast', event: 'new_message', payload: message });
-    supabase.removeChannel(channel);
-  } catch { /* broadcast is best-effort */ }
+  const { broadcast } = await import('@/lib/supabase/broadcast');
+  await broadcast(`group:${groupId}`, 'new_message', message as Record<string, unknown>);
 
   return NextResponse.json({ message }, { status: 201 });
 }
@@ -215,11 +212,8 @@ export async function DELETE(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  try {
-    const channel = supabase.channel(`group:${groupId}`);
-    await channel.send({ type: 'broadcast', event: 'delete_message', payload: { messageId } });
-    supabase.removeChannel(channel);
-  } catch { /* best-effort */ }
+  const { broadcast: broadcastDelete } = await import('@/lib/supabase/broadcast');
+  await broadcastDelete(`group:${groupId}`, 'delete_message', { messageId });
 
   return NextResponse.json({ deleted: true });
 }
