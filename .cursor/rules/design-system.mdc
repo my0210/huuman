@@ -1,0 +1,128 @@
+---
+description: huuman design system -- tokens, components, motion, haptics. Follow this for ALL UI work.
+alwaysApply: true
+---
+
+# huuman Design System
+
+Mobile-first, dark-only health app. Every UI change must use these tokens, components, and patterns.
+
+## Design Tokens (globals.css)
+
+### Surfaces (elevation = lighter, not shadows)
+- `bg-surface-base` (#09090b) -- page background
+- `bg-surface-raised` (#18181b) -- cards, inputs, list items
+- `bg-surface-overlay` (#27272a) -- sheets, drawers, popovers
+- `bg-surface-elevated` (#3f3f46) -- hover/active states, tooltips
+
+### Borders
+- `border-border-subtle` -- faint separators
+- `border-border-default` -- standard borders (cards, inputs)
+- `border-border-strong` -- emphasized borders
+
+### Text hierarchy
+- `text-text-primary` (#fafafa) -- headings, important text
+- `text-text-secondary` (#a1a1aa) -- body text, descriptions
+- `text-text-tertiary` (#71717a) -- labels, captions
+- `text-text-muted` (#52525b) -- timestamps, disabled, placeholders
+
+### Domain accent colors (3 intensities each)
+Each domain has `-muted` (backgrounds), default (text/icons), `-bright` (interactive):
+- Cardio: `text-domain-cardio`, `bg-domain-cardio-muted`, `text-domain-cardio-bright`
+- Strength: `text-domain-strength`, `bg-domain-strength-muted`, `text-domain-strength-bright`
+- Mindfulness: `text-domain-mindfulness`, `bg-domain-mindfulness-muted`, `text-domain-mindfulness-bright`
+- Nutrition: `text-domain-nutrition`, `bg-domain-nutrition-muted`, `text-domain-nutrition-bright`
+- Sleep: `text-domain-sleep`, `bg-domain-sleep-muted`, `text-domain-sleep-bright`
+
+### Semantic colors
+- `text-semantic-success` / `bg-semantic-success` -- completions, positive
+- `text-semantic-warning` / `bg-semantic-warning` -- caution, attention
+- `text-semantic-error` / `bg-semantic-error` -- errors, destructive
+
+### Radii
+- `rounded-radius-sm` (8px), `rounded-radius-md` (12px), `rounded-radius-lg` (16px), `rounded-radius-xl` (20px)
+
+## Typography
+Font: Inter (loaded via `next/font/google` in layout.tsx).
+
+| Class | Size | Use |
+|---|---|---|
+| `text-xs` | 11px | timestamps, metadata, badges |
+| `text-sm` | 13px | labels, captions, secondary |
+| `text-base` | 15px | body, chat messages |
+| `text-lg` | 17px | card titles, section headers |
+| `text-xl` | 20px | page titles |
+| `text-2xl` | 24px | hero numbers |
+
+Weights: `font-normal` (400), `font-medium` (500), `font-semibold` (600).
+
+## Motion (lib/motion.ts)
+
+Import from `@/lib/motion`. Never define inline spring/transition values.
+
+### Springs
+- `spring.snappy` -- button presses, toggles, quick feedback
+- `spring.smooth` -- drawers, sheets, page transitions
+- `spring.bouncy` -- achievements, completion celebrations
+
+### Press feedback (whileTap)
+- `press.button` (scale: 0.97) -- all tappable buttons
+- `press.card` (scale: 0.99) -- tappable cards
+- `press.icon` (scale: 0.9) -- icon-only buttons
+
+### Transitions
+- `transition.fade` -- opacity changes (150ms)
+- `transition.slide` -- position changes (smooth spring)
+- `transition.expand` -- height/width changes (250ms)
+
+**Rule: every tappable element MUST have `whileTap` from press presets.**
+
+## Haptics (lib/haptics.ts)
+
+Import from `@/lib/haptics`. Call on meaningful interactions.
+
+- `haptics.light()` -- tab switches, toggles, selections
+- `haptics.medium()` -- button taps, sheet open/close
+- `haptics.heavy()` -- destructive actions
+- `haptics.success()` -- session completed, plan generated
+
+## Components (components/ui/)
+
+Always use these instead of raw HTML elements:
+
+| Component | Import | Use instead of |
+|---|---|---|
+| `<Button>` | `@/components/ui/Button` | `<button>` with hand-rolled classes |
+| `<IconButton>` | `@/components/ui/IconButton` | icon-only `<button>` elements |
+| `<Input>` | `@/components/ui/Input` | `<input>` or `<textarea>` |
+| `<Toggle>` | `@/components/ui/Toggle` | custom checkbox/toggle switches |
+| `<Badge>` | `@/components/ui/Badge` | status spans with domain colors |
+| `<Skeleton>` | `@/components/ui/Skeleton` | loading placeholders |
+| `<Card>` | `@/components/ui/Card` | `Card`, `Card.Header`, `Card.Body`, `Card.Footer` |
+| `<Sheet>` | `@/components/ui/Sheet` | the old Drawer component (now Vaul-based) |
+| `<TabBar>` | `@/components/ui/TabBar` | bottom navigation |
+
+Toast: call `toast()` / `toast.success()` / `toast.error()` from `sonner`. Toaster is mounted in root layout.
+
+## Anti-patterns (NEVER do these)
+
+1. **Never use raw zinc values** -- use semantic tokens (`bg-surface-raised` not `bg-zinc-900/50`)
+2. **Never define inline springs** -- import from `@/lib/motion`
+3. **Never create a `<button>` without whileTap** -- use `<Button>` or `<IconButton>`
+4. **Never use `hover:` without `active:`** -- mobile has no hover. Prefer `whileTap`.
+5. **Never use spinners for loading** -- use `<Skeleton>` components
+6. **Never hardcode spacing** -- use the 4px grid via Tailwind spacing utilities
+7. **Never forget safe-area padding** -- bottom bars need `pb-[env(safe-area-inset-bottom)]`
+
+## Domain color mapping
+
+When rendering domain-specific UI (sessions, cards, badges):
+```
+const domainColors = {
+  cardio: { text: 'text-domain-cardio', bg: 'bg-domain-cardio-muted', bright: 'text-domain-cardio-bright', glow: 'shadow-glow-cardio' },
+  strength: { text: 'text-domain-strength', bg: 'bg-domain-strength-muted', bright: 'text-domain-strength-bright', glow: 'shadow-glow-strength' },
+  mindfulness: { text: 'text-domain-mindfulness', bg: 'bg-domain-mindfulness-muted', bright: 'text-domain-mindfulness-bright', glow: 'shadow-glow-mindfulness' },
+  nutrition: { text: 'text-domain-nutrition', bg: 'bg-domain-nutrition-muted', bright: 'text-domain-nutrition-bright', glow: 'shadow-glow-nutrition' },
+  sleep: { text: 'text-domain-sleep', bg: 'bg-domain-sleep-muted', bright: 'text-domain-sleep-bright', glow: 'shadow-glow-sleep' },
+};
+```

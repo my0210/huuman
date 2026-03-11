@@ -5,6 +5,9 @@ import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import { Send, X, Plus, Camera, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { spring, press } from "@/lib/motion";
+import { haptics } from "@/lib/haptics";
 import { CommandMenu } from "./CommandMenu";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -16,6 +19,7 @@ import { compressImage, uploadChatImage } from "@/lib/images";
 import { ProfileSheet } from "@/components/layout/ProfileSheet";
 import SocialBadge from "@/components/layout/SocialBadge";
 import { Avatar } from "@/components/ui/Avatar";
+import { IconButton } from "@/components/ui/IconButton";
 
 interface PendingImage {
   file: File;
@@ -197,6 +201,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     if ((!hasText && !hasImages) || isLoading || uploading) return;
 
     setError(null);
+    haptics.medium();
     let fileParts: FileUIPart[] = [];
 
     if (hasImages) {
@@ -241,13 +246,13 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   }, []);
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
       {/* Header */}
-      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
-        <button onClick={() => setProfileOpen(true)} className="hover:opacity-80 transition-opacity">
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
+        <button onClick={() => setProfileOpen(true)} className="active:opacity-70 transition-opacity">
           <Avatar src={avatarUrl} name={displayName || userEmail} size="md" />
         </button>
-        <h1 className="text-lg font-semibold text-zinc-100">huuman</h1>
+        <h1 className="text-lg font-semibold text-text-primary">huuman</h1>
         <SocialBadge unreadCount={unreadCount} onClick={() => router.push('/groups')} />
       </header>
 
@@ -261,15 +266,15 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
 
       {/* Messages */}
       <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain">
         {loadingOlder && (
           <div className="flex justify-center py-2">
-            <Loader2 size={16} className="animate-spin text-zinc-500" />
+            <Loader2 size={16} className="animate-spin text-text-muted" />
           </div>
         )}
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
-            <p className="text-zinc-400 text-sm max-w-xs">
+            <p className="text-text-secondary text-sm max-w-xs">
               {t("chat.ready", currentLanguage)}
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
@@ -278,15 +283,18 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
                 { key: "chat.week" as const, en: "Show me my week" },
                 { key: "chat.progress" as const, en: "How am I doing?" },
               ]).map(({ key, en }) => (
-                <button
+                <motion.button
                   key={key}
+                  whileTap={press.button}
+                  transition={spring.snappy}
                   onClick={() => {
+                    haptics.light();
                     sendMessage({ text: t(key, currentLanguage) || en });
                   }}
-                  className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors"
+                  className="rounded-full border border-border-default px-3 py-1.5 text-xs text-text-secondary active:bg-surface-raised transition-colors"
                 >
                   {t(key, currentLanguage)}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -307,12 +315,12 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           return (
             <div key={message.id}>
               {newDay && time && (
-                <p className="text-center text-[11px] font-medium text-zinc-500 py-3">
+                <p className="text-center text-[11px] font-medium text-text-muted py-3">
                   {formatDateLabel(time)}
                 </p>
               )}
               {timeGap && time && (
-                <p className="text-center text-[10px] text-zinc-600 py-1.5">
+                <p className="text-center text-[10px] text-text-muted py-1.5">
                   {formatTime(time)}
                 </p>
               )}
@@ -320,7 +328,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
                 <div
                   className={`max-w-[85%] ${
                     message.role === "user"
-                      ? "rounded-2xl rounded-br-md bg-zinc-800 px-4 py-2.5"
+                      ? "rounded-2xl rounded-br-md bg-surface-raised px-4 py-2.5"
                       : "space-y-3"
                   }`}
                 >
@@ -336,9 +344,9 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
         {shouldShowThinking && (
           <div className="flex justify-start">
             <div className="flex items-center gap-1 px-3 py-2">
-              <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse" />
-              <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse [animation-delay:150ms]" />
-              <span className="h-2 w-2 rounded-full bg-zinc-500 animate-pulse [animation-delay:300ms]" />
+              <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse" />
+              <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse [animation-delay:150ms]" />
+              <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse [animation-delay:300ms]" />
             </div>
           </div>
         )}
@@ -355,10 +363,10 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="flex-none border-t border-zinc-800 px-4 py-3"
+        className="flex-none border-t border-border-subtle px-4 py-3 safe-bottom"
       >
         {error && (
-          <div className="mb-2 rounded-xl border border-red-900/50 bg-red-950/30 px-3 py-2 text-xs text-red-400">
+          <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">
             {error}
           </div>
         )}
@@ -369,13 +377,13 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
                 <img
                   src={img.previewUrl}
                   alt={img.file.name}
-                  className="h-16 w-16 rounded-lg object-cover border border-zinc-700"
+                  className="h-16 w-16 rounded-radius-sm object-cover border border-border-default"
                 />
                 <button
                   type="button"
                   onClick={() => removeImage(i)}
                   disabled={uploading}
-                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-700 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-600 disabled:opacity-30"
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
                 >
                   <X size={10} />
                 </button>
@@ -392,18 +400,13 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
             onChange={handleImageSelect}
             className="hidden"
           />
-          {/* + button (WhatsApp pattern: left of input) */}
-          <button
-            type="button"
+          <IconButton
+            label={commandMenuOpen ? "Close menu" : "Open menu"}
             onClick={() => setCommandMenuOpen(!commandMenuOpen)}
-            className={`flex h-10 w-10 flex-none items-center justify-center rounded-xl transition-colors ${
-              commandMenuOpen
-                ? "bg-zinc-700 text-zinc-200"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
-            }`}
+            className={commandMenuOpen ? "bg-surface-elevated text-text-secondary" : ""}
           >
             {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
-          </button>
+          </IconButton>
           <input
             type="text"
             value={input}
@@ -413,25 +416,24 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
             }}
             onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
             placeholder={pendingImages.length > 0 ? "Add a note, e.g. \"my lunch\" or \"home gym setup\"..." : t("chat.placeholder", currentLanguage)}
-            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+            className="flex-1 rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-[15px] text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
           />
-          {/* Camera button (WhatsApp pattern: right of input) */}
-          <button
-            type="button"
+          <IconButton
+            label="Upload image"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || uploading}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-30"
-            title="Upload image"
           >
             <Camera size={18} />
-          </button>
-          <button
+          </IconButton>
+          <motion.button
             type="submit"
+            whileTap={press.button}
+            transition={spring.snappy}
             disabled={(!input.trim() && pendingImages.length === 0) || isLoading || uploading}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-radius-md bg-text-primary text-surface-base disabled:opacity-30 transition-opacity"
           >
             {uploading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-          </button>
+          </motion.button>
         </div>
       </form>
     </div>

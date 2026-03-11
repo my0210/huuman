@@ -3,6 +3,8 @@
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export default function LoginPage() {
   return (
@@ -59,51 +61,46 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-zinc-950">
+    <div className="flex min-h-dvh items-center justify-center bg-surface-base">
       <div className="w-full max-w-sm space-y-8 px-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-zinc-100">huuman</h1>
-          <p className="mt-2 text-sm text-zinc-500">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-text-primary">huuman</h1>
+          <p className="mt-2 text-sm text-text-muted">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              required
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
-            />
-          </div>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+          />
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+          />
 
           {error && (
-            <p className="text-xs text-red-400">{error}</p>
+            <p className="text-xs text-semantic-error">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-zinc-100 py-3 text-sm font-medium text-zinc-900 hover:bg-zinc-200 disabled:opacity-50 transition-colors"
+            fullWidth
+            size="lg"
           >
             {loading ? "Signing in..." : "Sign in"}
-          </button>
+          </Button>
         </form>
 
-        <p className="text-center text-xs text-zinc-500">
+        <p className="text-center text-xs text-text-muted">
           No account?{" "}
-          <a href={connectId ? `/signup?connect=${encodeURIComponent(connectId)}` : "/signup"} className="text-zinc-300 hover:text-zinc-100">
+          <a href={connectId ? `/signup?connect=${encodeURIComponent(connectId)}` : "/signup"} className="text-text-secondary">
             Sign up
           </a>
         </p>

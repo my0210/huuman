@@ -179,13 +179,13 @@ export function ProfileSheet({
                   saveLanguage(lang.code);
                   window.location.reload();
                 }}
-                className={`w-full flex items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm transition-colors ${
-                  isActive ? "bg-blue-600 text-white" : "text-zinc-300 hover:bg-zinc-800"
+                className={`w-full flex items-center justify-between rounded-radius-md px-4 py-2.5 text-left text-sm transition-colors ${
+                  isActive ? "bg-semantic-info text-white" : "text-text-secondary active:bg-surface-raised"
                 }`}
               >
                 <div className="flex items-baseline gap-2 min-w-0">
                   <span className="font-medium truncate">{lang.native}</span>
-                  <span className={`text-xs flex-none ${isActive ? "text-blue-100" : "text-zinc-500"}`}>
+                  <span className={`text-xs flex-none ${isActive ? "text-blue-100" : "text-text-muted"}`}>
                     {lang.region}
                   </span>
                 </div>
@@ -197,23 +197,23 @@ export function ProfileSheet({
       ) : (
         <div className="px-4 py-3 space-y-1 pb-4">
           {/* Avatar + Name card */}
-          <div className="rounded-xl bg-zinc-800/30 p-4">
+          <div className="rounded-radius-md bg-surface-raised p-4">
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => fileInputRef.current?.click()} className="relative flex-none">
                 {avatarSrc ? (
                   <img src={avatarSrc} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-700">
-                    <span className="text-lg font-semibold text-zinc-200">{initial}</span>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated">
+                    <span className="text-lg font-semibold text-text-secondary">{initial}</span>
                   </div>
                 )}
-                <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-600 ring-2 ring-zinc-900">
-                  <Camera size={10} className="text-zinc-300" />
+                <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated ring-2 ring-surface-base">
+                  <Camera size={10} className="text-text-secondary" />
                 </div>
               </button>
               <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple={false} onChange={handleAvatarUpload} className="hidden" />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500 mb-1">Name</p>
+                <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted mb-1">Name</p>
                 <input
                   ref={nameRef}
                   type="text"
@@ -221,7 +221,7 @@ export function ProfileSheet({
                   onChange={(e) => setDisplayName(e.target.value)}
                   onBlur={handleNameBlur}
                   placeholder="Your name"
-                  className="w-full rounded-lg bg-zinc-800/50 border border-zinc-700 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-400 focus:outline-none"
+                  className="w-full rounded-radius-sm bg-surface-overlay border border-border-default px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none"
                 />
               </div>
             </div>
@@ -229,71 +229,71 @@ export function ProfileSheet({
 
           <button
             onClick={() => { close(); router.push("/friends/manage"); }}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors"
           >
-            <Users size={16} className="flex-none text-zinc-500" />
+            <Users size={16} className="flex-none text-text-tertiary" />
             <div>
               <p className="font-medium">Friends</p>
-              <p className="text-xs text-zinc-500">Add and manage friends</p>
+              <p className="text-xs text-text-muted">Add and manage friends</p>
             </div>
           </button>
 
-          <div className="border-t border-zinc-800 my-2" />
+          <div className="border-t border-border-subtle my-2" />
 
           <button
             onClick={() => setView("language")}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors"
           >
-            <Globe size={16} className="flex-none text-zinc-500" />
+            <Globe size={16} className="flex-none text-text-tertiary" />
             <div className="flex-1 min-w-0">
               <p className="font-medium">{t("settings.language", currentLanguage)}</p>
-              <p className="text-xs text-zinc-500">{getLanguageByCode(currentLanguage)?.native ?? "English"}</p>
+              <p className="text-xs text-text-muted">{getLanguageByCode(currentLanguage)?.native ?? "English"}</p>
             </div>
           </button>
 
           <button
             onClick={() => { close(); router.push("/data"); }}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors"
           >
-            <Database size={16} className="flex-none text-zinc-500" />
+            <Database size={16} className="flex-none text-text-tertiary" />
             <div>
               <p className="font-medium">{t("settings.data", currentLanguage)}</p>
-              <p className="text-xs text-zinc-500">{t("settings.dataDesc", currentLanguage)}</p>
+              <p className="text-xs text-text-muted">{t("settings.dataDesc", currentLanguage)}</p>
             </div>
           </button>
 
           {userEmail && FEEDBACK_EMAILS.includes(userEmail) && (
             <button
               onClick={() => { close(); router.push("/feedback"); }}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors"
             >
-              <MessageSquarePlus size={16} className="flex-none text-zinc-500" />
+              <MessageSquarePlus size={16} className="flex-none text-text-tertiary" />
               <div>
                 <p className="font-medium">Feedback board</p>
-                <p className="text-xs text-zinc-500">View all user feedback</p>
+                <p className="text-xs text-text-muted">View all user feedback</p>
               </div>
             </button>
           )}
 
-          <div className="border-t border-zinc-800 my-2" />
+          <div className="border-t border-border-subtle my-2" />
 
           {!telegramLink ? (
             <button
               onClick={handleConnectTelegram}
               disabled={busy}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
+              className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors disabled:opacity-40"
             >
-              <MessageCircle size={16} className="flex-none text-zinc-500" />
+              <MessageCircle size={16} className="flex-none text-text-tertiary" />
               <div>
                 <p className="font-medium">{t("settings.connectTelegram", currentLanguage)}</p>
-                <p className="text-xs text-zinc-500">{t("settings.connectTelegramDesc", currentLanguage)}</p>
+                <p className="text-xs text-text-muted">{t("settings.connectTelegramDesc", currentLanguage)}</p>
               </div>
             </button>
           ) : (
             <div className="rounded-xl px-3 py-3 space-y-2">
               <div className="flex items-center gap-3">
                 <MessageCircle size={16} className="flex-none text-cyan-400" />
-                <p className="text-sm font-medium text-zinc-300">{t("settings.connectTelegram", currentLanguage)}</p>
+                <p className="text-sm font-medium text-text-secondary">{t("settings.connectTelegram", currentLanguage)}</p>
               </div>
               <p className="text-xs text-zinc-500 ml-7">Open this link in Telegram to connect:</p>
               <div className="ml-7 flex items-center gap-2">
@@ -307,39 +307,39 @@ export function ProfileSheet({
             </div>
           )}
 
-          <div className="border-t border-zinc-800 my-2" />
+          <div className="border-t border-border-subtle my-2" />
 
           <button
             onClick={handleRedoOnboarding}
             disabled={busy}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
+            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors disabled:opacity-40"
           >
-            <RotateCcw size={16} className="flex-none text-zinc-500" />
+            <RotateCcw size={16} className="flex-none text-text-tertiary" />
             <div>
               <p className="font-medium">{t("settings.redoOnboarding", currentLanguage)}</p>
-              <p className="text-xs text-zinc-500">{t("settings.redoOnboardingDesc", currentLanguage)}</p>
+              <p className="text-xs text-text-muted">{t("settings.redoOnboardingDesc", currentLanguage)}</p>
             </div>
           </button>
 
           <button
             onClick={handleResetEverything}
             disabled={busy}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-40"
+            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors disabled:opacity-40"
           >
-            <Trash2 size={16} className="flex-none text-zinc-500" />
+            <Trash2 size={16} className="flex-none text-text-tertiary" />
             <div>
               <p className="font-medium">{t("settings.reset", currentLanguage)}</p>
-              <p className="text-xs text-zinc-500">{t("settings.resetDesc", currentLanguage)}</p>
+              <p className="text-xs text-text-muted">{t("settings.resetDesc", currentLanguage)}</p>
             </div>
           </button>
 
-          <div className="border-t border-zinc-800 my-2" />
+          <div className="border-t border-border-subtle my-2" />
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left text-sm text-zinc-400 hover:bg-zinc-800 transition-colors"
+            className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-tertiary active:bg-surface-raised transition-colors"
           >
-            <LogOut size={16} className="flex-none text-zinc-500" />
+            <LogOut size={16} className="flex-none text-text-tertiary" />
             <p className="font-medium">{t("settings.signOut", currentLanguage)}</p>
           </button>
         </div>

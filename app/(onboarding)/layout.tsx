@@ -22,7 +22,7 @@ export default async function OnboardingLayout({
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-zinc-950">
+    <div className="flex min-h-dvh flex-col bg-surface-base">
       {children}
     </div>
   );

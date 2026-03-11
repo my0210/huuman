@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -15,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "huuman",
   description: "Your longevity coach. Because you deserve to be in your prime.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "huuman",
+  },
 };
 
 export const viewport: Viewport = {
@@ -22,7 +28,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   interactiveWidget: "resizes-content",
-  themeColor: "#0a0a0a",
+  themeColor: "#09090b",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -33,9 +40,20 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100`}
+        className={`${inter.variable} ${geistMono.variable} antialiased bg-surface-base text-text-primary`}
       >
         {children}
+        <Toaster
+          theme="dark"
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: "var(--color-surface-overlay)",
+              border: "1px solid var(--color-border-default)",
+              color: "var(--color-text-primary)",
+            },
+          }}
+        />
       </body>
     </html>
   );
