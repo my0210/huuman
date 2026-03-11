@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -11,6 +12,12 @@ const inter = Inter({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const satoshi = localFont({
+  src: "../public/fonts/Satoshi-Variable.woff2",
+  variable: "--font-satoshi",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -32,6 +39,13 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+import { useCircadianTheme } from "@/lib/hooks/useCircadianTheme";
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  useCircadianTheme();
+  return <>{children}</>;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,9 +54,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${geistMono.variable} antialiased bg-surface-base text-text-primary`}
+        className={`${inter.variable} ${geistMono.variable} ${satoshi.variable} antialiased bg-surface-base text-text-primary`}
       >
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
         <Toaster
           theme="dark"
           position="top-center"

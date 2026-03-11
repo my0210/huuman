@@ -44,22 +44,22 @@ export function SessionCardContent({ detail, weekProgress }: Props) {
   const c = DOMAIN_STYLE[detail.domain];
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3">
-        <div className={`h-2 w-2 rounded-full ${c.dot}`} />
+        <div className={`h-2 w-2 rounded-full ${c.dot} shadow-[0_0_8px_${c.dot.replace('bg-', '')}]`} />
         <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
           <Check size={10} className="text-emerald-400" />
         </div>
-        <p className="text-sm font-semibold text-zinc-200 flex-1 truncate">
+        <p className="text-sm font-medium text-text-primary flex-1 truncate">
           {detail.title}
         </p>
         <span
-          className={`text-[10px] font-bold ${c.text} ${c.bg} ${c.border} border rounded px-1.5 py-0.5`}
+          className={`text-[10px] font-bold ${c.text} ${c.bg} ${c.border} border rounded px-1.5 py-0.5 backdrop-blur-md`}
         >
           {c.short}
         </span>
         {detail.isExtra && (
-          <span className="text-[10px] font-medium text-zinc-500 bg-zinc-800 rounded px-1.5 py-0.5">
+          <span className="text-[10px] font-medium text-text-muted bg-surface-elevated rounded px-1.5 py-0.5">
             Extra
           </span>
         )}
@@ -71,9 +71,9 @@ export function SessionCardContent({ detail, weekProgress }: Props) {
           detail.exercises.length > 0 && (
             <div className="space-y-1">
               {detail.exercises.map((ex, i) => (
-                <p key={i} className="text-xs text-zinc-400">
+                <p key={i} className="text-xs text-text-secondary">
                   {ex.name}{" "}
-                  <span className="text-zinc-300">
+                  <span className="text-text-primary font-mono">
                     {ex.sets}&times;{ex.reps}
                     {ex.weight && ` @ ${ex.weight}`}
                   </span>
@@ -83,35 +83,35 @@ export function SessionCardContent({ detail, weekProgress }: Props) {
           )}
 
         {detail.domain === "cardio" && (
-          <div className="flex gap-4 text-xs text-zinc-400">
+          <div className="flex gap-4 text-xs text-text-secondary">
             {detail.durationMinutes != null && (
-              <span>{detail.durationMinutes} min</span>
+              <span className="font-mono text-text-primary">{detail.durationMinutes} min</span>
             )}
             {detail.zone != null && <span>Zone {detail.zone}</span>}
-            {detail.avgHr != null && <span>Avg {detail.avgHr} bpm</span>}
+            {detail.avgHr != null && <span className="font-mono">Avg {detail.avgHr} bpm</span>}
           </div>
         )}
 
         {detail.domain === "mindfulness" && (
-          <div className="flex gap-4 text-xs text-zinc-400">
+          <div className="flex gap-4 text-xs text-text-secondary">
             {detail.mindfulnessType && (
               <span className="capitalize">{detail.mindfulnessType}</span>
             )}
             {detail.durationMinutes != null && (
-              <span>{detail.durationMinutes} min</span>
+              <span className="font-mono text-text-primary">{detail.durationMinutes} min</span>
             )}
           </div>
         )}
       </div>
 
       {weekProgress && weekProgress.length > 0 && (
-        <div className="flex gap-3 border-t border-zinc-800/50 px-4 py-2">
+        <div className="flex gap-3 border-t border-[var(--phase-border)] px-4 py-2">
           {weekProgress
             .filter((d) => d.total > 0)
             .map((d) => (
-              <div key={d.domain} className="text-xs text-zinc-500">
+              <div key={d.domain} className="text-xs text-text-muted">
                 {d.label}:{" "}
-                <span className="text-zinc-300">
+                <span className="text-text-secondary font-mono">
                   {d.completed}/{d.total}
                 </span>
               </div>

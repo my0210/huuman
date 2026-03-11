@@ -32,15 +32,15 @@ export function ProgressRings({ data }: { data: Record<string, unknown> }) {
 
   if (!hasPlan && !hasAnyData) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800/50">
-          <p className="text-sm font-semibold text-zinc-200">This Week</p>
-        </div>
-        <div className="px-4 py-6 text-center">
-          <p className="text-xs text-zinc-500">No active plan yet.</p>
-          <p className="text-xs text-zinc-600 mt-1">Ask me to generate your weekly plan.</p>
-        </div>
+    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--phase-border)]">
+        <p className="text-sm font-medium text-text-primary font-heading tracking-wide">This Week</p>
       </div>
+      <div className="px-4 py-6 text-center">
+        <p className="text-xs text-text-muted">No active plan yet.</p>
+        <p className="text-xs text-text-secondary mt-1">Ask me to generate your weekly plan.</p>
+      </div>
+    </div>
     );
   }
 
@@ -48,9 +48,9 @@ export function ProgressRings({ data }: { data: Record<string, unknown> }) {
   const avgSteps = steps.length > 0 ? Math.round(totalSteps / steps.length) : 0;
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-800/50">
-        <p className="text-sm font-semibold text-zinc-200">This Week</p>
+    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--phase-border)]">
+        <p className="text-sm font-medium text-text-primary font-heading tracking-wide">This Week</p>
       </div>
 
       <div className="grid grid-cols-5 gap-1 px-4 py-4">
@@ -64,9 +64,9 @@ export function ProgressRings({ data }: { data: Record<string, unknown> }) {
       </div>
 
       {steps.length > 0 && (
-        <div className="px-4 pb-3 pt-1 border-t border-zinc-800/50 flex items-center justify-between">
-          <p className="text-xs text-zinc-500">
-            Steps: <span className="text-zinc-300">{avgSteps.toLocaleString()}/day</span>
+        <div className="px-4 pb-3 pt-1 border-t border-[var(--phase-border)] flex items-center justify-between">
+          <p className="text-xs text-text-muted">
+            Steps: <span className="text-text-primary font-mono">{avgSteps.toLocaleString()}/day</span>
           </p>
           <StepDots steps={steps} weekStart={weekStart} />
         </div>
@@ -95,7 +95,7 @@ function DomainRing({ domain: d, centerOverride }: { domain: DomainProgress; cen
             fill="none"
             stroke="currentColor"
             strokeWidth="3"
-            className="text-zinc-800"
+            className="text-surface-elevated/50"
           />
           {d.skipped > 0 && (
             <circle
@@ -122,11 +122,11 @@ function DomainRing({ domain: d, centerOverride }: { domain: DomainProgress; cen
             />
           )}
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-zinc-400">
+        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-text-secondary font-mono">
           {centerOverride ?? `${d.completed}/${d.total}`}
         </span>
       </div>
-      <span className="text-[10px] text-zinc-500">{d.label}</span>
+      <span className="text-[10px] text-text-muted">{d.label}</span>
     </div>
   );
 }
@@ -148,12 +148,12 @@ function StepDots({ steps, weekStart }: { steps: StepDay[]; weekStart: string })
         <div key={d.date} className="flex flex-col items-center gap-0.5">
           <div className={`h-1.5 w-1.5 rounded-full ${
             d.hasData && d.steps >= d.target
-              ? 'bg-emerald-400'
+              ? 'bg-emerald-400 shadow-[0_0_5px_rgba(74,222,128,0.4)]'
               : d.hasData && d.steps > 0
-                ? 'bg-zinc-500'
-                : 'bg-zinc-800'
+                ? 'bg-text-muted'
+                : 'bg-surface-elevated'
           }`} />
-          <span className="text-[8px] text-zinc-600">{DAY_LABELS[i]}</span>
+          <span className="text-[8px] text-text-muted">{DAY_LABELS[i]}</span>
         </div>
       ))}
     </div>

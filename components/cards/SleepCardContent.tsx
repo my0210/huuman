@@ -13,20 +13,20 @@ const QUALITY_LABEL: Record<number, string> = {
 
 export function SleepCardContent({ detail }: { detail: SleepCardDetail }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
       <div className="flex items-start gap-3 px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-400/10">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-400/10 shadow-[0_0_10px_rgba(167,139,250,0.2)]">
           <Moon size={14} className="text-violet-400" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold leading-tight text-zinc-100">
+          <p className="text-2xl font-bold leading-tight text-text-primary font-mono tracking-tight drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">
             {detail.hours}h
           </p>
           {detail.quality != null && (
-            <p className="mt-0.5 text-xs text-zinc-400">
+            <p className="mt-0.5 text-xs text-text-muted">
               Quality:{" "}
-              <span className="text-zinc-300">
+              <span className="text-text-secondary">
                 {QUALITY_LABEL[detail.quality] ?? detail.quality}
               </span>
             </p>
@@ -34,7 +34,7 @@ export function SleepCardContent({ detail }: { detail: SleepCardDetail }) {
         </div>
 
         {detail.streak != null && detail.streak > 0 && (
-          <span className="whitespace-nowrap rounded-full border border-violet-400/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-bold text-violet-400">
+          <span className="whitespace-nowrap rounded-full border border-violet-400/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-bold text-violet-400 backdrop-blur-md">
             {detail.streak}d streak
           </span>
         )}

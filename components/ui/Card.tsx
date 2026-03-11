@@ -21,7 +21,7 @@ export function Card({
     <motion.div
       whileTap={pressable ? press.card : undefined}
       transition={spring.snappy}
-      className={`rounded-radius-lg border border-border-default bg-surface-raised ${className}`}
+      className={`rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-2xl ${className}`}
       style={glow ? { boxShadow: glow, ...style } : style}
       {...props}
     >

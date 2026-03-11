@@ -68,9 +68,9 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
 
   if (!hasPlan || (sessions.length === 0 && !trackingBriefs)) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-4 space-y-2">
-        <p className="text-sm font-medium text-zinc-300">No plan for today</p>
-        <p className="text-xs text-zinc-500">
+      <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl px-4 py-4 space-y-2 shadow-lg">
+        <p className="text-sm font-medium text-text-secondary">No plan for today</p>
+        <p className="text-xs text-text-muted">
           Ask me to generate your weekly plan to get started.
         </p>
       </div>
@@ -83,12 +83,12 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
   const total = sessions.length;
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-zinc-800/50 flex items-center justify-between">
-        <p className="text-sm font-semibold text-zinc-200">{dayName}</p>
+      <div className="px-4 py-3 border-b border-[var(--phase-border)] flex items-center justify-between">
+        <p className="text-sm font-medium text-text-primary font-heading tracking-wide">{dayName}</p>
         {total > 0 && (
-          <p className={`text-xs font-medium ${completed === total ? "text-emerald-400" : "text-zinc-500"}`}>
+          <p className={`text-xs font-medium ${completed === total ? "text-emerald-400" : "text-text-muted"}`}>
             {completed === total ? "All done" : `${completed} of ${total} sessions`}
           </p>
         )}
@@ -96,7 +96,7 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
 
       {/* Session rows */}
       {sessions.length > 0 && (
-        <div className="divide-y divide-zinc-800/50">
+        <div className="divide-y divide-[var(--phase-border)]">
           {sessions.map((session) => (
             <SessionRow key={session.id} session={session} />
           ))}
@@ -106,8 +106,8 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
       {/* Divider between sessions and tracking */}
       {trackingBriefs && (
         <>
-          <div className="border-t border-dashed border-zinc-800" />
-          <div className="divide-y divide-zinc-800/50">
+          <div className="border-t border-dashed border-[var(--phase-border)]" />
+          <div className="divide-y divide-[var(--phase-border)]">
             <NutritionRow brief={trackingBriefs.nutrition} habits={habits} />
             <SleepRow brief={trackingBriefs.sleep} habits={habits} />
           </div>
@@ -138,7 +138,7 @@ const domainButtonColors: Record<string, string> = {
 function SessionRow({ session }: { session: Session }) {
   const [expanded, setExpanded] = useState(false);
   const send = useChatSend();
-  const colors = domainColors[session.domain] ?? "text-zinc-400 bg-zinc-900 border-zinc-800";
+  const colors = domainColors[session.domain] ?? "text-text-muted bg-surface-elevated border-transparent";
   const isCompleted = session.status === "completed";
 
   return (
@@ -147,27 +147,27 @@ function SessionRow({ session }: { session: Session }) {
         onClick={() => !isCompleted && setExpanded(!expanded)}
         disabled={isCompleted}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-          isCompleted ? "opacity-60 cursor-default" : "hover:bg-zinc-800/30 active:bg-zinc-800/50"
+          isCompleted ? "opacity-60 cursor-default" : "hover:bg-[var(--phase-accent)]/5 active:bg-[var(--phase-accent)]/10"
         }`}
       >
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${colors}`}>
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${colors} shadow-sm`}>
           {isCompleted ? <Check size={14} /> : domainIcons[session.domain]}
         </div>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-medium truncate ${isCompleted ? "text-zinc-500 line-through" : "text-zinc-200"}`}>
+          <p className={`text-sm font-medium truncate ${isCompleted ? "text-text-muted line-through" : "text-text-primary"}`}>
             {session.title}
           </p>
-          <p className="text-xs text-zinc-500 capitalize">
+          <p className="text-xs text-text-muted capitalize">
             {session.domain}
             {session.is_extra && (
-              <span className="ml-1.5 text-[10px] font-medium text-zinc-600 bg-zinc-800 rounded px-1 py-px">Extra</span>
+              <span className="ml-1.5 text-[10px] font-medium text-text-secondary bg-surface-elevated rounded px-1 py-px">Extra</span>
             )}
           </p>
         </div>
         {!isCompleted && (
           <ChevronDown
             size={14}
-            className={`text-zinc-600 transition-transform shrink-0 ${expanded ? "rotate-180" : ""}`}
+            className={`text-text-tertiary transition-transform shrink-0 ${expanded ? "rotate-180" : ""}`}
           />
         )}
       </button>
@@ -187,8 +187,8 @@ function SessionRow({ session }: { session: Session }) {
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => send({ text: sessionStartMessage(session) })}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                      domainButtonColors[session.domain] ?? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors shadow-sm ${
+                      domainButtonColors[session.domain] ?? "bg-surface-elevated text-text-secondary hover:bg-surface-overlay"
                     }`}
                   >
                     <Play size={10} />
@@ -196,7 +196,7 @@ function SessionRow({ session }: { session: Session }) {
                   </button>
                   <button
                     onClick={() => send({ text: `Tell me more about my ${session.title} session` })}
-                    className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-300 hover:border-zinc-600 transition-colors"
+                    className="flex items-center gap-1.5 rounded-lg border border-[var(--phase-border)] px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:border-text-muted transition-colors backdrop-blur-md"
                   >
                     <MessageCircle size={10} />
                     Ask coach
@@ -232,20 +232,20 @@ function NutritionRow({ brief, habits }: { brief: NutritionBrief; habits: Habits
   return (
     <button
       onClick={handleTap}
-      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-zinc-800/30 active:bg-zinc-800/50 transition-colors"
+      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[var(--phase-accent)]/5 active:bg-[var(--phase-accent)]/10 transition-colors"
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-900/50 bg-green-950/50 text-green-400 shrink-0">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-900/50 bg-green-950/50 text-green-400 shrink-0 shadow-sm">
         <Flame size={14} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-200 truncate">
+        <p className="text-sm font-medium text-text-primary truncate">
           {brief.calorieTarget} kcal · {brief.proteinTargetG}g protein
         </p>
-        <p className="text-xs text-zinc-500">Nutrition</p>
+        <p className="text-xs text-text-muted">Nutrition</p>
       </div>
       <div className="shrink-0">
         {!logged && (
-          <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5">
+          <span className="text-[11px] font-medium text-text-tertiary flex items-center gap-0.5">
             Log <ChevronRight size={12} />
           </span>
         )}
@@ -255,7 +255,7 @@ function NutritionRow({ brief, habits }: { brief: NutritionBrief; habits: Habits
           </span>
         )}
         {logged && !onPlan && (
-          <span className="text-xs font-medium text-zinc-500">Off plan</span>
+          <span className="text-xs font-medium text-text-muted">Off plan</span>
         )}
       </div>
     </button>
@@ -283,26 +283,26 @@ function SleepRow({ brief, habits }: { brief: SleepBrief; habits: Habits | null 
   return (
     <button
       onClick={handleTap}
-      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-zinc-800/30 active:bg-zinc-800/50 transition-colors"
+      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[var(--phase-accent)]/5 active:bg-[var(--phase-accent)]/10 transition-colors"
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-900/50 bg-violet-950/50 text-violet-400 shrink-0">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-900/50 bg-violet-950/50 text-violet-400 shrink-0 shadow-sm">
         <Moon size={14} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-zinc-200 truncate">
+        <p className="text-sm font-medium text-text-primary truncate">
           {brief.targetHours}h target · Bed {brief.bedtimeWindow}
         </p>
-        <p className="text-xs text-zinc-500">Sleep</p>
+        <p className="text-xs text-text-muted">Sleep</p>
       </div>
       <div className="shrink-0">
         {!logged && (
-          <span className="text-[11px] font-medium text-zinc-500 flex items-center gap-0.5">
+          <span className="text-[11px] font-medium text-text-tertiary flex items-center gap-0.5">
             Log <ChevronRight size={12} />
           </span>
         )}
         {logged && (
           <span className={`text-xs font-medium tabular-nums ${
-            (hours ?? 0) >= brief.targetHours ? "text-violet-400" : "text-zinc-400"
+            (hours ?? 0) >= brief.targetHours ? "text-violet-400" : "text-text-muted"
           }`}>
             {hours}h / {brief.targetHours}h
           </span>
