@@ -370,95 +370,8 @@ export interface DomainConviction {
 }
 
 // =============================================================================
-// Social -- Friends, Groups, Messages, Reactions
+// Card detail types (used by coach cards and share images)
 // =============================================================================
-
-export type FriendshipStatus = 'pending' | 'active' | 'removed';
-
-export interface Friendship {
-  id: string;
-  requesterId: string;
-  recipientId: string;
-  status: FriendshipStatus;
-  createdAt: string;
-  acceptedAt?: string;
-}
-
-export interface FriendProfile {
-  id: string;
-  displayName?: string;
-  username?: string;
-  email: string;
-}
-
-export interface Group {
-  id: string;
-  name: string;
-  createdBy: string;
-  createdAt: string;
-}
-
-export type GroupMemberRole = 'admin' | 'member';
-
-export interface GroupMember {
-  id: string;
-  groupId: string;
-  userId: string;
-  role: GroupMemberRole;
-  joinedAt: string;
-  lastReadAt: string;
-}
-
-export interface GroupWithMeta {
-  id: string;
-  name: string;
-  members: { id: string; displayName?: string; username?: string }[];
-  unreadCount: number;
-  lastMessage?: { content?: string; messageType: SocialMessageType; createdAt: string };
-}
-
-export type SocialMessageType =
-  | 'text'
-  | 'voice'
-  | 'photo'
-  | 'session_card'
-  | 'sleep_card'
-  | 'meal_card'
-  | 'commitment_card';
-
-export interface SocialMessage {
-  id: string;
-  groupId: string;
-  userId: string;
-  messageType: SocialMessageType;
-  content?: string;
-  detail?: SessionCardDetail | SleepCardDetail | MealCardDetail | CommitmentCardDetail;
-  mediaUrl?: string;
-  mediaDurationMs?: number;
-  replyToId?: string;
-  editedAt?: string;
-  deletedAt?: string;
-  createdAt: string;
-  sender?: { displayName?: string; username?: string };
-  reactions?: ReactionSummary[];
-  readCount?: number;
-}
-
-export interface ReactionSummary {
-  emoji: string;
-  count: number;
-  reacted: boolean;
-}
-
-export interface MessageReaction {
-  id: string;
-  messageId: string;
-  userId: string;
-  emoji: string;
-  createdAt: string;
-}
-
-// Card detail types for social_messages.detail JSONB
 
 export interface SessionCardDetail {
   sessionId: string;
@@ -486,16 +399,6 @@ export interface MealCardDetail {
   assessment?: string;
   oneLine?: string;
 }
-
-export interface CommitmentCardDetail {
-  domain: Domain;
-  title: string;
-  time?: string;
-  place?: string;
-  sessionPreview?: string;
-}
-
-export const REACTION_PRESETS = ['👊', '🔥', '💀'] as const;
 
 // =============================================================================
 // Helpers

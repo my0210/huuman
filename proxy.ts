@@ -8,7 +8,6 @@ const PUBLIC_ROUTES = [
   '/api/cron/',
   '/feedback',
   '/api/feedback',
-  '/u/',
 ];
 
 export async function proxy(request: NextRequest) {
