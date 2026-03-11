@@ -115,7 +115,7 @@ export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInG
       )}
       <div className="flex flex-col max-w-[70%]">
         <div
-          className={`rounded-2xl px-3 py-2 ${
+          className={`rounded-2xl px-3 py-2 select-none ${
             isOwn
               ? `bg-surface-overlay ${isLastInGroup ? "rounded-br-md" : ""}`
               : `bg-surface-raised border border-border-default ${isLastInGroup ? "rounded-bl-md" : ""}`
@@ -123,6 +123,7 @@ export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInG
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {replyContent && (
             <button type="button" onClick={onReplyTap} className="w-full border-l-2 border-text-tertiary pl-2 mb-1.5 text-left">

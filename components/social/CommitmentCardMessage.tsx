@@ -91,7 +91,7 @@ export default function CommitmentCardMessage({ message, onReact, onReply, onDel
           </div>
         </div>
       )}
-      <div className="rounded-xl border border-border-default bg-surface-raised overflow-hidden" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>
+      <div className="rounded-xl border border-border-default bg-surface-raised overflow-hidden select-none" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp} onContextMenu={(e) => e.preventDefault()}>
         {/* Header */}
         <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
           <div className={`flex h-5 w-5 items-center justify-center rounded-full ${tw.bg}`}>

@@ -92,7 +92,7 @@ export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGr
       )}
       <div className="flex flex-col max-w-[75%]">
         <div
-          className={`rounded-2xl px-3.5 py-2 ${
+          className={`rounded-2xl px-3.5 py-2 select-none ${
             isOwn
               ? `bg-surface-overlay text-text-primary ${isLastInGroup ? "rounded-br-md" : ""}`
               : `bg-surface-raised border border-border-default text-text-primary ${isLastInGroup ? "rounded-bl-md" : ""}`
@@ -100,6 +100,7 @@ export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGr
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {replyContent && (
             <button

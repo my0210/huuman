@@ -71,7 +71,7 @@ export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInG
       )}
       <div className="flex flex-col max-w-[70%]">
         <div
-          className={`rounded-2xl overflow-hidden ${
+          className={`rounded-2xl overflow-hidden select-none ${
             isOwn
               ? `bg-surface-overlay ${isLastInGroup ? "rounded-br-md" : ""}`
               : `bg-surface-raised border border-border-default ${isLastInGroup ? "rounded-bl-md" : ""}`
@@ -79,6 +79,7 @@ export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInG
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
+          onContextMenu={(e) => e.preventDefault()}
         >
           {replyContent && (
             <button
