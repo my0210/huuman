@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Utensils } from "lucide-react";
+import { useRef } from "react";
+import { Utensils, Reply, Trash2 } from "lucide-react";
 import type { SocialMessage, MealCardDetail } from "@/lib/types";
 import ReactionRow from "./ReactionRow";
 
@@ -13,6 +13,10 @@ interface MealCardMessageProps {
   onCopy?: () => void;
   isOwn?: boolean;
   readCount?: number;
+  replyContent?: { sender?: string; content: string };
+  onReplyTap?: () => void;
+  activeActionId?: string | null;
+  onActionOpen?: (id: string | null) => void;
 }
 
 function ReadStatus({ messageId, readCount = 0 }: { messageId: string; readCount?: number }) {
@@ -39,15 +43,16 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function MealCardMessage({ message, onReact, onReply, onDelete, onCopy, isOwn, readCount = 0 }: MealCardMessageProps) {
+export default function MealCardMessage({ message, onReact, onReply, onDelete, onCopy, isOwn, readCount = 0, replyContent, onReplyTap, activeActionId, onActionOpen }: MealCardMessageProps) {
   const detail = message.detail as MealCardDetail | undefined;
   if (!detail) return null;
 
-  const [showActions, setShowActions] = useState(false);
+  const showActions = activeActionId === message.id;
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeActions = () => onActionOpen?.(null);
 
   const handlePointerDown = () => {
-    longPressRef.current = setTimeout(() => setShowActions(true), 500);
+    longPressRef.current = setTimeout(() => onActionOpen?.(message.id), 500);
   };
   const handlePointerUp = () => {
     if (longPressRef.current) clearTimeout(longPressRef.current);
@@ -57,25 +62,23 @@ export default function MealCardMessage({ message, onReact, onReply, onDelete, o
   return (
     <div className="max-w-[85%]">
       {showActions && (
-        <div className="flex items-center gap-1 mb-1">
-          {onReply && (
-            <button onClick={() => { onReply(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-              Reply
-            </button>
-          )}
-          {onCopy && (
-            <button onClick={() => { onCopy(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-              Copy
-            </button>
-          )}
-          {onDelete && (
-            <button onClick={() => { onDelete(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-semantic-error active:bg-surface-elevated transition-colors">
-              Delete
-            </button>
-          )}
-          <button onClick={() => setShowActions(false)} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-muted active:bg-surface-elevated transition-colors">
-            ✕
-          </button>
+        <div className="fixed inset-0 z-[60]" onClick={closeActions}>
+          <div
+            className="absolute left-4 bg-surface-overlay border border-border-default rounded-radius-lg shadow-lg overflow-hidden"
+            style={{ bottom: "auto", top: "50%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {onReply && (
+              <button onClick={() => { onReply(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated">
+                <Reply size={16} className="text-text-tertiary" /> Reply
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => { onDelete(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-semantic-error active:bg-surface-elevated border-t border-border-subtle">
+                <Trash2 size={16} /> Delete
+              </button>
+            )}
+          </div>
         </div>
       )}
       <div className="rounded-xl border border-border-default bg-surface-raised overflow-hidden" onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerLeave={handlePointerUp}>

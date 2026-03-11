@@ -69,7 +69,8 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const [newMessageCount, setNewMessageCount] = useState(0);
-  const [atBottom, setAtBottom] = useState(true);
+  const [activeActionId, setActiveActionId] = useState<string | null>(null);
+  const atBottomRef = useRef(true);
 
   const FIRST_INDEX = 100_000;
   const [firstItemIndex, setFirstItemIndex] = useState(FIRST_INDEX);
@@ -158,7 +159,7 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
-        if (!atBottom) {
+        if (!atBottomRef.current) {
           setNewMessageCount((c) => c + 1);
         }
         markRead();
@@ -255,7 +256,7 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
       channelRef.current = null;
       supabase.removeChannel(channel);
     };
-  }, [groupId, currentUserId, markRead, fetchMessages, atBottom]);
+  }, [groupId, currentUserId, markRead, fetchMessages]);
 
   useEffect(() => {
     onOnlineCountChange?.(onlineUsers.size);
@@ -552,30 +553,54 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
     } catch {}
   }, [currentUserId]);
 
-  // ---- Render message by type ----
+  const findReplyContent = useCallback((replyToId?: string) => {
+    if (!replyToId) return undefined;
+    const found = messages.find((m) => m.id === replyToId);
+    if (!found) return undefined;
+    return { sender: found.sender?.displayName, content: found.content || found.messageType };
+  }, [messages]);
+
+  const scrollToMessage = useCallback((messageId: string) => {
+    const idx = messages.findIndex((m) => m.id === messageId);
+    if (idx >= 0) {
+      virtuosoRef.current?.scrollToIndex({ index: idx, behavior: "smooth", align: "center" });
+    }
+  }, [messages]);
+
   const renderMessage = (msg: SocialMessage, first: boolean, last: boolean) => {
     const isOwn = msg.userId === currentUserId;
     const onReact = (emoji: string) => handleReact(msg.id, emoji);
-
     const readCount = msg.readCount ?? 0;
+    const replyContent = findReplyContent(msg.replyToId);
+    const actionProps = {
+      onReact,
+      onReply: () => setReplyTo(msg),
+      onDelete: isOwn ? () => handleDelete(msg.id) : undefined,
+      onCopy: msg.content ? () => handleCopy(msg.content!) : undefined,
+      readCount,
+      replyContent,
+      onReplyTap: msg.replyToId ? () => scrollToMessage(msg.replyToId!) : undefined,
+      activeActionId,
+      onActionOpen: setActiveActionId,
+    };
 
     switch (msg.messageType) {
       case "text":
-        return <TextMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={isOwn ? () => handleDelete(msg.id) : undefined} onCopy={msg.content ? () => handleCopy(msg.content!) : undefined} readCount={readCount} />;
+        return <TextMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} {...actionProps} />;
       case "voice":
-        return <VoiceMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={isOwn ? () => handleDelete(msg.id) : undefined} onCopy={undefined} readCount={readCount} />;
+        return <VoiceMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} {...actionProps} onCopy={undefined} />;
       case "photo":
-        return <PhotoMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={isOwn ? () => handleDelete(msg.id) : undefined} onCopy={msg.content ? () => handleCopy(msg.content!) : undefined} readCount={readCount} />;
+        return <PhotoMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} {...actionProps} />;
       case "session_card":
-        return <SessionCardMessage message={msg} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={msg.userId === currentUserId ? () => handleDelete(msg.id) : undefined} onCopy={undefined} isOwn={isOwn} readCount={readCount} />;
+        return <SessionCardMessage message={msg} {...actionProps} isOwn={isOwn} onCopy={undefined} />;
       case "sleep_card":
-        return <SleepCardMessage message={msg} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={msg.userId === currentUserId ? () => handleDelete(msg.id) : undefined} onCopy={undefined} isOwn={isOwn} readCount={readCount} />;
+        return <SleepCardMessage message={msg} {...actionProps} isOwn={isOwn} onCopy={undefined} />;
       case "meal_card":
-        return <MealCardMessage message={msg} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={msg.userId === currentUserId ? () => handleDelete(msg.id) : undefined} onCopy={undefined} isOwn={isOwn} readCount={readCount} />;
+        return <MealCardMessage message={msg} {...actionProps} isOwn={isOwn} onCopy={undefined} />;
       case "commitment_card":
-        return <CommitmentCardMessage message={msg} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={msg.userId === currentUserId ? () => handleDelete(msg.id) : undefined} onCopy={undefined} isOwn={isOwn} readCount={readCount} />;
+        return <CommitmentCardMessage message={msg} {...actionProps} isOwn={isOwn} onCopy={undefined} />;
       default:
-        return <TextMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} onReact={onReact} onReply={() => setReplyTo(msg)} onDelete={isOwn ? () => handleDelete(msg.id) : undefined} onCopy={msg.content ? () => handleCopy(msg.content!) : undefined} readCount={readCount} />;
+        return <TextMessage message={msg} isOwn={isOwn} isFirstInGroup={first} isLastInGroup={last} {...actionProps} />;
     }
   };
 
@@ -604,7 +629,7 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
           followOutput="smooth"
           startReached={loadOlder}
           atBottomStateChange={(bottom) => {
-            setAtBottom(bottom);
+            atBottomRef.current = bottom;
             setShowScrollDown(!bottom);
             if (bottom) setNewMessageCount(0);
           }}
@@ -734,7 +759,8 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
               emitTyping();
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+              if (e.key === "Enter" && !e.shiftKey && !isMobile) {
                 e.preventDefault();
                 sendText();
               }

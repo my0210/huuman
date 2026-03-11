@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Reply, Copy, Trash2 } from "lucide-react";
 import type { SocialMessage } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import ReactionRow from "./ReactionRow";
@@ -16,6 +16,10 @@ interface VoiceMessageProps {
   onDelete?: () => void;
   onCopy?: () => void;
   readCount?: number;
+  replyContent?: { sender?: string; content: string };
+  onReplyTap?: () => void;
+  activeActionId?: string | null;
+  onActionOpen?: (id: string | null) => void;
 }
 
 function ReadStatus({ messageId, readCount = 0 }: { messageId: string; readCount?: number }) {
@@ -50,21 +54,22 @@ function formatDuration(ms?: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0 }: VoiceMessageProps) {
+export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0, replyContent, onReplyTap, activeActionId, onActionOpen }: VoiceMessageProps) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [showActions, setShowActions] = useState(false);
+  const showActions = activeActionId === message.id;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef = useRef<number>(0);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePointerDown = () => {
-    longPressRef.current = setTimeout(() => setShowActions(true), 500);
+    longPressRef.current = setTimeout(() => onActionOpen?.(message.id), 500);
   };
   const handlePointerUp = () => {
     if (longPressRef.current) clearTimeout(longPressRef.current);
     longPressRef.current = null;
   };
+  const closeActions = () => onActionOpen?.(null);
 
   const tick = useCallback(() => {
     const audio = audioRef.current;
@@ -109,28 +114,6 @@ export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInG
         </div>
       )}
       <div className="flex flex-col max-w-[70%]">
-        {showActions && (
-          <div className="flex items-center gap-1 mb-1">
-            {onReply && (
-              <button onClick={() => { onReply(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-                Reply
-              </button>
-            )}
-            {onCopy && (
-              <button onClick={() => { onCopy(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-                Copy
-              </button>
-            )}
-            {onDelete && (
-              <button onClick={() => { onDelete(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-semantic-error active:bg-surface-elevated transition-colors">
-                Delete
-              </button>
-            )}
-            <button onClick={() => setShowActions(false)} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-muted active:bg-surface-elevated transition-colors">
-              ✕
-            </button>
-          </div>
-        )}
         <div
           className={`rounded-2xl px-3 py-2 ${
             isOwn
@@ -141,10 +124,11 @@ export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInG
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          {isFirstInGroup && !isOwn && message.sender?.displayName && (
-            <p className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary mb-1.5">
-              {message.sender.displayName}
-            </p>
+          {replyContent && (
+            <button type="button" onClick={onReplyTap} className="w-full border-l-2 border-text-tertiary pl-2 mb-1.5 text-left">
+              <p className="text-[10px] font-medium text-text-tertiary truncate">{replyContent.sender || "Message"}</p>
+              <p className="text-[11px] text-text-muted truncate">{replyContent.content}</p>
+            </button>
           )}
           <div className="flex items-center gap-2.5">
             <button
@@ -185,6 +169,31 @@ export default function VoiceMessage({ message, isOwn, isFirstInGroup, isLastInG
           <ReactionRow messageId={message.id} reactions={message.reactions ?? []} onReact={onReact} />
         )}
       </div>
+      {showActions && (
+        <div className="fixed inset-0 z-[60]" onClick={closeActions}>
+          <div
+            className={`absolute ${isOwn ? "right-4" : "left-12"} bg-surface-overlay border border-border-default rounded-radius-lg shadow-lg overflow-hidden`}
+            style={{ bottom: "auto", top: "50%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {onReply && (
+              <button onClick={() => { onReply(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated">
+                <Reply size={16} className="text-text-tertiary" /> Reply
+              </button>
+            )}
+            {onCopy && (
+              <button onClick={() => { onCopy(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated border-t border-border-subtle">
+                <Copy size={16} className="text-text-tertiary" /> Copy
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => { onDelete(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-semantic-error active:bg-surface-elevated border-t border-border-subtle">
+                <Trash2 size={16} /> Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X } from "lucide-react";
+import { Reply, Copy, Trash2, X } from "lucide-react";
 import type { SocialMessage } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import ReactionRow from "./ReactionRow";
@@ -16,6 +16,10 @@ interface PhotoMessageProps {
   onDelete?: () => void;
   onCopy?: () => void;
   readCount?: number;
+  replyContent?: { sender?: string; content: string };
+  onReplyTap?: () => void;
+  activeActionId?: string | null;
+  onActionOpen?: (id: string | null) => void;
 }
 
 function ReadStatus({ messageId, readCount = 0 }: { messageId: string; readCount?: number }) {
@@ -42,18 +46,19 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0 }: PhotoMessageProps) {
-  const [showActions, setShowActions] = useState(false);
+export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0, replyContent, onReplyTap, activeActionId, onActionOpen }: PhotoMessageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showActions = activeActionId === message.id;
 
   const handlePointerDown = () => {
-    longPressRef.current = setTimeout(() => setShowActions(true), 500);
+    longPressRef.current = setTimeout(() => onActionOpen?.(message.id), 500);
   };
   const handlePointerUp = () => {
     if (longPressRef.current) clearTimeout(longPressRef.current);
     longPressRef.current = null;
   };
+  const closeActions = () => onActionOpen?.(null);
 
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
@@ -65,28 +70,6 @@ export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInG
         </div>
       )}
       <div className="flex flex-col max-w-[70%]">
-        {showActions && (
-          <div className="flex items-center gap-1 mb-1">
-            {onReply && (
-              <button onClick={() => { onReply(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-                Reply
-              </button>
-            )}
-            {onCopy && (
-              <button onClick={() => { onCopy(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-                Copy
-              </button>
-            )}
-            {onDelete && (
-              <button onClick={() => { onDelete(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-semantic-error active:bg-surface-elevated transition-colors">
-                Delete
-              </button>
-            )}
-            <button onClick={() => setShowActions(false)} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-muted active:bg-surface-elevated transition-colors">
-              ✕
-            </button>
-          </div>
-        )}
         <div
           className={`rounded-2xl overflow-hidden ${
             isOwn
@@ -97,10 +80,15 @@ export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInG
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          {isFirstInGroup && !isOwn && message.sender?.displayName && (
-            <p className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary px-3 pt-2">
-              {message.sender.displayName}
-            </p>
+          {replyContent && (
+            <button
+              type="button"
+              onClick={onReplyTap}
+              className="w-full border-l-2 border-text-tertiary pl-2 pr-3 pt-2 mb-1.5 text-left"
+            >
+              <p className="text-[10px] font-medium text-text-tertiary truncate">{replyContent.sender || "Message"}</p>
+              <p className="text-[11px] text-text-muted truncate">{replyContent.content}</p>
+            </button>
           )}
           {message.mediaUrl && (
             <img
@@ -129,21 +117,48 @@ export default function PhotoMessage({ message, isOwn, isFirstInGroup, isLastInG
           <ReactionRow messageId={message.id} reactions={message.reactions ?? []} onReact={onReact} />
         )}
       </div>
+
+      {showActions && (
+        <div className="fixed inset-0 z-[60]" onClick={closeActions}>
+          <div
+            className={`absolute ${isOwn ? "right-4" : "left-12"} bg-surface-overlay border border-border-default rounded-radius-lg shadow-lg overflow-hidden`}
+            style={{ bottom: "auto", top: "50%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {onReply && (
+              <button onClick={() => { onReply(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated">
+                <Reply size={16} className="text-text-tertiary" /> Reply
+              </button>
+            )}
+            {onCopy && message.content && (
+              <button onClick={() => { onCopy(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated border-t border-border-subtle">
+                <Copy size={16} className="text-text-tertiary" /> Copy
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => { onDelete(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-semantic-error active:bg-surface-elevated border-t border-border-subtle">
+                <Trash2 size={16} /> Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {lightboxOpen && message.mediaUrl && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/95"
           onClick={() => setLightboxOpen(false)}
         >
           <button
-            onClick={() => setLightboxOpen(false)}
-            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-surface-overlay/80 text-text-primary active:bg-surface-elevated transition-colors z-10"
+            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+            className="absolute top-6 right-6 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white active:bg-white/30 transition-colors"
           >
-            <X size={20} />
+            <X size={24} />
           </button>
           <img
             src={message.mediaUrl}
             alt="Photo fullscreen"
-            className="max-w-[95vw] max-h-[90vh] object-contain rounded-radius-md"
+            className="max-w-[95vw] max-h-[85vh] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

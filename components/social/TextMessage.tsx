@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
+import { Reply, Copy, Trash2, X } from "lucide-react";
 import type { SocialMessage } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
 import ReactionRow from "./ReactionRow";
@@ -15,6 +16,10 @@ interface TextMessageProps {
   onDelete?: () => void;
   onCopy?: () => void;
   readCount?: number;
+  replyContent?: { sender?: string; content: string };
+  onReplyTap?: () => void;
+  activeActionId?: string | null;
+  onActionOpen?: (id: string | null) => void;
 }
 
 function ReadStatus({ messageId, readCount = 0 }: { messageId: string; readCount?: number }) {
@@ -63,17 +68,18 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
-export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0 }: TextMessageProps) {
-  const [showActions, setShowActions] = useState(false);
+export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGroup, onReact, onReply, onDelete, onCopy, readCount = 0, replyContent, onReplyTap, activeActionId, onActionOpen }: TextMessageProps) {
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showActions = activeActionId === message.id;
 
   const handlePointerDown = () => {
-    longPressRef.current = setTimeout(() => setShowActions(true), 500);
+    longPressRef.current = setTimeout(() => onActionOpen?.(message.id), 500);
   };
   const handlePointerUp = () => {
     if (longPressRef.current) clearTimeout(longPressRef.current);
     longPressRef.current = null;
   };
+  const closeActions = () => onActionOpen?.(null);
 
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
@@ -85,28 +91,6 @@ export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGr
         </div>
       )}
       <div className="flex flex-col max-w-[75%]">
-        {showActions && (
-          <div className="flex items-center gap-1 mb-1">
-            {onReply && (
-              <button onClick={() => { onReply(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-                Reply
-              </button>
-            )}
-            {onCopy && (
-              <button onClick={() => { onCopy(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-secondary active:bg-surface-elevated transition-colors">
-                Copy
-              </button>
-            )}
-            {onDelete && (
-              <button onClick={() => { onDelete(); setShowActions(false); }} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-semantic-error active:bg-surface-elevated transition-colors">
-                Delete
-              </button>
-            )}
-            <button onClick={() => setShowActions(false)} className="px-2 py-1 rounded-radius-sm bg-surface-overlay text-xs text-text-muted active:bg-surface-elevated transition-colors">
-              ✕
-            </button>
-          </div>
-        )}
         <div
           className={`rounded-2xl px-3.5 py-2 ${
             isOwn
@@ -117,15 +101,15 @@ export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGr
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
         >
-          {isFirstInGroup && !isOwn && message.sender?.displayName && (
-            <p className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary mb-1">
-              {message.sender.displayName}
-            </p>
-          )}
-          {message.replyToId && (
-            <div className="border-l-2 border-text-muted pl-2 mb-1">
-              <p className="text-[10px] text-text-muted italic">Replying to a message</p>
-            </div>
+          {replyContent && (
+            <button
+              type="button"
+              onClick={onReplyTap}
+              className="w-full border-l-2 border-text-tertiary pl-2 mb-1.5 text-left"
+            >
+              <p className="text-[10px] font-medium text-text-tertiary truncate">{replyContent.sender || "Message"}</p>
+              <p className="text-[11px] text-text-muted truncate">{replyContent.content}</p>
+            </button>
           )}
           <p className="text-sm whitespace-pre-wrap break-words">{message.content ? renderTextWithLinks(message.content) : null}</p>
           {isLastInGroup && (
@@ -141,6 +125,32 @@ export default function TextMessage({ message, isOwn, isFirstInGroup, isLastInGr
           <ReactionRow messageId={message.id} reactions={message.reactions ?? []} onReact={onReact} />
         )}
       </div>
+
+      {showActions && (
+        <div className="fixed inset-0 z-[60]" onClick={closeActions}>
+          <div
+            className={`absolute ${isOwn ? "right-4" : "left-12"} bg-surface-overlay border border-border-default rounded-radius-lg shadow-lg overflow-hidden`}
+            style={{ bottom: "auto", top: "50%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {onReply && (
+              <button onClick={() => { onReply(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated">
+                <Reply size={16} className="text-text-tertiary" /> Reply
+              </button>
+            )}
+            {onCopy && (
+              <button onClick={() => { onCopy(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-text-primary active:bg-surface-elevated border-t border-border-subtle">
+                <Copy size={16} className="text-text-tertiary" /> Copy
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => { onDelete(); closeActions(); }} className="flex items-center gap-3 w-full px-4 py-3 text-sm text-semantic-error active:bg-surface-elevated border-t border-border-subtle">
+                <Trash2 size={16} /> Delete
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
