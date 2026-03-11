@@ -67,7 +67,6 @@ export async function POST(req: Request) {
           { type: 'text', text: 'Analyze this meal photo. Describe what you see, estimate calories and protein, and infer the meal type.' },
         ],
       }],
-      maxTokens: 300,
     });
     description = object.description;
     estimatedCalories = object.estimatedCalories;

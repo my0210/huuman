@@ -47,7 +47,6 @@ export async function POST(req: Request) {
           { type: 'text', text: 'Analyze this body composition / progress photo in 2-3 sentences. Cover posture, muscle definition, proportions, and visible body fat distribution. Be objective and encouraging. Do not use markdown.' },
         ],
       }],
-      maxTokens: 200,
     });
     analysis = text;
   } catch {
