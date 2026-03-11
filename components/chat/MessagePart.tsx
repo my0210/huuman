@@ -14,6 +14,7 @@ import { CoachSleepCard } from "@/components/cards/CoachSleepCard";
 import { DailyHabitWidget } from "@/components/cards/DailyHabitWidget";
 import { BreathworkTimer } from "@/components/cards/BreathworkTimer";
 import { YouTubeVideoCard } from "@/components/cards/YouTubeVideoCard";
+import { PhotoShareButton } from "@/components/share/PhotoShareButton";
 
 type Part = UIMessage["parts"][number];
 
@@ -66,11 +67,19 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
       );
     }
     return (
-      <img
-        src={part.url}
-        alt={part.filename ?? "Uploaded image"}
-        className="max-w-full rounded-xl max-h-64 object-contain"
-      />
+      <div className="space-y-2">
+        <img
+          src={part.url}
+          alt={part.filename ?? "Uploaded image"}
+          className="max-w-full rounded-xl max-h-64 object-contain"
+        />
+        <PhotoShareButton
+          imageUrl={part.url}
+          filename={part.filename ?? "huuman-photo.jpg"}
+          label="Share"
+          className="w-full justify-center"
+        />
+      </div>
     );
   }
 
@@ -244,7 +253,7 @@ function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
-      Plan locked in. Let's go.
+      Plan locked in. Let&apos;s go.
     </div>
   );
 }
@@ -316,6 +325,7 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
 
   const totalCount = data.totalCount as number | undefined;
   const id = data.id as string | undefined;
+  const imageUrl = data.imageUrl as string | undefined;
 
   const handleDateUpdate = async (newDate: string) => {
     setDate(newDate);
@@ -346,6 +356,15 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
           <EditableDate date={date} onUpdate={handleDateUpdate} />
         </div>
       )}
+      {imageUrl ? (
+        <div className="mt-3 pl-[21px]">
+          <PhotoShareButton
+            imageUrl={imageUrl}
+            filename={`huuman-progress-photo-${date ?? "today"}.jpg`}
+            label="Share photo"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -366,6 +385,7 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
   const cal = data.estimatedCalories as number | undefined;
   const protein = data.estimatedProteinG as number | undefined;
   const id = data.id as string | undefined;
+  const imageUrl = data.imageUrl as string | undefined;
 
   const patchMeal = async (fields: Record<string, unknown>) => {
     if (!id) return;
@@ -407,6 +427,15 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
           <EditableDate date={date} onUpdate={(d) => { setDate(d); patchMeal({ capturedAt: d }); }} />
         )}
       </div>
+      {imageUrl ? (
+        <div>
+          <PhotoShareButton
+            imageUrl={imageUrl}
+            filename={`huuman-meal-photo-${date ?? "today"}.jpg`}
+            label="Share photo"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
