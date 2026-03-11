@@ -1,61 +1,130 @@
 "use client";
 
-import { useState } from "react";
-import { Share2, Check } from "lucide-react";
-import type { SocialMessageType } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { Check, Download, Share2 } from "lucide-react";
+import type { SessionCardDetail, SleepCardDetail } from "@/lib/types";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/Button";
+import { haptics } from "@/lib/haptics";
+import { blobToFile, sanitizeFilename, shareFileOrDownload } from "@/lib/share/files";
+import { renderShareCardToBlob } from "@/lib/share/render";
+import { SessionShareImage } from "@/components/share/SessionShareImage";
+import { SleepShareImage } from "@/components/share/SleepShareImage";
 
-type CardType = Extract<
-  SocialMessageType,
-  "session_card" | "sleep_card" | "meal_card" | "commitment_card"
->;
+interface WeekProgressItem {
+  domain: string;
+  label: string;
+  completed: number;
+  total: number;
+}
 
 export function ShareButton({
   type,
   detail,
-}: {
-  type: CardType;
-  detail: object;
-}) {
+  weekProgress,
+}:
+  | {
+      type: "session_card";
+      detail: SessionCardDetail;
+      weekProgress?: WeekProgressItem[];
+    }
+  | {
+      type: "sleep_card";
+      detail: SleepCardDetail;
+      weekProgress?: never;
+    }) {
   const [status, setStatus] = useState<
-    "idle" | "sharing" | "shared" | "error"
+    "idle" | "sharing" | "shared" | "downloaded" | "error"
   >("idle");
+
+  useEffect(() => {
+    if (status !== "shared" && status !== "downloaded") return;
+    const timeout = window.setTimeout(() => setStatus("idle"), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [status]);
 
   async function handleShare() {
     setStatus("sharing");
     try {
-      const res = await fetch("/api/social/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, detail }),
+      const blob = await renderShareCardToBlob({
+        element:
+          type === "session_card" ? (
+            <SessionShareImage detail={detail} weekProgress={weekProgress} />
+          ) : (
+            <SleepShareImage detail={detail} />
+          ),
       });
-      if (!res.ok) throw new Error();
+
+      const file = blobToFile(
+        blob,
+        `${sanitizeFilename(
+          type === "session_card"
+            ? `huuman-${detail.title}`
+            : `huuman-sleep-${detail.hours}h`,
+        )}.png`,
+      );
+
+      const outcome = await shareFileOrDownload({
+        file,
+        title: "huuman",
+        text:
+          type === "session_card"
+            ? `${detail.title} completed in huuman`
+            : `${detail.hours}h sleep logged in huuman`,
+      });
+
+      if (outcome === "cancelled") {
+        setStatus("idle");
+        return;
+      }
+
+      if (outcome === "downloaded") {
+        setStatus("downloaded");
+        toast.success("Image downloaded. You can send it in WhatsApp manually.");
+        return;
+      }
+
+      haptics.success();
       setStatus("shared");
     } catch {
       setStatus("error");
+      toast.error("Couldn't prepare the share image.");
     }
   }
 
-  if (status === "shared") {
-    return (
-      <div className="flex items-center gap-1.5 px-4 py-2 text-xs text-emerald-400">
-        <Check size={12} />
-        Shared
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={handleShare}
-      disabled={status === "sharing"}
-      className="flex items-center gap-1.5 px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-50"
-    >
-      <Share2 size={12} />
-      {status === "sharing"
-        ? "Sharing\u2026"
-        : status === "error"
-          ? "Retry share"
-          : "Share to groups"}
-    </button>
+    <div className="px-4 pb-3">
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        onClick={handleShare}
+        disabled={status === "sharing"}
+        className={`w-full justify-center gap-2 ${
+          status === "shared"
+            ? "border-semantic-success/30 text-semantic-success"
+            : status === "downloaded"
+              ? "border-border-strong text-text-primary"
+              : ""
+        }`}
+      >
+        {status === "shared" ? (
+          <Check size={14} />
+        ) : status === "downloaded" ? (
+          <Download size={14} />
+        ) : (
+          <Share2 size={14} />
+        )}
+        {status === "sharing"
+          ? "Preparing..."
+          : status === "shared"
+            ? "Shared"
+            : status === "downloaded"
+              ? "Downloaded"
+              : status === "error"
+                ? "Retry share"
+                : "Share"}
+      </Button>
+    </div>
   );
 }

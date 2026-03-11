@@ -88,7 +88,11 @@ export function CoachSessionCard({
   return (
     <div>
       <SessionCardContent detail={detail} weekProgress={raw.weekProgress} />
-      <ShareButton type="session_card" detail={detail} />
+      <ShareButton
+        type="session_card"
+        detail={detail}
+        weekProgress={raw.weekProgress}
+      />
     </div>
   );
 }
