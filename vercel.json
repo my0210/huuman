@@ -1,18 +1,4 @@
 {
   "framework": "nextjs",
-  "regions": ["fra1"],
-  "crons": [
-    {
-      "path": "/api/cron/daily-briefing",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/session-nudge",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "path": "/api/cron/evening-checkin",
-      "schedule": "0 21 * * *"
-    }
-  ]
+  "regions": ["fra1"]
 }

@@ -41,7 +41,7 @@ npm run test:e2e:headed   # Same but with visible browser for debugging.
 
 ## Key architecture: platform-agnostic state machine
 
-Step definitions live in `lib/onboarding/steps.ts` as pure data (no React, no Telegram). The web page in `app/(onboarding)/onboarding/page.tsx` is a thin renderer. When adding steps or questions, only edit `steps.ts` -- the renderers are generic.
+Step definitions live in `lib/onboarding/steps.ts` as pure data (no React). The web page in `app/(onboarding)/onboarding/page.tsx` is a thin renderer. When adding steps or questions, only edit `steps.ts` -- the renderer is generic.
 
 ## Test account
 

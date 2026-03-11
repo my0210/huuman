@@ -3,4 +3,4 @@ description: Points to the architecture doc -- read ARCHITECTURE.md at the repo 
 alwaysApply: true
 ---
 
-Read `ARCHITECTURE.md` at the repo root before making changes. It covers the multi-client design (web + Telegram), Supabase client types, auth flows, AI harnessing philosophy, database schema, and file map.
+Read `ARCHITECTURE.md` at the repo root before making changes. It covers the web app architecture, Supabase client types, auth flows, AI harnessing philosophy, database schema, and file map.

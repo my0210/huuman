@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import {
   Globe,
   Database,
-  MessageCircle,
   RotateCcw,
   Trash2,
   LogOut,
-  Check,
-  Copy,
   Camera,
   Users,
   MessageSquarePlus,
@@ -51,8 +48,6 @@ export function ProfileSheet({
   const [view, setView] = useState<"main" | "language">("main");
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
   const [busy, setBusy] = useState(false);
-  const [telegramLink, setTelegramLink] = useState<{ code: string; botUrl: string } | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,8 +61,6 @@ export function ProfileSheet({
       setDisplayName(initialDisplayName ?? "");
       setAvatarSrc(initialAvatarUrl);
       setView("main");
-      setTelegramLink(null);
-      setLinkCopied(false);
     }
   }, [open, initialDisplayName, initialAvatarUrl]);
 
@@ -136,24 +129,6 @@ export function ProfileSheet({
       if (res.ok) { router.push("/onboarding"); router.refresh(); }
       else alert("Reset failed");
     } finally { setBusy(false); }
-  };
-
-  const handleConnectTelegram = async () => {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/telegram/link", { method: "POST" });
-      const data = await res.json();
-      if (res.ok) setTelegramLink(data);
-      else alert(data.error ?? "Failed to generate link");
-    } finally { setBusy(false); }
-  };
-
-  const handleCopyLink = () => {
-    if (telegramLink) {
-      navigator.clipboard.writeText(telegramLink.botUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    }
   };
 
   const close = () => { onClose(); setView("main"); };
@@ -273,38 +248,6 @@ export function ProfileSheet({
                 <p className="text-xs text-text-muted">View all user feedback</p>
               </div>
             </button>
-          )}
-
-          <div className="border-t border-border-subtle my-2" />
-
-          {!telegramLink ? (
-            <button
-              onClick={handleConnectTelegram}
-              disabled={busy}
-              className="w-full flex items-center gap-3 rounded-radius-md px-3 py-3 text-left text-sm text-text-secondary active:bg-surface-raised transition-colors disabled:opacity-40"
-            >
-              <MessageCircle size={16} className="flex-none text-text-tertiary" />
-              <div>
-                <p className="font-medium">{t("settings.connectTelegram", currentLanguage)}</p>
-                <p className="text-xs text-text-muted">{t("settings.connectTelegramDesc", currentLanguage)}</p>
-              </div>
-            </button>
-          ) : (
-            <div className="rounded-xl px-3 py-3 space-y-2">
-              <div className="flex items-center gap-3">
-                <MessageCircle size={16} className="flex-none text-cyan-400" />
-                <p className="text-sm font-medium text-text-secondary">{t("settings.connectTelegram", currentLanguage)}</p>
-              </div>
-              <p className="text-xs text-zinc-500 ml-7">Open this link in Telegram to connect:</p>
-              <div className="ml-7 flex items-center gap-2">
-                <a href={telegramLink.botUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-cyan-400 underline truncate flex-1">
-                  {telegramLink.botUrl}
-                </a>
-                <button onClick={handleCopyLink} className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:text-zinc-300 transition-colors">
-                  {linkCopied ? <Check size={12} /> : <Copy size={12} />}
-                </button>
-              </div>
-            </div>
           )}
 
           <div className="border-t border-border-subtle my-2" />
