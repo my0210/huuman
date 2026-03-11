@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { generateText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
 
 export async function GET() {
   const supabase = await createClient();
@@ -34,12 +36,30 @@ export async function POST(req: Request) {
   const { imageUrl, capturedAt } = (await req.json()) as { imageUrl: string; capturedAt?: string };
   if (!imageUrl) return NextResponse.json({ error: 'imageUrl is required' }, { status: 400 });
 
+  let analysis = 'Analyzing...';
+  try {
+    const { text } = await generateText({
+      model: anthropic('claude-sonnet-4-6'),
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', image: new URL(imageUrl) },
+          { type: 'text', text: 'Analyze this body composition / progress photo in 2-3 sentences. Cover posture, muscle definition, proportions, and visible body fat distribution. Be objective and encouraging. Do not use markdown.' },
+        ],
+      }],
+      maxTokens: 200,
+    });
+    analysis = text;
+  } catch {
+    analysis = 'Photo saved (analysis unavailable)';
+  }
+
   const { data, error } = await supabase
     .from('progress_photos')
     .insert({
       user_id: user.id,
       image_url: imageUrl,
-      ai_analysis: 'Uploaded directly',
+      ai_analysis: analysis,
       captured_at: capturedAt ?? new Date().toISOString().slice(0, 10),
     })
     .select('id, image_url, ai_analysis, notes, captured_at, created_at')

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { generateObject } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
 
 export async function GET() {
   const supabase = await createClient();
@@ -41,13 +44,48 @@ export async function POST(req: Request) {
   };
   if (!imageUrl) return NextResponse.json({ error: 'imageUrl is required' }, { status: 400 });
 
+  const mealAnalysisSchema = z.object({
+    description: z.string().describe('What you see in the photo (e.g. "Grilled chicken breast with roasted vegetables and brown rice")'),
+    estimatedCalories: z.number().nullable().describe('Rough calorie estimate, or null if not food'),
+    estimatedProteinG: z.number().nullable().describe('Rough protein estimate in grams, or null if not food'),
+    detectedMealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']).nullable().describe('Inferred meal type, or null if unclear'),
+  });
+
+  let description = 'Photo saved';
+  let estimatedCalories: number | null = null;
+  let estimatedProteinG: number | null = null;
+  let detectedMealType: string | null = mealType ?? null;
+
+  try {
+    const { object } = await generateObject({
+      model: anthropic('claude-sonnet-4-6'),
+      schema: mealAnalysisSchema,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', image: new URL(imageUrl) },
+          { type: 'text', text: 'Analyze this meal photo. Describe what you see, estimate calories and protein, and infer the meal type.' },
+        ],
+      }],
+      maxTokens: 300,
+    });
+    description = object.description;
+    estimatedCalories = object.estimatedCalories;
+    estimatedProteinG = object.estimatedProteinG;
+    if (!detectedMealType && object.detectedMealType) detectedMealType = object.detectedMealType;
+  } catch {
+    description = 'Photo saved (analysis unavailable)';
+  }
+
   const { data, error } = await supabase
     .from('meal_photos')
     .insert({
       user_id: user.id,
       image_url: imageUrl,
-      description: 'Uploaded directly',
-      meal_type: mealType ?? null,
+      description,
+      estimated_calories: estimatedCalories,
+      estimated_protein_g: estimatedProteinG,
+      meal_type: detectedMealType,
       captured_at: capturedAt ?? new Date().toISOString().slice(0, 10),
     })
     .select('id, image_url, description, estimated_calories, estimated_protein_g, meal_type, captured_at, created_at')
