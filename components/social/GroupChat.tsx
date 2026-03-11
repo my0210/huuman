@@ -7,6 +7,7 @@ import {
   useCallback,
 } from "react";
 import { Send, Camera, Mic, Loader2, Square } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/images";
 import { normalizeMessage } from "@/lib/social/normalize";
@@ -341,7 +342,7 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
   };
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
       {/* Message list */}
       <div
         ref={scrollRef}
@@ -350,17 +351,17 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
       >
         {loadingOlder && (
           <div className="flex justify-center py-2">
-            <Loader2 size={16} className="animate-spin text-zinc-500" />
+            <Loader2 size={16} className="animate-spin text-text-muted" />
           </div>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <Loader2 size={20} className="animate-spin text-zinc-500" />
+            <Loader2 size={20} className="animate-spin text-text-muted" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-sm text-zinc-500">No messages yet. Say something!</p>
+            <p className="text-sm text-text-muted">No messages yet. Say something!</p>
           </div>
         ) : (
           messages.map((msg) => (
@@ -372,7 +373,7 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
       </div>
 
       {/* Input bar */}
-      <form onSubmit={handleSubmit} className="flex-none border-t border-zinc-800 px-4 py-3">
+      <form onSubmit={handleSubmit} className="flex-none border-t border-border-default px-4 py-3 safe-bottom">
         <div className="flex items-center gap-2">
           {/* Photo button */}
           <input
@@ -382,14 +383,15 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
             onChange={handlePhotoSelect}
             className="hidden"
           />
-          <button
+          <IconButton
+            label="Add photo"
+            size="md"
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={sending || recording}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors disabled:opacity-30"
           >
             <Camera size={18} />
-          </button>
+          </IconButton>
 
           {/* Text input */}
           <input
@@ -398,31 +400,31 @@ export default function GroupChat({ groupId, currentUserId }: GroupChatProps) {
             onChange={(e) => setInput(e.target.value)}
             placeholder={recording ? `Recording… ${recordingDuration}s` : "Message…"}
             disabled={recording}
-            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none disabled:opacity-50"
+            className="flex-1 rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none disabled:opacity-50 transition-colors"
           />
 
           {/* Mic / Stop button */}
-          <button
+          <IconButton
+            label={recording ? "Stop recording" : "Record voice"}
+            size="md"
             type="button"
             onClick={recording ? stopRecording : startRecording}
             disabled={sending}
-            className={`flex h-10 w-10 flex-none items-center justify-center rounded-xl transition-colors disabled:opacity-30 ${
-              recording
-                ? "bg-red-500/20 text-red-400 hover:bg-red-500/30"
-                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800"
-            }`}
+            className={recording ? "bg-semantic-error/20 text-semantic-error" : ""}
           >
             {recording ? <Square size={16} /> : <Mic size={18} />}
-          </button>
+          </IconButton>
 
           {/* Send button */}
-          <button
+          <IconButton
+            label="Send"
+            size="md"
             type="submit"
             disabled={!input.trim() || sending || recording}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
+            className="h-10 w-10 flex-none bg-text-primary text-surface-base"
           >
             {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-          </button>
+          </IconButton>
         </div>
       </form>
     </div>

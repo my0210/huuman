@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Users, Settings } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
 import GroupSettings from "@/components/social/GroupSettings";
 import GroupChat from "@/components/social/GroupChat";
 
@@ -59,19 +60,19 @@ export default function GroupDetailPage({
 
   if (loading) {
     return (
-      <div className="flex flex-1 min-h-0 items-center justify-center bg-zinc-950">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
+      <div className="flex flex-1 min-h-0 items-center justify-center bg-surface-base">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-border-default border-t-text-muted" />
       </div>
     );
   }
 
   if (!group) {
     return (
-      <div className="flex flex-1 min-h-0 flex-col items-center justify-center bg-zinc-950 gap-3">
-        <p className="text-sm text-zinc-400">Group not found</p>
+      <div className="flex flex-1 min-h-0 flex-col items-center justify-center bg-surface-base gap-3">
+        <p className="text-sm text-text-tertiary">Group not found</p>
         <button
           onClick={() => router.push("/groups")}
-          className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="text-sm text-text-muted active:text-text-secondary transition-colors"
         >
           Back to groups
         </button>
@@ -86,30 +87,32 @@ export default function GroupDetailPage({
   }));
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
-      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+      <header className="flex-none border-b border-border-default px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button
+          <IconButton
+            label="Back"
+            size="sm"
             onClick={() => router.push("/groups")}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
           >
             <ArrowLeft size={16} />
-          </button>
-          <h1 className="text-sm font-semibold text-zinc-100 truncate max-w-48">
+          </IconButton>
+          <h1 className="text-sm font-semibold text-text-primary truncate max-w-48">
             {group.name}
           </h1>
         </div>
         <div className="flex items-center gap-1">
-          <span className="flex items-center gap-1 text-xs text-zinc-500 mr-1">
+          <span className="flex items-center gap-1 text-xs text-text-muted mr-1">
             <Users size={12} />
             {group.members.length}
           </span>
-          <button
+          <IconButton
+            label="Settings"
+            size="sm"
             onClick={() => setSettingsOpen(true)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
           >
             <Settings size={16} />
-          </button>
+          </IconButton>
         </div>
       </header>
 

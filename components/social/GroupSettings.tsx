@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { X, Check, UserPlus, LogOut, Pencil } from "lucide-react";
+import { Sheet } from "@/components/ui/Sheet";
+import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 interface Member {
   id: string;
@@ -74,8 +78,6 @@ export default function GroupSettings({
     if (editingName) nameInputRef.current?.focus();
   }, [editingName]);
 
-  if (!open) return null;
-
   const handleSaveName = async () => {
     if (!name.trim() || name.trim() === groupName) {
       setEditingName(false);
@@ -127,53 +129,57 @@ export default function GroupSettings({
   const availableFriends = friends.filter((f) => !existingMemberIds.has(f.user.id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-md max-h-[85dvh] rounded-t-2xl sm:rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex-none flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-          <h2 className="text-sm font-semibold text-zinc-100">Group settings</h2>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+    <Sheet
+      open={open}
+      onOpenChange={(val) => {
+        if (!val) onClose();
+      }}
+      snapPoints={[0.85]}
+    >
+      <Sheet.Header
+        title="Group settings"
+        rightAction={
+          <IconButton label="Close" size="sm" onClick={onClose}>
+            <X size={14} />
+          </IconButton>
+        }
+      />
+      <Sheet.Body>
+        <div className="px-4 py-4 space-y-5 safe-bottom">
           {/* Group name */}
           <div className="space-y-2">
-            <span className="text-xs font-medium text-zinc-500">Name</span>
+            <span className="text-xs font-medium text-text-muted">Name</span>
             {editingName ? (
               <div className="flex items-center gap-2">
-                <input
+                <Input
                   ref={nameInputRef}
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
                   disabled={savingName}
-                  className="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none disabled:opacity-50"
                 />
-                <button
+                <IconButton
+                  label="Save"
+                  size="sm"
                   onClick={handleSaveName}
                   disabled={savingName}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-zinc-900 disabled:opacity-50"
+                  className="h-8 w-8 flex-shrink-0 bg-text-primary text-surface-base"
                 >
                   <Check size={14} />
-                </button>
+                </IconButton>
               </div>
             ) : (
               <div className="flex items-center justify-between">
-                <p className="text-sm text-zinc-200">{groupName}</p>
+                <p className="text-sm text-text-secondary">{groupName}</p>
                 {isAdmin && (
-                  <button
+                  <IconButton
+                    label="Edit name"
+                    size="sm"
                     onClick={() => setEditingName(true)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
                   >
                     <Pencil size={13} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             )}
@@ -182,29 +188,29 @@ export default function GroupSettings({
           {/* Members */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-zinc-500">
+              <span className="text-xs font-medium text-text-muted">
                 Members ({members.length})
               </span>
               {isAdmin && (
                 <button
                   onClick={() => setShowAddMembers(!showAddMembers)}
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+                  className="flex items-center gap-1 rounded-radius-sm px-2 py-1 text-xs text-text-tertiary active:text-text-secondary active:bg-surface-raised transition-colors"
                 >
                   <UserPlus size={12} />
                   Add
                 </button>
               )}
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 divide-y divide-zinc-800">
+            <div className="rounded-radius-md border border-border-default bg-surface-raised divide-y divide-border-subtle">
               {members.map((m) => (
                 <div key={m.id} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-sm text-zinc-200 truncate">
+                  <span className="text-sm text-text-secondary truncate">
                     {m.displayName || "Member"}
                     {m.id === currentUserId && (
-                      <span className="ml-1.5 text-xs text-zinc-500">you</span>
+                      <span className="ml-1.5 text-xs text-text-muted">you</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-zinc-500 capitalize">{m.role}</span>
+                  <span className="text-[11px] text-text-muted capitalize">{m.role}</span>
                 </div>
               ))}
             </div>
@@ -213,13 +219,13 @@ export default function GroupSettings({
           {/* Add members panel */}
           {showAddMembers && (
             <div className="space-y-2">
-              <span className="text-xs font-medium text-zinc-500">Add friends</span>
+              <span className="text-xs font-medium text-text-muted">Add friends</span>
               {loadingFriends ? (
                 <div className="flex items-center justify-center py-6">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-border-default border-t-text-muted" />
                 </div>
               ) : availableFriends.length === 0 ? (
-                <p className="text-xs text-zinc-600 py-3 text-center">
+                <p className="text-xs text-text-muted py-3 text-center">
                   All friends are already members
                 </p>
               ) : (
@@ -231,15 +237,15 @@ export default function GroupSettings({
                         key={f.user.id}
                         onClick={() => handleAddMember(f.user.id)}
                         disabled={adding}
-                        className="flex w-full items-center justify-between rounded-lg border border-zinc-800 bg-zinc-950/50 px-4 py-2.5 text-left hover:bg-zinc-900 disabled:opacity-50 transition-colors"
+                        className="flex w-full items-center justify-between rounded-radius-sm border border-border-default bg-surface-raised px-4 py-2.5 text-left text-text-secondary active:bg-surface-elevated disabled:opacity-50 transition-colors"
                       >
-                        <span className="text-sm text-zinc-200 truncate">
+                        <span className="text-sm truncate">
                           {f.user.display_name || f.user.username || f.user.email}
                         </span>
                         {adding ? (
-                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-300" />
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-border-default border-t-text-muted" />
                         ) : (
-                          <span className="text-xs text-zinc-500">Add</span>
+                          <span className="text-xs text-text-muted">Add</span>
                         )}
                       </button>
                     );
@@ -250,40 +256,42 @@ export default function GroupSettings({
           )}
 
           {/* Leave group */}
-          <div className="pt-2 border-t border-zinc-800">
+          <div className="pt-2 border-t border-border-subtle">
             {!confirmLeave ? (
               <button
                 onClick={() => setConfirmLeave(true)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-radius-md px-4 py-3 text-sm text-semantic-error active:bg-semantic-error/10 transition-colors"
               >
                 <LogOut size={14} />
                 Leave group
               </button>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-zinc-400 text-center">
+                <p className="text-xs text-text-tertiary text-center">
                   Are you sure you want to leave?
                 </p>
                 <div className="flex gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={() => setConfirmLeave(false)}
-                    className="flex-1 rounded-xl border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    className="flex-1"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="danger"
                     onClick={handleLeave}
                     disabled={leaving}
-                    className="flex-1 rounded-xl bg-red-500/20 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+                    className="flex-1"
                   >
                     {leaving ? "Leaving..." : "Leave"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </Sheet.Body>
+    </Sheet>
   );
 }

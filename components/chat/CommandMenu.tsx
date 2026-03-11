@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, CalendarDays, Sliders, TrendingUp, ClipboardList, MessageSquarePlus } from "lucide-react";
+import { transition, press } from "@/lib/motion";
 
 interface CommandMenuProps {
   open: boolean;
@@ -15,42 +16,36 @@ const commands = [
     label: "Today's plan",
     message: "Show me today's plan",
     icon: Calendar,
-    color: "text-zinc-300",
   },
   {
     id: "week",
     label: "This week",
     message: "Show me my week",
     icon: CalendarDays,
-    color: "text-zinc-300",
   },
   {
     id: "adjust",
     label: "Adjust my plan",
     message: "I want to adjust my plan for the rest of the week",
     icon: Sliders,
-    color: "text-zinc-300",
   },
   {
     id: "progress",
     label: "Progress",
     message: "How am I doing this week?",
     icon: TrendingUp,
-    color: "text-zinc-300",
   },
   {
     id: "log",
     label: "Log",
     message: "I want to log my day",
     icon: ClipboardList,
-    color: "text-zinc-300",
   },
   {
     id: "feedback",
     label: "Feedback",
     message: "I want to give feedback about huuman",
     icon: MessageSquarePlus,
-    color: "text-zinc-300",
   },
 ];
 
@@ -71,28 +66,29 @@ export function CommandMenu({ open, onSelect, onClose }: CommandMenuProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            transition={transition.expand}
             className="overflow-hidden z-40 relative"
           >
-            <div className="grid grid-cols-3 gap-2 px-4 py-4 bg-zinc-900/95 border-t border-zinc-800">
+            <div className="grid grid-cols-3 gap-2 px-4 py-4 bg-surface-overlay/95 border-t border-border-default">
               {commands.map((cmd) => {
                 const Icon = cmd.icon;
                 return (
-                  <button
+                  <motion.button
                     key={cmd.id}
+                    whileTap={press.button}
                     onClick={() => {
                       onSelect(cmd.message);
                       onClose();
                     }}
-                    className="flex flex-col items-center gap-2 rounded-xl py-3 px-2 hover:bg-zinc-800/60 active:bg-zinc-800 transition-colors"
+                    className="flex flex-col items-center gap-2 rounded-radius-lg py-3 px-2 text-text-secondary active:bg-surface-elevated transition-colors"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 border border-zinc-700/50">
-                      <Icon size={18} className={cmd.color} />
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated border border-border-default">
+                      <Icon size={18} className="text-text-secondary" />
                     </div>
-                    <span className="text-[11px] font-medium text-zinc-400 leading-tight text-center">
+                    <span className="text-[11px] font-medium text-text-tertiary leading-tight text-center">
                       {cmd.label}
                     </span>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
