@@ -363,7 +363,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="flex-none border-t border-border-subtle px-4 py-3 safe-bottom"
+        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
       >
         {error && (
           <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">

@@ -145,7 +145,7 @@ export default function GroupSettings({
         }
       />
       <Sheet.Body>
-        <div className="px-4 py-4 space-y-5 safe-bottom">
+        <div className="px-4 pt-4 space-y-5 safe-bottom">
           {/* Group name */}
           <div className="space-y-2">
             <span className="text-xs font-medium text-text-muted">Name</span>
@@ -164,7 +164,7 @@ export default function GroupSettings({
                   size="sm"
                   onClick={handleSaveName}
                   disabled={savingName}
-                  className="h-8 w-8 flex-shrink-0 bg-text-primary text-surface-base"
+                  className="flex-shrink-0 bg-text-primary text-surface-base"
                 >
                   <Check size={14} />
                 </IconButton>

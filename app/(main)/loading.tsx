@@ -27,7 +27,7 @@ export default function Loading() {
         </div>
       </div>
 
-      <div className="flex-none border-t border-border-subtle px-4 py-3 safe-bottom">
+      <div className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom">
         <div className="flex items-center gap-2">
           <Skeleton className="h-10 w-10 rounded-radius-md" />
           <Skeleton className="flex-1 h-10 rounded-radius-md" />

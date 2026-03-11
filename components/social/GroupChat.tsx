@@ -729,7 +729,7 @@ export default function GroupChat({ groupId, currentUserId, onOnlineCountChange 
       )}
 
       {/* Input bar */}
-      <form onSubmit={handleSubmit} className="flex-none border-t border-border-default px-4 py-3 safe-bottom">
+      <form onSubmit={handleSubmit} className="flex-none border-t border-border-default px-4 pt-3 safe-bottom">
         <div className="flex items-center gap-2">
           {/* Photo button */}
           <input

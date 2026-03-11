@@ -98,7 +98,7 @@ function SheetFooter({
 }) {
   return (
     <div
-      className={`px-4 py-3 border-t border-border-subtle safe-bottom ${className}`}
+      className={`px-4 pt-3 border-t border-border-subtle safe-bottom ${className}`}
     >
       {children}
     </div>
