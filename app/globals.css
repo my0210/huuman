@@ -6,28 +6,25 @@
   --font-heading: var(--font-satoshi);
   --font-mono: var(--font-geist-mono);
 
-  /* Circadian Phases - Dynamic Variables */
-  --phase-bg: var(--color-surface-base);
-  --phase-glass: var(--color-surface-overlay);
-  --phase-border: var(--color-border-subtle);
-  --phase-accent: var(--color-text-primary);
-
-  /* Surfaces — elevation through lightness */
-  --color-surface-base: var(--phase-bg);
-  --color-surface-raised: var(--phase-glass);
-  --color-surface-overlay: var(--phase-glass);
+  /* Surfaces — elevation through lightness (defaults, overridden by phase) */
+  --color-surface-base: #18181B;
+  --color-surface-raised: #1E1E22;
+  --color-surface-overlay: #27272A;
   --color-surface-elevated: #3f3f46;
 
   /* Borders */
-  --color-border-subtle: var(--phase-border);
-  --color-border-default: var(--phase-border);
+  --color-border-subtle: #1C1C1F;
+  --color-border-default: #27272A;
   --color-border-strong: #3f3f46;
 
-  /* Text hierarchy */
+  /* Text hierarchy — solid hex, always readable */
   --color-text-primary: #fafafa;
-  --color-text-secondary: rgba(250, 250, 250, 0.6);
-  --color-text-tertiary: rgba(250, 250, 250, 0.4);
-  --color-text-muted: rgba(250, 250, 250, 0.3);
+  --color-text-secondary: #a1a1aa;
+  --color-text-tertiary: #71717a;
+  --color-text-muted: #52525b;
+
+  /* Circadian accent (overridden by phase) */
+  --color-phase-accent: #fb923c;
 
   /* Domain accents — muted / default / bright */
   --color-domain-cardio-muted: oklch(0.25 0.04 25);
@@ -70,45 +67,45 @@
   --shadow-glow-sleep: 0 0 20px oklch(0.65 0.2 290 / 0.15);
 }
 
-/* Circadian Phase Definitions */
-:root {
-  /* Default fallback (Day) */
-  --phase-bg: #18181B;
-  --phase-glass: rgba(255, 255, 255, 0.03);
-  --phase-border: rgba(255, 255, 255, 0.08);
-  --phase-accent: #fb923c;
-}
-
+/* Circadian Phase Definitions — solid hex only */
 body[data-phase="dawn"] {
-  --phase-bg: #1A1D21; /* Deep Cool Charcoal */
-  --phase-glass: rgba(255, 255, 255, 0.04);
-  --phase-border: rgba(180, 220, 255, 0.1);
-  --phase-accent: #22d3ee; /* Ice Blue */
+  --color-surface-base: #1A1D21;
+  --color-surface-raised: #1F2327;
+  --color-surface-overlay: #262A2F;
+  --color-border-subtle: #232830;
+  --color-border-default: #2A2E33;
+  --color-phase-accent: #22d3ee;
 }
 
 body[data-phase="day"] {
-  --phase-bg: #18181B; /* Deep Neutral Slate */
-  --phase-glass: rgba(255, 255, 255, 0.03);
-  --phase-border: rgba(255, 255, 255, 0.08);
-  --phase-accent: #fb923c; /* Solar Orange */
+  --color-surface-base: #18181B;
+  --color-surface-raised: #1E1E22;
+  --color-surface-overlay: #27272A;
+  --color-border-subtle: #1C1C1F;
+  --color-border-default: #27272A;
+  --color-phase-accent: #fb923c;
 }
 
 body[data-phase="dusk"] {
-  --phase-bg: #1C1A18; /* Deep Warm Espresso */
-  --phase-glass: rgba(255, 220, 200, 0.03);
-  --phase-border: rgba(255, 200, 150, 0.08);
-  --phase-accent: #fbbf24; /* Sunset Amber */
+  --color-surface-base: #1C1A18;
+  --color-surface-raised: #23211E;
+  --color-surface-overlay: #2B2925;
+  --color-border-subtle: #262320;
+  --color-border-default: #2E2B27;
+  --color-phase-accent: #fbbf24;
 }
 
 body[data-phase="midnight"] {
-  --phase-bg: #0B0C12; /* Deep Midnight Blue */
-  --phase-glass: rgba(200, 200, 255, 0.02);
-  --phase-border: rgba(100, 100, 255, 0.05);
-  --phase-accent: #a78bfa; /* Bioluminescent Purple */
+  --color-surface-base: #0B0C12;
+  --color-surface-raised: #11121A;
+  --color-surface-overlay: #191A24;
+  --color-border-subtle: #14151E;
+  --color-border-default: #1A1B24;
+  --color-phase-accent: #a78bfa;
 }
 
 body {
-  background: var(--phase-bg);
+  background: var(--color-surface-base);
   color: var(--color-text-primary);
   transition: background-color 1.5s ease;
 }

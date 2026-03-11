@@ -68,7 +68,7 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
 
   if (!hasPlan || (sessions.length === 0 && !trackingBriefs)) {
     return (
-      <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl px-4 py-4 space-y-2 shadow-lg">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-4 space-y-2">
         <p className="text-sm font-medium text-text-secondary">No plan for today</p>
         <p className="text-xs text-text-muted">
           Ask me to generate your weekly plan to get started.
@@ -83,10 +83,10 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
   const total = sessions.length;
 
   return (
-    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[var(--phase-border)] flex items-center justify-between">
-        <p className="text-sm font-medium text-text-primary font-heading tracking-wide">{dayName}</p>
+      <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
+        <p className="text-sm font-semibold text-text-primary">{dayName}</p>
         {total > 0 && (
           <p className={`text-xs font-medium ${completed === total ? "text-emerald-400" : "text-text-muted"}`}>
             {completed === total ? "All done" : `${completed} of ${total} sessions`}
@@ -96,7 +96,7 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
 
       {/* Session rows */}
       {sessions.length > 0 && (
-        <div className="divide-y divide-[var(--phase-border)]">
+        <div className="divide-y divide-border-subtle">
           {sessions.map((session) => (
             <SessionRow key={session.id} session={session} />
           ))}
@@ -106,8 +106,8 @@ export function TodayPlanCard({ data }: { data: Record<string, unknown> }) {
       {/* Divider between sessions and tracking */}
       {trackingBriefs && (
         <>
-          <div className="border-t border-dashed border-[var(--phase-border)]" />
-          <div className="divide-y divide-[var(--phase-border)]">
+          <div className="border-t border-dashed border-border-subtle" />
+          <div className="divide-y divide-border-subtle">
             <NutritionRow brief={trackingBriefs.nutrition} habits={habits} />
             <SleepRow brief={trackingBriefs.sleep} habits={habits} />
           </div>
@@ -147,7 +147,7 @@ function SessionRow({ session }: { session: Session }) {
         onClick={() => !isCompleted && setExpanded(!expanded)}
         disabled={isCompleted}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-          isCompleted ? "opacity-60 cursor-default" : "hover:bg-[var(--phase-accent)]/5 active:bg-[var(--phase-accent)]/10"
+          isCompleted ? "opacity-60 cursor-default" : "active:bg-surface-overlay"
         }`}
       >
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg border shrink-0 ${colors} shadow-sm`}>
@@ -196,7 +196,7 @@ function SessionRow({ session }: { session: Session }) {
                   </button>
                   <button
                     onClick={() => send({ text: `Tell me more about my ${session.title} session` })}
-                    className="flex items-center gap-1.5 rounded-lg border border-[var(--phase-border)] px-3 py-1.5 text-xs font-medium text-text-secondary hover:text-text-primary hover:border-text-muted transition-colors backdrop-blur-md"
+                    className="flex items-center gap-1.5 rounded-lg border border-border-default px-3 py-1.5 text-xs font-medium text-text-secondary active:text-text-primary active:border-border-strong transition-colors"
                   >
                     <MessageCircle size={10} />
                     Ask coach
@@ -232,9 +232,9 @@ function NutritionRow({ brief, habits }: { brief: NutritionBrief; habits: Habits
   return (
     <button
       onClick={handleTap}
-      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[var(--phase-accent)]/5 active:bg-[var(--phase-accent)]/10 transition-colors"
+      className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-surface-overlay transition-colors"
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-900/50 bg-green-950/50 text-green-400 shrink-0 shadow-sm">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-green-900/50 bg-green-950/50 text-green-400 shrink-0">
         <Flame size={14} />
       </div>
       <div className="flex-1 min-w-0">
@@ -283,9 +283,9 @@ function SleepRow({ brief, habits }: { brief: SleepBrief; habits: Habits | null 
   return (
     <button
       onClick={handleTap}
-      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-[var(--phase-accent)]/5 active:bg-[var(--phase-accent)]/10 transition-colors"
+      className="w-full px-4 py-3 flex items-center gap-3 text-left active:bg-surface-overlay transition-colors"
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-900/50 bg-violet-950/50 text-violet-400 shrink-0 shadow-sm">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-900/50 bg-violet-950/50 text-violet-400 shrink-0">
         <Moon size={14} />
       </div>
       <div className="flex-1 min-w-0">

@@ -246,9 +246,9 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   }, []);
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-transparent">
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
       {/* Header */}
-      <header className="flex-none px-4 py-3 flex items-center justify-between safe-top z-10">
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
         <button onClick={() => setProfileOpen(true)} className="active:opacity-70 transition-opacity">
           <Avatar src={avatarUrl} name={displayName || userEmail} size="md" />
         </button>
@@ -328,7 +328,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
                 <div
                   className={`max-w-[85%] ${
                     message.role === "user"
-                      ? "rounded-2xl rounded-br-md bg-[var(--phase-glass)] border border-[var(--phase-border)] backdrop-blur-md px-4 py-2.5 shadow-sm"
+                      ? "rounded-2xl rounded-br-md bg-surface-raised px-4 py-2.5"
                       : "space-y-3"
                   }`}
                 >
@@ -363,10 +363,10 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="flex-none px-4 pt-3 pb-6 safe-bottom z-10"
+        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
       >
         {error && (
-          <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error backdrop-blur-md">
+          <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">
             {error}
           </div>
         )}
@@ -403,7 +403,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           <IconButton
             label={commandMenuOpen ? "Close menu" : "Open menu"}
             onClick={() => setCommandMenuOpen(!commandMenuOpen)}
-            className={`bg-[var(--phase-glass)] backdrop-blur-xl border border-[var(--phase-border)] shadow-lg ${commandMenuOpen ? "bg-surface-elevated text-text-secondary" : ""}`}
+            className={commandMenuOpen ? "bg-surface-elevated text-text-secondary" : ""}
           >
             {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
           </IconButton>
@@ -416,13 +416,13 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
             }}
             onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
             placeholder={pendingImages.length > 0 ? "Add a note..." : t("chat.placeholder", currentLanguage)}
-            className="flex-1 rounded-full border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl px-5 py-3 text-[15px] text-text-primary placeholder:text-text-muted focus:border-[var(--phase-accent)] focus:outline-none transition-colors shadow-lg"
+            className="flex-1 rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-[15px] text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
           />
           <IconButton
             label="Upload image"
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading || uploading}
-            className="bg-[var(--phase-glass)] backdrop-blur-xl border border-[var(--phase-border)] shadow-lg"
+            className=""
           >
             <Camera size={20} />
           </IconButton>
@@ -430,7 +430,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
             label="Send"
             type="submit"
             disabled={(!input.trim() && pendingImages.length === 0) || isLoading || uploading}
-            className="h-11 w-11 flex-none bg-[var(--phase-accent)] text-surface-base shadow-[0_0_15px_var(--phase-accent)/30]"
+            className="h-11 w-11 flex-none bg-text-primary text-surface-base"
           >
             {uploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           </IconButton>

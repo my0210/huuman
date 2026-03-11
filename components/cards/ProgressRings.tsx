@@ -32,9 +32,9 @@ export function ProgressRings({ data }: { data: Record<string, unknown> }) {
 
   if (!hasPlan && !hasAnyData) {
     return (
-    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-[var(--phase-border)]">
-        <p className="text-sm font-medium text-text-primary font-heading tracking-wide">This Week</p>
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-subtle">
+        <p className="text-sm font-semibold text-text-primary">This Week</p>
       </div>
       <div className="px-4 py-6 text-center">
         <p className="text-xs text-text-muted">No active plan yet.</p>
@@ -48,9 +48,9 @@ export function ProgressRings({ data }: { data: Record<string, unknown> }) {
   const avgSteps = steps.length > 0 ? Math.round(totalSteps / steps.length) : 0;
 
   return (
-    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-[var(--phase-border)]">
-        <p className="text-sm font-medium text-text-primary font-heading tracking-wide">This Week</p>
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-subtle">
+        <p className="text-sm font-semibold text-text-primary">This Week</p>
       </div>
 
       <div className="grid grid-cols-5 gap-1 px-4 py-4">
@@ -64,7 +64,7 @@ export function ProgressRings({ data }: { data: Record<string, unknown> }) {
       </div>
 
       {steps.length > 0 && (
-        <div className="px-4 pb-3 pt-1 border-t border-[var(--phase-border)] flex items-center justify-between">
+        <div className="px-4 pb-3 pt-1 border-t border-border-subtle flex items-center justify-between">
           <p className="text-xs text-text-muted">
             Steps: <span className="text-text-primary font-mono">{avgSteps.toLocaleString()}/day</span>
           </p>

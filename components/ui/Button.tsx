@@ -16,12 +16,12 @@ interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--phase-accent)]/20 border border-[var(--phase-accent)]/40 text-text-primary font-medium backdrop-blur-md shadow-[0_0_15px_var(--phase-accent)/10]",
+    "bg-text-primary text-surface-base font-medium",
   secondary:
-    "bg-[var(--phase-glass)] border border-[var(--phase-border)] text-text-secondary backdrop-blur-md",
-  ghost: "text-text-secondary hover:bg-[var(--phase-glass)]",
+    "bg-surface-raised border border-border-default text-text-secondary",
+  ghost: "text-text-secondary",
   danger:
-    "bg-semantic-error/10 border border-semantic-error/20 text-semantic-error backdrop-blur-md",
+    "bg-semantic-error/10 border border-semantic-error/20 text-semantic-error",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

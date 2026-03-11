@@ -44,7 +44,7 @@ export function SessionCardContent({ detail, weekProgress }: Props) {
   const c = DOMAIN_STYLE[detail.domain];
 
   return (
-    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3">
         <div className={`h-2 w-2 rounded-full ${c.dot} shadow-[0_0_8px_${c.dot.replace('bg-', '')}]`} />
         <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
@@ -54,7 +54,7 @@ export function SessionCardContent({ detail, weekProgress }: Props) {
           {detail.title}
         </p>
         <span
-          className={`text-[10px] font-bold ${c.text} ${c.bg} ${c.border} border rounded px-1.5 py-0.5 backdrop-blur-md`}
+          className={`text-[10px] font-bold ${c.text} ${c.bg} ${c.border} border rounded px-1.5 py-0.5`}
         >
           {c.short}
         </span>
@@ -105,7 +105,7 @@ export function SessionCardContent({ detail, weekProgress }: Props) {
       </div>
 
       {weekProgress && weekProgress.length > 0 && (
-        <div className="flex gap-3 border-t border-[var(--phase-border)] px-4 py-2">
+        <div className="flex gap-3 border-t border-border-subtle px-4 py-2">
           {weekProgress
             .filter((d) => d.total > 0)
             .map((d) => (

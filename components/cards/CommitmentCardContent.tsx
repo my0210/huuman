@@ -19,10 +19,10 @@ export function CommitmentCardContent({
   const c = DOMAIN_STYLE[detail.domain] ?? DOMAIN_STYLE.strength;
 
   return (
-    <div className="rounded-radius-lg border border-[var(--phase-border)] bg-[var(--phase-glass)] backdrop-blur-xl shadow-lg overflow-hidden">
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
       <div className="flex items-start gap-3 px-4 py-3">
         <div
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${c.bg} shadow-[0_0_10px_rgba(255,255,255,0.1)]`}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${c.bg}`}
         >
           <Clock size={14} className={c.text} />
         </div>
@@ -30,7 +30,7 @@ export function CommitmentCardContent({
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-text-primary">{detail.title}</p>
           {(detail.time || detail.place) && (
-            <p className="mt-0.5 text-xs text-text-secondary font-mono">
+            <p className="mt-0.5 text-xs text-text-secondary">
               {[detail.time, detail.place].filter(Boolean).join(" · ")}
             </p>
           )}
