@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TimezoneSync } from "@/components/TimezoneSync";
+import { IonAppShell } from "@/components/layout/IonAppShell";
 
 export default async function MainLayout({
   children,
@@ -25,9 +26,9 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-surface-base">
+    <IonAppShell>
       <TimezoneSync />
       {children}
-    </div>
+    </IonAppShell>
   );
 }

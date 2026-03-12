@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { IonPage, IonContent } from "@ionic/react";
 import { Plus, Trash2, Utensils, Pencil, Flame, Beef } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
 import { NavHeader } from "@/components/ui/NavHeader";
@@ -90,7 +91,7 @@ export default function MealLogPage() {
   let mealIndex = 0;
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+    <IonPage>
       <NavHeader
         title="Meal Log"
         onBack={() => router.push("/data")}
@@ -101,7 +102,7 @@ export default function MealLogPage() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto scrollbar-none">
+      <IonContent>
         {loading ? (
           <div>
             {[0, 1].map((g) => (
@@ -215,7 +216,7 @@ export default function MealLogPage() {
             ))}
           </div>
         )}
-      </div>
+      </IonContent>
 
       <Sheet
         open={!!selected}
@@ -330,7 +331,7 @@ export default function MealLogPage() {
           />
         </Sheet.Body>
       </Sheet>
-    </div>
+    </IonPage>
   );
 }
 

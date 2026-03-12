@@ -77,6 +77,59 @@ body {
   color: var(--color-text-primary);
 }
 
+:root {
+  --ion-background-color: var(--color-surface-base);
+  --ion-text-color: var(--color-text-primary);
+  --ion-toolbar-background: var(--color-surface-base);
+  --ion-toolbar-color: var(--color-text-primary);
+  --ion-toolbar-border-color: var(--color-border-subtle);
+  --ion-item-background: var(--color-surface-raised);
+  --ion-item-color: var(--color-text-primary);
+  --ion-border-color: var(--color-border-default);
+  --ion-card-background: var(--color-surface-raised);
+  --ion-tab-bar-background: var(--color-surface-base);
+  --ion-overlay-background-color: var(--color-surface-overlay);
+  --ion-backdrop-color: #000;
+  --ion-backdrop-opacity: 0.6;
+  --ion-font-family: var(--font-inter), -apple-system, system-ui, sans-serif;
+  --ion-safe-area-top: env(safe-area-inset-top, 0px);
+  --ion-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --ion-safe-area-left: env(safe-area-inset-left, 0px);
+  --ion-safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+ion-content {
+  --background: var(--color-surface-base);
+  --color: var(--color-text-primary);
+}
+
+ion-toolbar {
+  --background: var(--color-surface-base);
+  --color: var(--color-text-primary);
+  --border-color: var(--color-border-subtle);
+}
+
+ion-footer ion-toolbar {
+  --background: var(--color-surface-base);
+  --border-color: var(--color-border-subtle);
+}
+
+ion-modal {
+  --background: var(--color-surface-overlay);
+  --border-radius: 20px 20px 0 0;
+}
+
+ion-modal::part(backdrop) {
+  background: #000;
+  opacity: 0.6;
+}
+
+ion-modal::part(handle) {
+  background: var(--color-surface-elevated);
+  width: 48px;
+  height: 6px;
+}
+
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;

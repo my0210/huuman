@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { IonPage, IonContent } from "@ionic/react";
 import { Plus, Trash2, Camera, Pencil } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
 import { NavHeader } from "@/components/ui/NavHeader";
@@ -106,7 +107,7 @@ export default function ProgressPhotosPage() {
   let photoIndex = 0;
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+    <IonPage>
       <NavHeader
         title={photos.length > 0 ? `Progress Photos · ${photos.length}` : "Progress Photos"}
         onBack={() => router.push("/data")}
@@ -117,7 +118,7 @@ export default function ProgressPhotosPage() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto scrollbar-none">
+      <IonContent>
         {loading ? (
           <div className="px-4 pt-6">
             <Skeleton className="h-4 w-28 mb-4" />
@@ -180,7 +181,7 @@ export default function ProgressPhotosPage() {
             ))}
           </div>
         )}
-      </div>
+      </IonContent>
 
       <Sheet
         open={!!selected}
@@ -268,7 +269,7 @@ export default function ProgressPhotosPage() {
           />
         </Sheet.Body>
       </Sheet>
-    </div>
+    </IonPage>
   );
 }
 

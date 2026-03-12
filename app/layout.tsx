@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { IonicProvider } from "@/components/layout/IonicProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -43,7 +44,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased bg-surface-base text-text-primary`}
       >
-        {children}
+        <IonicProvider>
+          {children}
+        </IonicProvider>
         <Toaster
           theme="dark"
           position="top-center"

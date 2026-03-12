@@ -13,6 +13,15 @@ import {
 } from "react";
 import { Send, X, Plus, Camera, Loader2, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonContent,
+  IonFooter,
+  IonButtons,
+  IonTitle,
+} from "@ionic/react";
 import { haptics } from "@/lib/haptics";
 import { CommandMenu } from "./CommandMenu";
 import { createClient } from "@/lib/supabase/client";
@@ -284,35 +293,41 @@ export function ChatInterface({
   };
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
-      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
-        <button
-          onClick={() => {
-            haptics.light();
-            setProfileOpen(true);
-          }}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full active:scale-[0.97] active:opacity-80 transition-[transform,opacity] duration-100"
-        >
-          <Avatar
-            src={avatarUrl}
-            name={displayName || userEmail}
-            size="md"
-          />
-        </button>
-        <h1 className="text-lg font-semibold text-text-primary tracking-tight">
-          huuman
-        </h1>
-        <IconButton
-          label="Your data"
-          size="sm"
-          onClick={() => {
-            haptics.light();
-            router.push("/data");
-          }}
-        >
-          <BarChart3 size={20} />
-        </IconButton>
-      </header>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <button
+              onClick={() => {
+                haptics.light();
+                setProfileOpen(true);
+              }}
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full active:scale-[0.97] active:opacity-80 transition-[transform,opacity] duration-100"
+            >
+              <Avatar
+                src={avatarUrl}
+                name={displayName || userEmail}
+                size="md"
+              />
+            </button>
+          </IonButtons>
+          <IonTitle className="text-lg font-semibold tracking-tight">
+            huuman
+          </IonTitle>
+          <IonButtons slot="end">
+            <IconButton
+              label="Your data"
+              size="sm"
+              onClick={() => {
+                haptics.light();
+                router.push("/data");
+              }}
+            >
+              <BarChart3 size={20} />
+            </IconButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
 
       <ProfileSheet
         open={profileOpen}
@@ -322,12 +337,20 @@ export function ChatInterface({
         avatarUrl={avatarUrl}
       />
 
-      <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-        <div className="relative flex-1 min-h-0">
+      <IonContent scrollEvents onIonScroll={(e) => {
+        const el = e.target as HTMLIonContentElement;
+        el.getScrollElement().then((scrollEl) => {
+          const distFromBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+          setShowScrollBtn(distFromBottom > 200);
+          if (scrollEl.scrollTop < 80 && !loadingOlder && !isLoading) {
+            loadOlderMessages();
+          }
+        });
+      }}>
+        <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
           <div
             ref={scrollRef}
-            onScroll={handleScroll}
-            className="absolute inset-0 overflow-y-auto px-4 py-4 space-y-4 [-webkit-overflow-scrolling:touch] scrollbar-none"
+            className="px-4 py-4 space-y-4"
           >
             {loadingOlder && (
               <div className="flex justify-center py-2">
@@ -449,8 +472,8 @@ export function ChatInterface({
           </div>
 
           <ScrollToBottom visible={showScrollBtn} onClick={scrollToBottom} />
-        </div>
-      </ChatActionsProvider>
+        </ChatActionsProvider>
+      </IonContent>
 
       <CommandMenu
         open={commandMenuOpen}
@@ -458,95 +481,96 @@ export function ChatInterface({
         onClose={() => setCommandMenuOpen(false)}
       />
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
-      >
-        {error && (
-          <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
-            {error}
-          </div>
-        )}
-        {pendingImages.length > 0 && (
-          <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
-            {pendingImages.map((img, i) => (
-              <div key={i} className="relative flex-none">
-                <img
-                  src={img.previewUrl}
-                  alt={img.file.name}
-                  className="h-16 w-16 rounded-radius-sm object-cover border border-border-default"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(i)}
-                  disabled={uploading}
-                  className="absolute -top-3 -right-3 flex min-h-[44px] min-w-[44px] items-start justify-end p-2 transition-opacity disabled:opacity-30"
-                >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border-default bg-surface-elevated text-text-secondary active:scale-[0.97] transition-transform duration-100">
-                    <X size={12} />
-                  </span>
-                </button>
+      <IonFooter>
+        <IonToolbar>
+          <form onSubmit={handleSubmit} className="px-4 py-2">
+            {error && (
+              <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
+                {error}
               </div>
-            ))}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <IconButton
-            label={commandMenuOpen ? "Close menu" : "Open menu"}
-            type="button"
-            onClick={() => setCommandMenuOpen(!commandMenuOpen)}
-            className={
-              commandMenuOpen
-                ? "bg-surface-elevated text-text-secondary"
-                : ""
-            }
-          >
-            {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
-          </IconButton>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              if (commandMenuOpen) setCommandMenuOpen(false);
-            }}
-            onFocus={() => {
-              if (commandMenuOpen) setCommandMenuOpen(false);
-            }}
-            placeholder={
-              pendingImages.length > 0
-                ? "Add a note..."
-                : t("chat.placeholder", currentLanguage)
-            }
-            className="flex-1 min-h-[44px] rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
-          />
-          <IconButton
-            label="Upload image"
-            type="button"
-            onClick={handleNativeCamera}
-            disabled={isLoading || uploading}
-          >
-            <Camera size={20} />
-          </IconButton>
-          <IconButton
-            label="Send"
-            type="submit"
-            disabled={
-              (!input.trim() && pendingImages.length === 0) ||
-              isLoading ||
-              uploading
-            }
-            className="h-11 w-11 flex-none rounded-full bg-white text-black"
-          >
-            {uploading ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Send size={18} />
             )}
-          </IconButton>
-        </div>
-      </form>
-    </div>
+            {pendingImages.length > 0 && (
+              <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
+                {pendingImages.map((img, i) => (
+                  <div key={i} className="relative flex-none">
+                    <img
+                      src={img.previewUrl}
+                      alt={img.file.name}
+                      className="h-16 w-16 rounded-radius-sm object-cover border border-border-default"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      disabled={uploading}
+                      className="absolute -top-3 -right-3 flex min-h-[44px] min-w-[44px] items-start justify-end p-2 transition-opacity disabled:opacity-30"
+                    >
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border-default bg-surface-elevated text-text-secondary active:scale-[0.97] transition-transform duration-100">
+                        <X size={12} />
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <IconButton
+                label={commandMenuOpen ? "Close menu" : "Open menu"}
+                type="button"
+                onClick={() => setCommandMenuOpen(!commandMenuOpen)}
+                className={
+                  commandMenuOpen
+                    ? "bg-surface-elevated text-text-secondary"
+                    : ""
+                }
+              >
+                {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
+              </IconButton>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (commandMenuOpen) setCommandMenuOpen(false);
+                }}
+                onFocus={() => {
+                  if (commandMenuOpen) setCommandMenuOpen(false);
+                }}
+                placeholder={
+                  pendingImages.length > 0
+                    ? "Add a note..."
+                    : t("chat.placeholder", currentLanguage)
+                }
+                className="flex-1 min-h-[44px] rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
+              />
+              <IconButton
+                label="Upload image"
+                type="button"
+                onClick={handleNativeCamera}
+                disabled={isLoading || uploading}
+              >
+                <Camera size={20} />
+              </IconButton>
+              <IconButton
+                label="Send"
+                type="submit"
+                disabled={
+                  (!input.trim() && pendingImages.length === 0) ||
+                  isLoading ||
+                  uploading
+                }
+                className="h-11 w-11 flex-none rounded-full bg-white text-black"
+              >
+                {uploading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Send size={18} />
+                )}
+              </IconButton>
+            </div>
+          </form>
+        </IonToolbar>
+      </IonFooter>
+    </IonPage>
   );
 }
 

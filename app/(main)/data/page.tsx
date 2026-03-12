@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { IonPage, IonContent, IonFooter, IonToolbar } from "@ionic/react";
 import { Trash2, Send, Scale, Plus, ChevronRight, Camera, Utensils } from "lucide-react";
 import { NavHeader } from "@/components/ui/NavHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -125,23 +126,26 @@ export default function DataPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+      <IonPage>
         <NavHeader title="Your Data" onBack={() => router.push("/")} />
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-          <Skeleton className="h-20 w-full rounded-radius-lg" />
-          <Skeleton className="h-28 w-full rounded-radius-lg" />
-          <Skeleton className="h-36 w-full rounded-radius-lg" />
-          <Skeleton className="h-24 w-full rounded-radius-lg" />
-        </div>
-      </div>
+        <IonContent>
+          <div className="px-4 py-6 space-y-6">
+            <Skeleton className="h-20 w-full rounded-radius-lg" />
+            <Skeleton className="h-28 w-full rounded-radius-lg" />
+            <Skeleton className="h-36 w-full rounded-radius-lg" />
+            <Skeleton className="h-24 w-full rounded-radius-lg" />
+          </div>
+        </IonContent>
+      </IonPage>
     );
   }
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+    <IonPage>
       <NavHeader title="Your Data" onBack={() => router.push("/")} />
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
+      <IonContent>
+        <div className="px-4 py-6 space-y-8">
         {profile && (
           <section className="space-y-3">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
@@ -274,37 +278,42 @@ export default function DataPage() {
         )}
 
         <div className="h-20" />
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleAdd();
-        }}
-        className="flex-none border-t border-border-default bg-surface-base px-4 pt-3 safe-bottom"
-      >
-        <div className="flex items-center gap-2">
-          <Input
-            type="text"
-            value={newContent}
-            onChange={(e) => setNewContent(e.target.value)}
-            placeholder="Bad left knee, training at home this week..."
-            disabled={adding}
-            fullWidth={false}
-            className="flex-1 min-w-0 text-sm"
-          />
-          <Button
-            type="submit"
-            variant="primary"
-            size="sm"
-            disabled={!newContent.trim() || adding}
-            className="flex-none shrink-0"
-          >
-            <Send size={16} />
-          </Button>
         </div>
-      </form>
-    </div>
+      </IonContent>
+
+      <IonFooter>
+        <IonToolbar>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAdd();
+            }}
+            className="px-4 py-2"
+          >
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                value={newContent}
+                onChange={(e) => setNewContent(e.target.value)}
+                placeholder="Bad left knee, training at home this week..."
+                disabled={adding}
+                fullWidth={false}
+                className="flex-1 min-w-0 text-sm"
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={!newContent.trim() || adding}
+                className="flex-none shrink-0"
+              >
+                <Send size={16} />
+              </Button>
+            </div>
+          </form>
+        </IonToolbar>
+      </IonFooter>
+    </IonPage>
   );
 }
 
