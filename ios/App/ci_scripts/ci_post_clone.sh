@@ -20,4 +20,7 @@ echo "==> Installing npm dependencies..."
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 npm ci --ignore-scripts
 
-echo "==> Done. node_modules ready for SPM."
+echo "==> Syncing Capacitor iOS project..."
+npx cap sync ios
+
+echo "==> Done. node_modules and Capacitor config ready."
