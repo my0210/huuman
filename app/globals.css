@@ -143,17 +143,22 @@ ion-item {
   --detail-icon-opacity: 1;
   --padding-start: 16px;
   --padding-end: 16px;
-  --min-height: 44px;
+  --min-height: 48px;
+  --inner-padding-top: 10px;
+  --inner-padding-bottom: 10px;
   font-size: 0.9375rem;
 }
 
 ion-item ion-label {
   --color: var(--color-text-primary);
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 ion-item ion-label p {
-  color: var(--color-text-muted) !important;
-  font-size: 0.75rem !important;
+  color: var(--color-text-tertiary) !important;
+  font-size: 0.6875rem !important;
+  margin-top: 2px;
 }
 
 ion-item ion-icon {

@@ -20,7 +20,6 @@ import {
   IonContent,
   IonFooter,
   IonButtons,
-  IonButton,
   IonTitle,
 } from "@ionic/react";
 import { haptics } from "@/lib/haptics";
@@ -296,18 +295,24 @@ export function ChatInterface({
 
   return (
     <IonPage>
-      <IonHeader translucent>
+      <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonButton fill="clear" onClick={() => { haptics.light(); setProfileOpen(true); }}>
+            <button
+              onClick={() => { haptics.light(); setProfileOpen(true); }}
+              className="flex h-[44px] w-[44px] items-center justify-center active:opacity-70 transition-opacity"
+            >
               <Avatar src={avatarUrl} name={displayName || userEmail} size="sm" />
-            </IonButton>
+            </button>
           </IonButtons>
           <IonTitle>huuman</IonTitle>
           <IonButtons slot="end">
-            <IonButton fill="clear" onClick={() => { haptics.light(); router.push("/data"); }}>
-              <BarChart3 size={20} className="text-text-secondary" />
-            </IonButton>
+            <button
+              onClick={() => { haptics.light(); router.push("/data"); }}
+              className="flex h-[44px] w-[44px] items-center justify-center text-text-secondary active:opacity-70 transition-opacity"
+            >
+              <BarChart3 size={20} />
+            </button>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
