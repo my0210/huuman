@@ -489,6 +489,7 @@ export function ChatInterface({
         <div className="flex items-center gap-2">
           <IconButton
             label={commandMenuOpen ? "Close menu" : "Open menu"}
+            type="button"
             onClick={() => setCommandMenuOpen(!commandMenuOpen)}
             className={
               commandMenuOpen
@@ -517,6 +518,7 @@ export function ChatInterface({
           />
           <IconButton
             label="Upload image"
+            type="button"
             onClick={handleNativeCamera}
             disabled={isLoading || uploading}
           >
