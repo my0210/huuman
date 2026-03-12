@@ -6,8 +6,7 @@ const config: CapacitorConfig = {
   webDir: "public",
 
   server: {
-    // Switch to https://app.huuman.life once the custom domain is configured
-    url: "https://huuman.vercel.app",
+    url: "https://app.huuman.life",
     cleartext: false,
   },
 
