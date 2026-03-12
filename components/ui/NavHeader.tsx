@@ -11,7 +11,7 @@ interface NavHeaderProps {
 
 export function NavHeader({ title, onBack, rightAction }: NavHeaderProps) {
   return (
-    <header className="flex-none flex items-center gap-2 border-b border-border-subtle px-4 min-h-[44px]">
+    <header className="flex-none flex items-center gap-2 border-b border-border-subtle px-4 min-h-[44px] safe-top">
       <button
         onClick={() => {
           haptics.light();

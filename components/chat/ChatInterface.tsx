@@ -284,7 +284,7 @@ export function ChatInterface({
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
-      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between">
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
         <button
           onClick={() => {
             haptics.light();
@@ -478,7 +478,7 @@ export function ChatInterface({
                   type="button"
                   onClick={() => removeImage(i)}
                   disabled={uploading}
-                  className="absolute -top-2 -right-2 flex h-7 w-7 min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-surface-elevated text-text-secondary transition-opacity disabled:opacity-30"
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-text-secondary transition-opacity disabled:opacity-30"
                 >
                   <X size={12} />
                 </button>
