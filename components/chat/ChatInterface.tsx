@@ -284,7 +284,7 @@ export function ChatInterface({
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
-      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between">
         <button
           onClick={() => {
             haptics.light();

@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
     scheme: "huuman",
     contentInset: "always",
     preferredContentMode: "mobile",
-    backgroundColor: "#09090b",
+    backgroundColor: "#111114",
   },
 };
 
