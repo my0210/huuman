@@ -26,6 +26,7 @@ import { ProfileSheet } from "@/components/layout/ProfileSheet";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
 import { ScrollToBottom } from "@/components/ui/ScrollToBottom";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 interface PendingImage {
   file: File;
@@ -284,13 +285,13 @@ export function ChatInterface({
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
-      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between">
         <button
           onClick={() => {
             haptics.light();
             setProfileOpen(true);
           }}
-          className="active:opacity-70 transition-opacity"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full active:scale-[0.97] active:opacity-80 transition-[transform,opacity] duration-100"
         >
           <Avatar
             src={avatarUrl}
@@ -330,10 +331,11 @@ export function ChatInterface({
           >
             {loadingOlder && (
               <div className="flex justify-center py-2">
-                <Loader2
-                  size={16}
-                  className="animate-spin text-text-muted"
-                />
+                <div className="flex items-center gap-1">
+                  <Skeleton className="h-2 w-2 rounded-full" />
+                  <Skeleton className="h-2 w-2 rounded-full" />
+                  <Skeleton className="h-2 w-2 rounded-full" />
+                </div>
               </div>
             )}
             {messages.length === 0 && (
@@ -458,7 +460,7 @@ export function ChatInterface({
 
       <form
         onSubmit={handleSubmit}
-        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
+        className="flex-none border-t border-border-subtle px-4 pt-3 pb-3"
       >
         {error && (
           <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
@@ -478,9 +480,11 @@ export function ChatInterface({
                   type="button"
                   onClick={() => removeImage(i)}
                   disabled={uploading}
-                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated text-text-secondary transition-opacity disabled:opacity-30"
+                  className="absolute -top-3 -right-3 flex min-h-[44px] min-w-[44px] items-start justify-end p-2 transition-opacity disabled:opacity-30"
                 >
-                  <X size={12} />
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border-default bg-surface-elevated text-text-secondary active:scale-[0.97] transition-transform duration-100">
+                    <X size={12} />
+                  </span>
                 </button>
               </div>
             ))}

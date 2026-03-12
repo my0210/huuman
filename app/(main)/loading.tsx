@@ -3,10 +3,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export default function Loading() {
   return (
     <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
-      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
-        <Skeleton className="h-8 w-8 rounded-full" />
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between">
+        <Skeleton className="h-11 w-11 rounded-full" />
         <Skeleton className="h-5 w-20" />
-        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-11 w-11 rounded-full" />
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -27,12 +27,12 @@ export default function Loading() {
         </div>
       </div>
 
-      <div className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom">
+      <div className="flex-none border-t border-border-subtle px-4 pt-3 pb-3">
         <div className="flex items-center gap-2">
-          <Skeleton className="h-10 w-10 rounded-radius-md" />
-          <Skeleton className="flex-1 h-10 rounded-radius-md" />
-          <Skeleton className="h-10 w-10 rounded-radius-md" />
-          <Skeleton className="h-10 w-10 rounded-radius-md" />
+          <Skeleton className="h-11 w-11 rounded-radius-md" />
+          <Skeleton className="flex-1 h-11 rounded-radius-md" />
+          <Skeleton className="h-11 w-11 rounded-radius-md" />
+          <Skeleton className="h-11 w-11 rounded-radius-md" />
         </div>
       </div>
     </div>
