@@ -458,7 +458,7 @@ export function ChatInterface({
 
       <form
         onSubmit={handleSubmit}
-        className="flex-none border-t border-border-subtle px-4 pt-3 pb-2 safe-bottom"
+        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
       >
         {error && (
           <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
