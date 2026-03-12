@@ -122,11 +122,11 @@ function DomainRing({ domain: d, centerOverride }: { domain: DomainProgress; cen
             />
           )}
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-text-secondary font-mono">
+        <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-text-secondary font-mono">
           {centerOverride ?? `${d.completed}/${d.total}`}
         </span>
       </div>
-      <span className="text-[10px] text-text-muted">{d.label}</span>
+      <span className="text-xs text-text-muted">{d.label}</span>
     </div>
   );
 }
@@ -148,7 +148,7 @@ function StepDots({ steps, weekStart }: { steps: StepDay[]; weekStart: string })
         <div key={d.date} className="flex flex-col items-center gap-0.5">
           <div className={`h-1.5 w-1.5 rounded-full ${
             d.hasData && d.steps >= d.target
-              ? 'bg-emerald-400 shadow-[0_0_5px_rgba(74,222,128,0.4)]'
+              ? 'bg-semantic-success'
               : d.hasData && d.steps > 0
                 ? 'bg-text-muted'
                 : 'bg-surface-elevated'

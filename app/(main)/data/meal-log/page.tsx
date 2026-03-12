@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, Utensils, Pencil, Flame, Beef } from "lucide-react";
+import { Plus, Trash2, Utensils, Pencil, Flame, Beef } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
-import { motion } from "framer-motion";
-import { Drawer } from "@/components/layout/Drawer";
+import { NavHeader } from "@/components/ui/NavHeader";
+import { Sheet } from "@/components/ui/Sheet";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { haptics } from "@/lib/haptics";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
 import { pickPhoto } from "@/lib/camera";
@@ -58,6 +60,7 @@ export default function MealLogPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
+    haptics.light();
     const res = await fetch("/api/meal-photos", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -71,6 +74,7 @@ export default function MealLogPage() {
   };
 
   const handleUpdate = async (id: string, fields: Partial<MealPhoto>) => {
+    haptics.light();
     setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, ...fields } : p)));
     const body: Record<string, unknown> = { id };
     if (fields.capturedAt) body.capturedAt = fields.capturedAt;
@@ -86,26 +90,16 @@ export default function MealLogPage() {
   let mealIndex = 0;
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
-      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <IconButton
-            label="Back"
-            size="sm"
-            onClick={() => router.push("/data")}
-          >
-            <ArrowLeft size={16} />
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+      <NavHeader
+        title="Meal Log"
+        onBack={() => router.push("/data")}
+        rightAction={
+          <IconButton label="Add meal" size="sm" onClick={() => setShowUpload(true)}>
+            <Plus size={16} />
           </IconButton>
-          <h1 className="text-lg font-semibold text-text-primary">Meal Log</h1>
-        </div>
-        <IconButton
-          label="Add meal"
-          size="sm"
-          onClick={() => setShowUpload(true)}
-        >
-          <Plus size={16} />
-        </IconButton>
-      </header>
+        }
+      />
 
       <div className="flex-1 overflow-y-auto scrollbar-none">
         {loading ? (
@@ -113,19 +107,19 @@ export default function MealLogPage() {
             {[0, 1].map((g) => (
               <div key={g}>
                 <div className="px-4 py-3 flex items-center justify-between">
-                  <div className="h-4 w-20 animate-pulse rounded-md bg-zinc-800/60" />
+                  <Skeleton className="h-4 w-20" />
                   <div className="flex gap-2">
-                    <div className="h-5 w-20 animate-pulse rounded-full bg-zinc-800/40" />
-                    <div className="h-5 w-16 animate-pulse rounded-full bg-zinc-800/40" />
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
                   </div>
                 </div>
                 {[0, 1].map((i) => (
                   <div key={i} className="flex gap-3.5 px-4 py-3.5">
-                    <div className="w-20 h-20 animate-pulse rounded-xl bg-zinc-800/60 flex-none" />
+                    <Skeleton className="w-20 h-20 rounded-xl flex-none" />
                     <div className="flex-1 space-y-2 py-1">
-                      <div className="h-3 w-14 animate-pulse rounded-md bg-zinc-800/40" />
-                      <div className="h-3 w-full animate-pulse rounded-md bg-zinc-800/50" />
-                      <div className="h-3 w-24 animate-pulse rounded-md bg-zinc-800/30" />
+                      <Skeleton className="h-3 w-14" />
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
                   </div>
                 ))}
@@ -134,16 +128,16 @@ export default function MealLogPage() {
           </div>
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 px-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-500/10 mb-5">
-              <Utensils size={28} className="text-green-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-domain-nutrition-muted mb-5">
+              <Utensils size={28} className="text-domain-nutrition" />
             </div>
-            <p className="text-base font-semibold text-zinc-200 mb-1.5">Log your meals</p>
-            <p className="text-sm text-zinc-500 text-center mb-6">
+            <p className="text-base font-semibold text-text-primary mb-1.5">Log your meals</p>
+            <p className="text-sm text-text-tertiary text-center mb-6">
               Snap a photo in chat or upload here
             </p>
             <button
               onClick={() => setShowUpload(true)}
-              className="rounded-xl bg-zinc-100 px-6 py-2.5 text-sm font-medium text-zinc-900 active:scale-[0.97] transition-transform"
+              className="rounded-xl bg-white px-6 min-h-[44px] text-sm font-medium text-surface-base active:scale-[0.97] transition-[transform] duration-100"
             >
               Upload meal
             </button>
@@ -152,19 +146,19 @@ export default function MealLogPage() {
           <div>
             {days.map((day) => (
               <div key={day.date}>
-                <div className="sticky top-0 z-10 flex items-center justify-between bg-zinc-950/95 backdrop-blur-sm px-4 py-3 border-b border-zinc-800/50">
-                  <span className="text-sm font-semibold text-zinc-200">
+                <div className="sticky top-0 z-10 flex items-center justify-between bg-surface-base/95 backdrop-blur-sm px-4 py-3 border-b border-border-subtle">
+                  <span className="text-sm font-semibold text-text-primary">
                     {formatDayLabel(day.date)}
                   </span>
                   <div className="flex items-center gap-2">
                     {day.totalCalories > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/80 px-2.5 py-0.5 text-[11px] text-zinc-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs text-text-secondary">
                         <Flame size={10} className="text-orange-400" />
                         ~{day.totalCalories}
                       </span>
                     )}
                     {day.totalProtein > 0 && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800/80 px-2.5 py-0.5 text-[11px] text-zinc-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2.5 py-0.5 text-xs text-text-secondary">
                         <Beef size={10} className="text-sky-400" />
                         ~{day.totalProtein}g
                       </span>
@@ -174,13 +168,18 @@ export default function MealLogPage() {
                 {day.photos.map((photo) => {
                   const i = mealIndex++;
                   return (
-                    <motion.button
+                    <button
                       key={photo.id}
-                      onClick={() => setSelectedId(photo.id)}
-                      className="w-full flex gap-3.5 px-4 py-3.5 text-left hover:bg-zinc-900/50 active:bg-zinc-900 transition-colors"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04, duration: 0.25 }}
+                      onClick={() => {
+                        haptics.light();
+                        setSelectedId(photo.id);
+                      }}
+                      className="w-full flex gap-3.5 px-4 py-3.5 text-left min-h-[44px] active:bg-surface-raised active:scale-[0.99] transition-[transform,background-color] duration-100"
+                      style={{
+                        opacity: 0,
+                        animation: "fadeIn 250ms ease-out forwards",
+                        animationDelay: `${i * 40}ms`,
+                      }}
                     >
                       <img
                         src={photo.imageUrl}
@@ -190,16 +189,16 @@ export default function MealLogPage() {
                       <div className="flex-1 min-w-0 space-y-1 py-0.5">
                         {photo.mealType && (
                           <span
-                            className={`text-[11px] font-semibold ${MEAL_TYPE_COLORS[photo.mealType] ?? "text-zinc-400"}`}
+                            className={`text-xs font-semibold ${MEAL_TYPE_COLORS[photo.mealType] ?? "text-text-secondary"}`}
                           >
                             {capitalize(photo.mealType)}
                           </span>
                         )}
-                        <p className="text-[13px] text-zinc-300 line-clamp-2 leading-snug">
+                        <p className="text-sm text-text-secondary line-clamp-2 leading-snug">
                           {photo.description}
                         </p>
                         {(photo.estimatedCalories != null || photo.estimatedProteinG != null) && (
-                          <p className="text-[11px] text-zinc-500">
+                          <p className="text-xs text-text-tertiary">
                             {photo.estimatedCalories != null && `~${photo.estimatedCalories} cal`}
                             {photo.estimatedCalories != null &&
                               photo.estimatedProteinG != null &&
@@ -209,7 +208,7 @@ export default function MealLogPage() {
                           </p>
                         )}
                       </div>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
@@ -218,110 +217,119 @@ export default function MealLogPage() {
         )}
       </div>
 
-      <Drawer
+      <Sheet
         open={!!selected}
-        onClose={() => {
-          setSelectedId(null);
-          setConfirmingId(null);
+        onOpenChange={(v) => {
+          if (!v) {
+            setSelectedId(null);
+            setConfirmingId(null);
+          }
         }}
-        title={
-          selected ? (
-            <MealTitleWithEdit
-              photo={selected}
-              onChange={(d) => handleUpdate(selected.id, { capturedAt: d })}
-            />
-          ) : undefined
-        }
       >
-        {selected && (
-          <>
-            <div className="px-4 pt-2">
-              <div className="rounded-xl overflow-hidden">
-                <img
-                  src={selected.imageUrl}
-                  alt="Meal photo"
-                  className="w-full aspect-[4/3] object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="px-4 py-4 space-y-4">
-              {(selected.estimatedCalories != null || selected.estimatedProteinG != null) && (
-                <div className="grid grid-cols-2 gap-3">
-                  {selected.estimatedCalories != null && (
-                    <div className="rounded-xl bg-zinc-900 border border-zinc-800/60 p-3 text-center">
-                      <p className="text-xl font-bold text-zinc-100">~{selected.estimatedCalories}</p>
-                      <p className="text-[11px] text-zinc-500 mt-0.5">cal</p>
-                    </div>
-                  )}
-                  {selected.estimatedProteinG != null && (
-                    <div className="rounded-xl bg-zinc-900 border border-zinc-800/60 p-3 text-center">
-                      <p className="text-xl font-bold text-zinc-100">~{selected.estimatedProteinG}</p>
-                      <p className="text-[11px] text-zinc-500 mt-0.5">g protein</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
-                  Meal type
-                </p>
-                <div className="flex gap-2">
-                  {MEAL_TYPES.map((mt) => (
-                    <button
-                      key={mt}
-                      onClick={() => handleUpdate(selected.id, { mealType: mt })}
-                      className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                        mt === selected.mealType
-                          ? "bg-green-900/40 text-green-400 border border-green-800"
-                          : "bg-zinc-900 text-zinc-500 border border-zinc-800 hover:text-zinc-300"
-                      }`}
-                    >
-                      {capitalize(mt)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  Description
-                </p>
-                <p className="text-[13px] text-zinc-300 leading-relaxed">{selected.description}</p>
-              </div>
-
-              <div className="pt-3 border-t border-zinc-800/60">
-                {confirmingId !== selected.id ? (
-                  <button
-                    onClick={() => setConfirmingId(selected.id)}
-                    className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-                  >
-                    <Trash2 size={12} />
-                    <span>Delete meal</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors"
-                  >
-                    Confirm delete?
-                  </button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </Drawer>
-
-      <Drawer open={showUpload} onClose={() => setShowUpload(false)} title="Upload meal photo">
-        <MealUploadForm
-          onUploaded={(photo) => {
-            setPhotos((prev) => [photo, ...prev]);
-            setShowUpload(false);
-          }}
+        <Sheet.Header
+          title={
+            selected ? (
+              <MealTitleWithEdit
+                photo={selected}
+                onChange={(d) => handleUpdate(selected.id, { capturedAt: d })}
+              />
+            ) : undefined
+          }
         />
-      </Drawer>
+        <Sheet.Body>
+          {selected && (
+            <>
+              <div className="px-4 pt-2">
+                <div className="rounded-xl overflow-hidden">
+                  <img
+                    src={selected.imageUrl}
+                    alt="Meal photo"
+                    className="w-full aspect-[4/3] object-cover"
+                  />
+                </div>
+              </div>
+
+              <div className="px-4 py-4 space-y-4">
+                {(selected.estimatedCalories != null || selected.estimatedProteinG != null) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {selected.estimatedCalories != null && (
+                      <div className="rounded-xl bg-surface-raised border border-border-subtle p-3 text-center">
+                        <p className="text-xl font-bold text-text-primary">~{selected.estimatedCalories}</p>
+                        <p className="text-xs text-text-tertiary mt-0.5">cal</p>
+                      </div>
+                    )}
+                    {selected.estimatedProteinG != null && (
+                      <div className="rounded-xl bg-surface-raised border border-border-subtle p-3 text-center">
+                        <p className="text-xl font-bold text-text-primary">~{selected.estimatedProteinG}</p>
+                        <p className="text-xs text-text-tertiary mt-0.5">g protein</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2">
+                    Meal type
+                  </p>
+                  <div className="flex gap-2">
+                    {MEAL_TYPES.map((mt) => (
+                      <button
+                        key={mt}
+                        onClick={() => handleUpdate(selected.id, { mealType: mt })}
+                        className={`rounded-full px-3.5 min-h-[44px] text-xs font-medium active:scale-[0.97] transition-all duration-100 ${
+                          mt === selected.mealType
+                            ? "bg-domain-nutrition-muted text-domain-nutrition border border-border-default"
+                            : "bg-surface-raised text-text-tertiary border border-border-default active:text-text-secondary"
+                        }`}
+                      >
+                        {capitalize(mt)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+                    Description
+                  </p>
+                  <p className="text-sm text-text-secondary leading-relaxed">{selected.description}</p>
+                </div>
+
+                <div className="pt-3 border-t border-border-subtle">
+                  {confirmingId !== selected.id ? (
+                    <button
+                      onClick={() => setConfirmingId(selected.id)}
+                      className="flex items-center gap-2 text-xs text-text-muted min-h-[44px] active:text-text-secondary active:scale-[0.97] transition-all duration-100"
+                    >
+                      <Trash2 size={12} />
+                      <span>Delete meal</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(selected.id)}
+                      className="rounded-lg bg-semantic-error/10 px-3 min-h-[44px] text-xs font-medium text-semantic-error active:bg-semantic-error/20 active:scale-[0.97] transition-all duration-100"
+                    >
+                      Confirm delete?
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </Sheet.Body>
+      </Sheet>
+
+      <Sheet open={showUpload} onOpenChange={(v) => { if (!v) setShowUpload(false); }}>
+        <Sheet.Header title="Upload meal photo" />
+        <Sheet.Body>
+          <MealUploadForm
+            onUploaded={(photo) => {
+              setPhotos((prev) => [photo, ...prev]);
+              setShowUpload(false);
+            }}
+          />
+        </Sheet.Body>
+      </Sheet>
     </div>
   );
 }
@@ -337,7 +345,7 @@ function MealTitleWithEdit({
   return (
     <div className="relative inline-flex items-center gap-1.5 cursor-pointer">
       <span>{mt} · {formatShortDate(photo.capturedAt)}</span>
-      <Pencil size={11} className="text-zinc-500" />
+      <Pencil size={11} className="text-text-muted" />
       <input
         type="date"
         value={photo.capturedAt}
@@ -358,6 +366,7 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
   const [uploading, setUploading] = useState(false);
 
   const handlePickPhoto = async () => {
+    haptics.light();
     const result = await pickPhoto("prompt");
     if (!result) return;
     setFile(result.file);
@@ -368,6 +377,7 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
 
   const handleSave = async () => {
     if (!file) return;
+    haptics.light();
     setUploading(true);
     try {
       const supabase = createClient();
@@ -399,37 +409,40 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
       ) : (
         <button
           onClick={handlePickPhoto}
-          className="w-full rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/50 py-12 flex flex-col items-center gap-2 hover:border-zinc-500 transition-colors"
+          className="w-full rounded-2xl border border-dashed border-border-default bg-surface-raised/50 py-12 flex flex-col items-center gap-2 min-h-[44px] active:border-border-strong active:scale-[0.99] transition-all duration-100"
         >
-          <Utensils size={24} className="text-zinc-500" />
-          <span className="text-sm text-zinc-500">Choose photo</span>
+          <Utensils size={24} className="text-text-tertiary" />
+          <span className="text-sm text-text-tertiary">Choose photo</span>
         </button>
       )}
 
       <div className="space-y-1.5">
-        <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Date</label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Date</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
           max={new Date().toISOString().slice(0, 10)}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none transition-colors"
+          className="w-full rounded-xl border border-border-default bg-surface-raised px-4 py-2.5 text-sm text-text-primary focus:border-border-strong focus:outline-none transition-colors"
         />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">
           Meal type
         </label>
         <div className="grid grid-cols-2 gap-2">
           {MEAL_TYPES.map((mt) => (
             <button
               key={mt}
-              onClick={() => setMealType(mealType === mt ? "" : mt)}
-              className={`rounded-xl border py-2.5 text-sm font-medium transition-colors ${
+              onClick={() => {
+                haptics.light();
+                setMealType(mealType === mt ? "" : mt);
+              }}
+              className={`rounded-xl border py-2.5 text-sm font-medium min-h-[44px] active:scale-[0.97] transition-all duration-100 ${
                 mealType === mt
-                  ? "border-green-700 bg-green-900/30 text-green-400"
-                  : "border-zinc-700 bg-zinc-900 text-zinc-500 hover:text-zinc-400"
+                  ? "border-border-default bg-domain-nutrition-muted text-domain-nutrition"
+                  : "border-border-default bg-surface-raised text-text-tertiary active:text-text-secondary"
               }`}
             >
               {capitalize(mt)}
@@ -441,10 +454,10 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
       <button
         onClick={handleSave}
         disabled={!file || uploading}
-        className="w-full rounded-xl bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+        className="w-full rounded-xl bg-white min-h-[44px] text-sm font-medium text-surface-base disabled:opacity-30 active:scale-[0.97] transition-all duration-100 flex items-center justify-center gap-2"
       >
         {uploading && (
-          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-400 border-t-zinc-900" />
+          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-text-secondary border-t-surface-base" />
         )}
         {uploading ? "Uploading..." : "Save"}
       </button>

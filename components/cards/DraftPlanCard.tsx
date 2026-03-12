@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Check, Circle, ArrowRight, Repeat, ChevronDown, X } from "lucide-react";
+import { Check, Circle, Repeat, ChevronDown } from "lucide-react";
 import { DAY_LABELS, DayOfWeek } from "@/lib/types";
 import { useChatSend } from "@/components/chat/ChatActions";
+import { domainStyle } from "@/lib/domain-colors";
 
 const SESSION_DOMAINS = ["cardio", "strength", "mindfulness"];
 
@@ -25,18 +25,6 @@ interface DraftPlanData {
   success?: boolean;
 }
 
-const domainDot: Record<string, string> = {
-  cardio: "bg-red-400",
-  strength: "bg-orange-400",
-  mindfulness: "bg-cyan-400",
-};
-
-const domainBorder: Record<string, string> = {
-  cardio: "border-red-900/50",
-  strength: "border-orange-900/50",
-  mindfulness: "border-cyan-900/50",
-};
-
 const DAYS: DayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
 
 export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
@@ -51,9 +39,9 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
 
   if (allSessions.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 px-4 py-4 space-y-2">
-        <p className="text-sm font-medium text-zinc-300">Couldn&apos;t build the plan this time</p>
-        <p className="text-xs text-zinc-500">Ask me to try again.</p>
+      <div className="rounded-radius-lg border border-dashed border-border-default bg-surface-raised px-4 py-4 space-y-2">
+        <p className="text-sm font-medium text-text-secondary">Couldn&apos;t build the plan this time</p>
+        <p className="text-xs text-text-muted">Ask me to try again.</p>
       </div>
     );
   }
@@ -96,19 +84,17 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div className="rounded-xl border border-dashed border-zinc-600 bg-zinc-900/50 overflow-hidden">
-      {/* Draft header */}
-      <div className="px-4 py-2.5 border-b border-zinc-800/50 space-y-1">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full">
+    <div className="rounded-radius-lg border border-dashed border-border-default bg-surface-raised overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border-subtle space-y-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-semantic-warning bg-semantic-warning/10 px-2 py-0.5 rounded-full">
           Draft
         </span>
         {introMessage && (
-          <p className="text-xs text-zinc-500">{introMessage}</p>
+          <p className="text-xs text-text-muted">{introMessage}</p>
         )}
       </div>
 
-      {/* Day strip */}
-      <div className="flex border-b border-zinc-800/50">
+      <div className="flex border-b border-border-subtle">
         {DAYS.map((dow) => {
           const daySessions = byDay[dow] ?? [];
           const isSelected = selectedDay === dow;
@@ -118,115 +104,109 @@ export function DraftPlanCard({ data }: { data: Record<string, unknown> }) {
             <button
               key={dow}
               onClick={() => setSelectedDay(selectedDay === dow ? null : dow)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2 text-xs transition-colors ${
-                isSelected || isToday ? "bg-zinc-800/50 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"
+              className={`flex-1 flex flex-col items-center gap-1 py-2 min-h-[44px] text-xs transition-colors ${
+                isSelected || isToday ? "bg-surface-overlay text-text-primary" : "text-text-muted active:text-text-secondary"
               }`}
             >
               <span>{DAY_LABELS[dow]}</span>
               {daySessions.length > 0 ? (
                 <div className="flex gap-0.5">
-                  {daySessions.map(s => (
-                    <span key={s.id} className={`h-1.5 w-1.5 rounded-full ${domainDot[s.domain] ?? "bg-zinc-600"}`} />
-                  ))}
+                  {daySessions.map(s => {
+                    const ds = domainStyle[s.domain as keyof typeof domainStyle];
+                    return (
+                      <span key={s.id} className={`h-1.5 w-1.5 rounded-full ${ds?.bg ?? "bg-surface-elevated"}`} />
+                    );
+                  })}
                 </div>
               ) : (
-                <Circle size={6} className="text-zinc-700" />
+                <Circle size={6} className="text-text-muted" />
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Sessions */}
-      <div className="divide-y divide-zinc-800/50">
+      <div className="divide-y divide-border-subtle">
         {displaySessions.length === 0 ? (
-          <div className="px-4 py-3 text-xs text-zinc-500">No sessions this day</div>
+          <div className="px-4 py-3 text-xs text-text-muted">No sessions this day</div>
         ) : (
           displaySessions.map((s) => {
             const isExpanded = actionSession?.id === s.id;
+            const ds = domainStyle[s.domain as keyof typeof domainStyle];
             return (
               <div key={s.id}>
                 <button
                   onClick={() => setActionSession(isExpanded ? null : s)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-zinc-800/30 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 min-h-[44px] text-left active:bg-surface-overlay transition-colors"
                 >
-                  <span className={`h-2 w-2 rounded-full shrink-0 ${domainDot[s.domain] ?? "bg-zinc-600"}`} />
-                  <span className="text-sm text-zinc-300 flex-1 truncate">{s.title}</span>
-                  <span className="text-[10px] text-zinc-600">
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${ds?.bg ?? "bg-surface-elevated"}`} />
+                  <span className="text-sm text-text-secondary flex-1 truncate">{s.title}</span>
+                  <span className="text-xs text-text-muted">
                     {DAY_LABELS[s.day_of_week as DayOfWeek]}
                   </span>
                   <ChevronDown
                     size={12}
-                    className={`text-zinc-600 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                    className={`text-text-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
                   />
                 </button>
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.15 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 py-3 space-y-2 bg-zinc-900/80">
-                        <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-medium">
-                          {s.title}
-                        </p>
-                        <div className="flex gap-1.5 flex-wrap">
-                          <span className="text-[10px] text-zinc-500 self-center mr-1">Move to</span>
-                          {DAYS.filter(d => d !== s.day_of_week).map(dow => {
-                            const weekStart = raw.plan?.week_start;
-                            const daysFromMonday = dow === 0 ? 6 : dow - 1;
-                            const targetDate = weekStart
-                              ? (() => {
-                                  const d = new Date(weekStart + 'T00:00:00');
-                                  d.setDate(d.getDate() + daysFromMonday);
-                                  return d.toISOString().slice(0, 10);
-                                })()
-                              : '';
-                            return (
-                              <button
-                                key={dow}
-                                onClick={() => handleMoveSession(s, targetDate, dow)}
-                                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors hover:bg-zinc-700/50 ${
-                                  domainBorder[s.domain] ?? "border-zinc-700"
-                                } text-zinc-400`}
-                              >
-                                {DAY_LABELS[dow]}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <button
-                          onClick={() => handleSwapActivity(s)}
-                          className="flex items-center gap-2 text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors py-1"
-                        >
-                          <Repeat size={11} />
-                          <span>Different activity</span>
-                        </button>
+                <div className={`grid ${isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"} transition-[grid-template-rows] duration-200`}>
+                  <div className="overflow-hidden">
+                    <div className="px-4 py-3 space-y-2 bg-surface-raised">
+                      <p className="text-xs uppercase tracking-wider text-text-muted font-medium">
+                        {s.title}
+                      </p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        <span className="text-xs text-text-muted self-center mr-1">Move to</span>
+                        {DAYS.filter(d => d !== s.day_of_week).map(dow => {
+                          const weekStart = raw.plan?.week_start;
+                          const daysFromMonday = dow === 0 ? 6 : dow - 1;
+                          const targetDate = weekStart
+                            ? (() => {
+                                const d = new Date(weekStart + 'T00:00:00');
+                                d.setDate(d.getDate() + daysFromMonday);
+                                return d.toISOString().slice(0, 10);
+                              })()
+                            : '';
+                          return (
+                            <button
+                              key={dow}
+                              onClick={() => handleMoveSession(s, targetDate, dow)}
+                              className={`px-2.5 py-1 rounded-radius-sm text-xs font-medium border min-h-[44px] active:scale-[0.97] active:bg-surface-elevated transition-[transform] duration-100 ${
+                                ds?.border ?? "border-border-default"
+                              } text-text-tertiary`}
+                            >
+                              {DAY_LABELS[dow]}
+                            </button>
+                          );
+                        })}
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <button
+                        onClick={() => handleSwapActivity(s)}
+                        className="flex items-center gap-2 text-xs text-text-tertiary active:text-text-secondary transition-colors py-1 min-h-[44px]"
+                      >
+                        <Repeat size={11} />
+                        <span>Different activity</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })
         )}
       </div>
 
-      {/* Confirm / Rebuild footer */}
-      <div className="border-t border-zinc-800/50 px-4 py-3 flex items-center gap-3">
+      <div className="border-t border-border-subtle px-4 py-3 flex items-center gap-3">
         <button
           onClick={handleConfirm}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-zinc-100 text-zinc-900 py-2.5 text-sm font-medium hover:bg-white transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 rounded-radius-lg bg-white text-surface-base py-2.5 text-sm font-medium min-h-[44px] active:scale-[0.97] active:brightness-90 transition-[transform] duration-100"
         >
           <Check size={14} />
           Looks good
         </button>
         <button
           onClick={handleRebuild}
-          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-2.5 px-3"
+          className="flex items-center gap-1.5 text-xs text-text-muted active:text-text-secondary transition-colors py-2.5 px-3 min-h-[44px]"
         >
           Rebuild
         </button>

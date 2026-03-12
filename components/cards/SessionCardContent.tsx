@@ -2,32 +2,12 @@
 
 import { Check } from "lucide-react";
 import type { SessionCardDetail, SessionDomain } from "@/lib/types";
+import { domainStyle } from "@/lib/domain-colors";
 
-const DOMAIN_STYLE: Record<
-  SessionDomain,
-  { text: string; border: string; bg: string; dot: string; short: string }
-> = {
-  cardio: {
-    text: "text-red-400",
-    border: "border-red-400/30",
-    bg: "bg-red-400/10",
-    dot: "bg-red-400",
-    short: "CARDIO",
-  },
-  strength: {
-    text: "text-orange-400",
-    border: "border-orange-400/30",
-    bg: "bg-orange-400/10",
-    dot: "bg-orange-400",
-    short: "STR",
-  },
-  mindfulness: {
-    text: "text-cyan-400",
-    border: "border-cyan-400/30",
-    bg: "bg-cyan-400/10",
-    dot: "bg-cyan-400",
-    short: "MIND",
-  },
+const DOMAIN_SHORT: Record<SessionDomain, string> = {
+  cardio: "CARDIO",
+  strength: "STR",
+  mindfulness: "MIND",
 };
 
 interface Props {
@@ -41,25 +21,25 @@ interface Props {
 }
 
 export function SessionCardContent({ detail, weekProgress }: Props) {
-  const c = DOMAIN_STYLE[detail.domain];
+  const ds = domainStyle[detail.domain];
 
   return (
     <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3">
-        <div className={`h-2 w-2 rounded-full ${c.dot} shadow-[0_0_8px_${c.dot.replace('bg-', '')}]`} />
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20">
-          <Check size={10} className="text-emerald-400" />
+        <div className={`h-2 w-2 rounded-full ${ds.bg}`} />
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-semantic-success/20">
+          <Check size={10} className="text-semantic-success" />
         </div>
         <p className="text-sm font-medium text-text-primary flex-1 truncate">
           {detail.title}
         </p>
         <span
-          className={`text-[10px] font-bold ${c.text} ${c.bg} ${c.border} border rounded px-1.5 py-0.5`}
+          className={`text-xs font-bold ${ds.text} ${ds.bg} ${ds.border} border rounded px-1.5 py-0.5`}
         >
-          {c.short}
+          {DOMAIN_SHORT[detail.domain]}
         </span>
         {detail.isExtra && (
-          <span className="text-[10px] font-medium text-text-muted bg-surface-elevated rounded px-1.5 py-0.5">
+          <span className="text-xs font-medium text-text-muted bg-surface-elevated rounded px-1.5 py-0.5">
             Extra
           </span>
         )}

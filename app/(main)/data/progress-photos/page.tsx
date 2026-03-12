@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Trash2, Camera, Pencil } from "lucide-react";
+import { Plus, Trash2, Camera, Pencil } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
-import { motion } from "framer-motion";
-import { Drawer } from "@/components/layout/Drawer";
+import { NavHeader } from "@/components/ui/NavHeader";
+import { Sheet } from "@/components/ui/Sheet";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { haptics } from "@/lib/haptics";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
 import { pickPhoto } from "@/lib/camera";
@@ -77,6 +79,7 @@ export default function ProgressPhotosPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
+    haptics.light();
     const res = await fetch("/api/progress-photos", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -90,6 +93,7 @@ export default function ProgressPhotosPage() {
   };
 
   const handleDateUpdate = async (id: string, newDate: string) => {
+    haptics.light();
     setPhotos((prev) => prev.map((p) => (p.id === id ? { ...p, capturedAt: newDate } : p)));
     await fetch("/api/progress-photos", {
       method: "PATCH",
@@ -102,53 +106,38 @@ export default function ProgressPhotosPage() {
   let photoIndex = 0;
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
-      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <IconButton
-            label="Back"
-            size="sm"
-            onClick={() => router.push("/data")}
-          >
-            <ArrowLeft size={16} />
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+      <NavHeader
+        title={photos.length > 0 ? `Progress Photos · ${photos.length}` : "Progress Photos"}
+        onBack={() => router.push("/data")}
+        rightAction={
+          <IconButton label="Add photo" size="sm" onClick={() => setShowUpload(true)}>
+            <Plus size={16} />
           </IconButton>
-          <h1 className="text-lg font-semibold text-text-primary">
-            Progress Photos
-            {photos.length > 0 && (
-              <span className="text-sm font-normal text-text-muted ml-2">{photos.length}</span>
-            )}
-          </h1>
-        </div>
-        <IconButton
-          label="Add photo"
-          size="sm"
-          onClick={() => setShowUpload(true)}
-        >
-          <Plus size={16} />
-        </IconButton>
-      </header>
+        }
+      />
 
       <div className="flex-1 overflow-y-auto scrollbar-none">
         {loading ? (
           <div className="px-4 pt-6">
-            <div className="h-4 w-28 animate-pulse rounded-md bg-zinc-800/60 mb-4" />
-            <div className="animate-pulse rounded-2xl bg-zinc-800/60 aspect-[3/4] mb-2" />
-            <div className="h-3 w-16 animate-pulse rounded-md bg-zinc-800/40 mb-8" />
-            <div className="animate-pulse rounded-2xl bg-zinc-800/60 aspect-[3/4] mb-2" />
-            <div className="h-3 w-20 animate-pulse rounded-md bg-zinc-800/40" />
+            <Skeleton className="h-4 w-28 mb-4" />
+            <Skeleton className="rounded-2xl aspect-[3/4] mb-2" />
+            <Skeleton className="h-3 w-16 mb-8" />
+            <Skeleton className="rounded-2xl aspect-[3/4] mb-2" />
+            <Skeleton className="h-3 w-20" />
           </div>
         ) : photos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 px-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 mb-5">
-              <Camera size={28} className="text-emerald-400" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-domain-nutrition-muted mb-5">
+              <Camera size={28} className="text-domain-nutrition" />
             </div>
-            <p className="text-base font-semibold text-zinc-200 mb-1.5">Track your transformation</p>
-            <p className="text-sm text-zinc-500 text-center mb-6">
+            <p className="text-base font-semibold text-text-primary mb-1.5">Track your transformation</p>
+            <p className="text-sm text-text-tertiary text-center mb-6">
               Send a selfie in chat or upload your first photo
             </p>
             <button
               onClick={() => setShowUpload(true)}
-              className="rounded-xl bg-zinc-100 px-6 py-2.5 text-sm font-medium text-zinc-900 active:scale-[0.97] transition-transform"
+              className="rounded-xl bg-white px-6 min-h-[44px] text-sm font-medium text-surface-base active:scale-[0.97] transition-[transform] duration-100"
             >
               Upload photo
             </button>
@@ -157,19 +146,24 @@ export default function ProgressPhotosPage() {
           <div className="px-4 pb-8">
             {months.map((month, mi) => (
               <div key={month.label}>
-                <p className={`text-sm font-semibold text-zinc-200 ${mi === 0 ? "pt-5" : "pt-8"} pb-4`}>
+                <p className={`text-sm font-semibold text-text-primary ${mi === 0 ? "pt-5" : "pt-8"} pb-4`}>
                   {month.label}
                 </p>
                 {month.photos.map((photo) => {
                   const i = photoIndex++;
                   return (
-                    <motion.button
+                    <button
                       key={photo.id}
-                      onClick={() => setSelectedId(photo.id)}
-                      className="w-full text-left mb-6 last:mb-0"
-                      initial={{ opacity: 0, scale: 0.97 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.05, duration: 0.3 }}
+                      onClick={() => {
+                        haptics.light();
+                        setSelectedId(photo.id);
+                      }}
+                      className="w-full text-left mb-6 last:mb-0 active:scale-[0.99] transition-[transform] duration-100"
+                      style={{
+                        opacity: 0,
+                        animation: "scaleIn 300ms ease-out forwards",
+                        animationDelay: `${i * 50}ms`,
+                      }}
                     >
                       <div className="rounded-2xl overflow-hidden">
                         <img
@@ -178,8 +172,8 @@ export default function ProgressPhotosPage() {
                           className="w-full aspect-[3/4] object-cover"
                         />
                       </div>
-                      <p className="text-xs text-zinc-500 mt-2">{formatPhotoDate(photo.capturedAt)}</p>
-                    </motion.button>
+                      <p className="text-xs text-text-tertiary mt-2">{formatPhotoDate(photo.capturedAt)}</p>
+                    </button>
                   );
                 })}
               </div>
@@ -188,80 +182,92 @@ export default function ProgressPhotosPage() {
         )}
       </div>
 
-      <Drawer
+      <Sheet
         open={!!selected}
-        onClose={() => { setSelectedId(null); setConfirmingId(null); }}
-        title={
-          selected ? (
-            <DateEditOverlay
-              date={selected.capturedAt}
-              onChange={(d) => handleDateUpdate(selected.id, d)}
-            />
-          ) : undefined
-        }
+        onOpenChange={(v) => {
+          if (!v) {
+            setSelectedId(null);
+            setConfirmingId(null);
+          }
+        }}
       >
-        {selected && (
-          <>
-            <div className="px-4 pt-2">
-              <div className="rounded-xl overflow-hidden">
-                <img
-                  src={selected.imageUrl}
-                  alt="Progress photo"
-                  className="w-full aspect-[3/4] object-cover"
-                />
-              </div>
-            </div>
-            <div className="px-4 py-4 space-y-3">
-              {selectedIndex >= 0 && (
-                <span className="inline-block rounded-full bg-emerald-900/30 px-2.5 py-0.5 text-[11px] font-medium text-emerald-400">
-                  #{photos.length - selectedIndex}
-                </span>
-              )}
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  Analysis
-                </p>
-                <p className="text-[13px] text-zinc-300 leading-relaxed">{selected.analysis}</p>
-              </div>
-              {selected.notes && (
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    Notes
-                  </p>
-                  <p className="text-[13px] text-zinc-400 leading-relaxed">{selected.notes}</p>
-                </div>
-              )}
-              <div className="pt-3 border-t border-zinc-800/60">
-                {confirmingId !== selected.id ? (
-                  <button
-                    onClick={() => setConfirmingId(selected.id)}
-                    className="flex items-center gap-2 text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
-                  >
-                    <Trash2 size={12} />
-                    <span>Delete photo</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleDelete(selected.id)}
-                    className="rounded-lg bg-red-900/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-900/60 transition-colors"
-                  >
-                    Confirm delete?
-                  </button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </Drawer>
-
-      <Drawer open={showUpload} onClose={() => setShowUpload(false)} title="Upload progress photo">
-        <UploadForm
-          onUploaded={(photo) => {
-            setPhotos((prev) => [photo, ...prev]);
-            setShowUpload(false);
-          }}
+        <Sheet.Header
+          title={
+            selected ? (
+              <DateEditOverlay
+                date={selected.capturedAt}
+                onChange={(d) => handleDateUpdate(selected.id, d)}
+              />
+            ) : undefined
+          }
         />
-      </Drawer>
+        <Sheet.Body>
+          {selected && (
+            <>
+              <div className="px-4 pt-2">
+                <div className="rounded-xl overflow-hidden">
+                  <img
+                    src={selected.imageUrl}
+                    alt="Progress photo"
+                    className="w-full aspect-[3/4] object-cover"
+                  />
+                </div>
+              </div>
+              <div className="px-4 py-4 space-y-3">
+                {selectedIndex >= 0 && (
+                  <span className="inline-block rounded-full bg-domain-nutrition-muted px-2.5 py-0.5 text-xs font-medium text-domain-nutrition">
+                    #{photos.length - selectedIndex}
+                  </span>
+                )}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+                    Analysis
+                  </p>
+                  <p className="text-sm text-text-secondary leading-relaxed">{selected.analysis}</p>
+                </div>
+                {selected.notes && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-1.5">
+                      Notes
+                    </p>
+                    <p className="text-sm text-text-tertiary leading-relaxed">{selected.notes}</p>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-border-subtle">
+                  {confirmingId !== selected.id ? (
+                    <button
+                      onClick={() => setConfirmingId(selected.id)}
+                      className="flex items-center gap-2 text-xs text-text-muted min-h-[44px] active:text-text-secondary active:scale-[0.97] transition-all duration-100"
+                    >
+                      <Trash2 size={12} />
+                      <span>Delete photo</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDelete(selected.id)}
+                      className="rounded-lg bg-semantic-error/10 px-3 min-h-[44px] text-xs font-medium text-semantic-error active:bg-semantic-error/20 active:scale-[0.97] transition-all duration-100"
+                    >
+                      Confirm delete?
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </Sheet.Body>
+      </Sheet>
+
+      <Sheet open={showUpload} onOpenChange={(v) => { if (!v) setShowUpload(false); }}>
+        <Sheet.Header title="Upload progress photo" />
+        <Sheet.Body>
+          <UploadForm
+            onUploaded={(photo) => {
+              setPhotos((prev) => [photo, ...prev]);
+              setShowUpload(false);
+            }}
+          />
+        </Sheet.Body>
+      </Sheet>
     </div>
   );
 }
@@ -271,7 +277,7 @@ function DateEditOverlay({ date, onChange }: { date: string; onChange: (d: strin
   return (
     <div className="relative inline-flex items-center gap-1.5 cursor-pointer">
       <span>{label}</span>
-      <Pencil size={11} className="text-zinc-500" />
+      <Pencil size={11} className="text-text-muted" />
       <input
         type="date"
         value={date}
@@ -291,6 +297,7 @@ function UploadForm({ onUploaded }: { onUploaded: (photo: ProgressPhoto) => void
   const [uploading, setUploading] = useState(false);
 
   const handlePickPhoto = async () => {
+    haptics.light();
     const result = await pickPhoto("prompt");
     if (!result) return;
     setFile(result.file);
@@ -301,6 +308,7 @@ function UploadForm({ onUploaded }: { onUploaded: (photo: ProgressPhoto) => void
 
   const handleSave = async () => {
     if (!file) return;
+    haptics.light();
     setUploading(true);
     try {
       const supabase = createClient();
@@ -332,31 +340,31 @@ function UploadForm({ onUploaded }: { onUploaded: (photo: ProgressPhoto) => void
       ) : (
         <button
           onClick={handlePickPhoto}
-          className="w-full rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/50 py-12 flex flex-col items-center gap-2 hover:border-zinc-500 transition-colors"
+          className="w-full rounded-2xl border border-dashed border-border-default bg-surface-raised/50 py-12 flex flex-col items-center gap-2 min-h-[44px] active:border-border-strong active:scale-[0.99] transition-all duration-100"
         >
-          <Camera size={24} className="text-zinc-500" />
-          <span className="text-sm text-zinc-500">Choose photo</span>
+          <Camera size={24} className="text-text-tertiary" />
+          <span className="text-sm text-text-tertiary">Choose photo</span>
         </button>
       )}
 
       <div className="space-y-1.5">
-        <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Date</label>
+        <label className="text-xs font-semibold uppercase tracking-wider text-text-muted">Date</label>
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
           max={new Date().toISOString().slice(0, 10)}
-          className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none transition-colors"
+          className="w-full rounded-xl border border-border-default bg-surface-raised px-4 py-2.5 text-sm text-text-primary focus:border-border-strong focus:outline-none transition-colors"
         />
       </div>
 
       <button
         onClick={handleSave}
         disabled={!file || uploading}
-        className="w-full rounded-xl bg-zinc-100 py-2.5 text-sm font-medium text-zinc-900 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
+        className="w-full rounded-xl bg-white min-h-[44px] text-sm font-medium text-surface-base disabled:opacity-30 active:scale-[0.97] transition-all duration-100 flex items-center justify-center gap-2"
       >
         {uploading && (
-          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-400 border-t-zinc-900" />
+          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-text-secondary border-t-surface-base" />
         )}
         {uploading ? "Uploading..." : "Save"}
       </button>

@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { TimezoneSync } from '@/components/TimezoneSync';
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { TimezoneSync } from "@/components/TimezoneSync";
 
 export default async function MainLayout({
   children,
@@ -8,22 +8,24 @@ export default async function MainLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login');
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('onboarding_completed')
-    .eq('id', user.id)
+    .from("user_profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
     .maybeSingle();
 
   if (!profile?.onboarding_completed) {
-    redirect('/onboarding');
+    redirect("/onboarding");
   }
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-surface-base">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-surface-base">
       <TimezoneSync />
       {children}
     </div>

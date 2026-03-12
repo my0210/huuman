@@ -22,9 +22,9 @@ const variantClasses: Record<BadgeVariant, string> = {
   mindfulness: "bg-domain-mindfulness-muted text-domain-mindfulness",
   nutrition: "bg-domain-nutrition-muted text-domain-nutrition",
   sleep: "bg-domain-sleep-muted text-domain-sleep",
-  success: "bg-semantic-success/15 text-semantic-success",
-  warning: "bg-semantic-warning/15 text-semantic-warning",
-  error: "bg-semantic-error/15 text-semantic-error",
+  success: "bg-semantic-success-muted text-semantic-success",
+  warning: "bg-semantic-warning-muted text-semantic-warning",
+  error: "bg-semantic-error-muted text-semantic-error",
 };
 
 export function Badge({
@@ -34,7 +34,7 @@ export function Badge({
 }: BadgeProps) {
   return (
     <span
-      className={`${variantClasses[variant]} inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${className}`}
+      className={`${variantClasses[variant]} inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${className}`}
     >
       {children}
     </span>

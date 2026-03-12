@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { Utensils } from "lucide-react";
 import type { MealCardDetail } from "@/lib/types";
+import { domainStyle } from "@/lib/domain-colors";
+
+const ds = domainStyle.nutrition;
 
 export function MealCardContent({ detail }: { detail: MealCardDetail }) {
   return (
@@ -20,8 +23,8 @@ export function MealCardContent({ detail }: { detail: MealCardDetail }) {
       )}
 
       <div className="flex items-start gap-3 px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-400/10">
-          <Utensils size={14} className="text-green-400" />
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-radius-sm ${ds.bg}`}>
+          <Utensils size={14} className={ds.text} />
         </div>
 
         <div className="min-w-0 flex-1">

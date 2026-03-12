@@ -1,6 +1,12 @@
 "use client";
 
-import { forwardRef, useRef, useEffect, type TextareaHTMLAttributes, type InputHTMLAttributes } from "react";
+import {
+  forwardRef,
+  useRef,
+  useEffect,
+  type TextareaHTMLAttributes,
+  type InputHTMLAttributes,
+} from "react";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   fullWidth?: boolean;
@@ -11,7 +17,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         ref={ref}
-        className={`${fullWidth ? "w-full" : ""} rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-[15px] text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors ${className}`}
+        className={`${fullWidth ? "w-full" : ""} min-h-[44px] rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none focus-visible:ring-1 focus-visible:ring-border-strong/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
         {...props}
       />
     );
@@ -29,7 +35,8 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     ref,
   ) {
     const internalRef = useRef<HTMLTextAreaElement | null>(null);
-    const textareaRef = (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
+    const textareaRef =
+      (ref as React.RefObject<HTMLTextAreaElement>) || internalRef;
 
     useEffect(() => {
       if (autoGrow && textareaRef.current) {
@@ -55,7 +62,7 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
           onChange?.(e);
         }}
         rows={1}
-        className={`w-full resize-none rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-[15px] text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors ${className}`}
+        className={`w-full min-h-[44px] resize-none rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none focus-visible:ring-1 focus-visible:ring-border-strong/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
         {...props}
       />
     );

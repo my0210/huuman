@@ -29,9 +29,9 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
       result.push(text.slice(lastIndex, match.index));
     }
     result.push(
-      <strong key={match.index} className="font-semibold text-zinc-100">
+      <strong key={match.index} className="font-semibold text-text-primary">
         {match[1]}
-      </strong>
+      </strong>,
     );
     lastIndex = regex.lastIndex;
   }
@@ -45,12 +45,14 @@ function formatInlineMarkdown(text: string): React.ReactNode[] {
 
 export function MessagePart({ part, role }: { part: Part; role: string }) {
   if (part.type === "text") {
-    const displayText = part.text.replace(/\n?\[sessionId:[^\]]+\]/g, '');
+    const displayText = part.text.replace(/\n?\[sessionId:[^\]]+\]/g, "");
     if (!displayText.trim()) return null;
     return (
-      <p className={`text-sm leading-relaxed whitespace-pre-wrap ${
-        role === "user" ? "text-zinc-100" : "text-zinc-300"
-      }`}>
+      <p
+        className={`text-sm leading-relaxed whitespace-pre-wrap ${
+          role === "user" ? "text-text-primary" : "text-text-secondary"
+        }`}
+      >
         {role === "user" ? displayText : formatInlineMarkdown(displayText)}
       </p>
     );
@@ -60,7 +62,7 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
     const stripped = (part as Record<string, unknown>).stripped === true;
     if (stripped || !part.url) {
       return (
-        <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-500">
+        <div className="flex items-center gap-2 rounded-radius-lg border border-border-default bg-surface-raised px-3 py-2 text-xs text-text-muted">
           <Camera size={14} className="flex-none" />
           <span>{part.filename ?? "Photo"}</span>
         </div>
@@ -71,7 +73,7 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
         <img
           src={part.url}
           alt={part.filename ?? "Uploaded image"}
-          className="max-w-full rounded-xl max-h-64 object-contain"
+          className="max-w-full rounded-radius-lg max-h-64 object-contain"
         />
         <PhotoShareButton
           imageUrl={part.url}
@@ -92,7 +94,13 @@ export function MessagePart({ part, role }: { part: Part; role: string }) {
       output?: unknown;
       input?: unknown;
     };
-    return <ToolPart toolName={toolName} state={toolPart.state} output={toolPart.output as Record<string, unknown> | undefined} />;
+    return (
+      <ToolPart
+        toolName={toolName}
+        state={toolPart.state}
+        output={toolPart.output as Record<string, unknown> | undefined}
+      />
+    );
   }
 
   return null;
@@ -107,13 +115,17 @@ function ToolPart({
   state: string;
   output?: Record<string, unknown>;
 }) {
-  if (state === "input-available" || state === "partial-call" || state === "input-streaming") {
+  if (
+    state === "input-available" ||
+    state === "partial-call" ||
+    state === "input-streaming"
+  ) {
     return <LoadingCard toolName={toolName} />;
   }
 
   if (state === "output-error") {
     return (
-      <div className="rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-xs text-red-400">
+      <div className="rounded-radius-lg border border-semantic-error/30 bg-semantic-error-muted px-4 py-3 text-xs text-semantic-error">
         Something went wrong. Try again.
       </div>
     );
@@ -127,7 +139,8 @@ function ToolPart({
     case "show_today_plan":
       return <TodayPlanCard data={output} />;
     case "show_week_plan":
-      if (output.isDraft && output.sessions) return <DraftPlanCard data={output} />;
+      if (output.isDraft && output.sessions)
+        return <DraftPlanCard data={output} />;
       return <WeekPlanCard data={output} />;
     case "show_session":
       return <SessionDetailCard data={output} />;
@@ -139,7 +152,11 @@ function ToolPart({
       return <ProgressRings data={output} />;
     case "log_daily": {
       const logged = output?.logged as Record<string, unknown> | undefined;
-      if (logged?.sleep_hours != null && !logged?.steps_actual && logged?.nutrition_on_plan == null) {
+      if (
+        logged?.sleep_hours != null &&
+        !logged?.steps_actual &&
+        logged?.nutrition_on_plan == null
+      ) {
         return <CoachSleepCard data={output} />;
       }
       return <DailyHabitWidget data={output} />;
@@ -149,7 +166,8 @@ function ToolPart({
     case "adapt_plan":
       return <AdaptConfirmation data={output} />;
     case "generate_plan":
-      if (output.isDraft && output.sessions) return <DraftPlanCard data={output} />;
+      if (output.isDraft && output.sessions)
+        return <DraftPlanCard data={output} />;
       return <PlanGenerated data={output} />;
     case "confirm_plan":
       return <PlanConfirmed data={output} />;
@@ -191,7 +209,7 @@ function LoadingCard({ toolName }: { toolName: string }) {
   };
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-500 animate-pulse">
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-muted animate-pulse">
       {labels[toolName] ?? "Working on it..."}
     </div>
   );
@@ -200,7 +218,7 @@ function LoadingCard({ toolName }: { toolName: string }) {
 function AdaptConfirmation({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Couldn&apos;t update that session right now. Try again in a moment.
       </div>
     );
@@ -217,11 +235,12 @@ function AdaptConfirmation({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 space-y-1">
-      <p className="text-xs font-medium text-zinc-300">
-        {actionLabels[action] ?? action}{session?.title ? `: ${session.title}` : ""}
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 space-y-1">
+      <p className="text-xs font-medium text-text-secondary">
+        {actionLabels[action] ?? action}
+        {session?.title ? `: ${session.title}` : ""}
       </p>
-      <p className="text-xs text-zinc-500">{reason}</p>
+      <p className="text-xs text-text-muted">{reason}</p>
     </div>
   );
 }
@@ -229,14 +248,14 @@ function AdaptConfirmation({ data }: { data: Record<string, unknown> }) {
 function PlanGenerated({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Plan couldn&apos;t be generated right now. Ask me to try again.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
+    <div className="rounded-radius-lg border border-semantic-success/30 bg-semantic-success-muted px-4 py-3 text-xs text-semantic-success">
       Your plan is ready.
     </div>
   );
@@ -245,30 +264,41 @@ function PlanGenerated({ data }: { data: Record<string, unknown> }) {
 function PlanConfirmed({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Couldn&apos;t lock in the plan. Ask me to confirm again.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 px-4 py-3 text-xs text-emerald-400">
+    <div className="rounded-radius-lg border border-semantic-success/30 bg-semantic-success-muted px-4 py-3 text-xs text-semantic-success">
       Plan locked in. Let&apos;s go.
     </div>
   );
 }
 
-function EditableDate({ date, onUpdate }: { date: string; onUpdate: (newDate: string) => void }) {
-  const label = new Date(date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+function EditableDate({
+  date,
+  onUpdate,
+}: {
+  date: string;
+  onUpdate: (newDate: string) => void;
+}) {
+  const label = new Date(date + "T00:00:00").toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
 
   return (
-    <div className="relative inline-flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+    <div className="relative inline-flex items-center gap-1 text-xs text-text-muted active:text-text-secondary transition-colors cursor-pointer">
       <span>{label}</span>
       <Pencil size={9} />
       <input
         type="date"
         value={date}
-        onChange={(e) => { if (e.target.value) onUpdate(e.target.value); }}
+        onChange={(e) => {
+          if (e.target.value) onUpdate(e.target.value);
+        }}
         className="absolute inset-0 opacity-0 cursor-pointer"
       />
     </div>
@@ -277,9 +307,17 @@ function EditableDate({ date, onUpdate }: { date: string; onUpdate: (newDate: st
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
 
-function EditableMealType({ value, onUpdate }: { value: string | null; onUpdate: (mt: string) => void }) {
+function EditableMealType({
+  value,
+  onUpdate,
+}: {
+  value: string | null;
+  onUpdate: (mt: string) => void;
+}) {
   const [open, setOpen] = useState(false);
-  const label = value ? value.charAt(0).toUpperCase() + value.slice(1) : "Set type";
+  const label = value
+    ? value.charAt(0).toUpperCase() + value.slice(1)
+    : "Set type";
 
   if (open) {
     return (
@@ -287,11 +325,14 @@ function EditableMealType({ value, onUpdate }: { value: string | null; onUpdate:
         {MEAL_TYPES.map((mt) => (
           <button
             key={mt}
-            onClick={() => { onUpdate(mt); setOpen(false); }}
-            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors ${
+            onClick={() => {
+              onUpdate(mt);
+              setOpen(false);
+            }}
+            className={`min-h-[44px] rounded-full px-3 py-1 text-xs font-medium transition-colors duration-100 ${
               mt === value
-                ? "bg-green-900/40 text-green-400"
-                : "bg-zinc-800 text-zinc-500 hover:text-zinc-300"
+                ? "bg-semantic-success-muted text-semantic-success"
+                : "bg-surface-elevated text-text-muted active:text-text-secondary"
             }`}
           >
             {mt.charAt(0).toUpperCase() + mt.slice(1)}
@@ -304,7 +345,7 @@ function EditableMealType({ value, onUpdate }: { value: string | null; onUpdate:
   return (
     <button
       onClick={() => setOpen(true)}
-      className="inline-flex items-center gap-1 rounded-full bg-green-900/30 px-2.5 py-1 text-[11px] font-medium text-green-500 hover:bg-green-900/50 transition-colors"
+      className="inline-flex items-center gap-1 rounded-full bg-semantic-success-muted px-2.5 py-1 text-xs font-medium text-semantic-success active:brightness-110 transition-[filter] duration-100"
     >
       <span>{label}</span>
       <Pencil size={9} />
@@ -317,7 +358,7 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
 
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Couldn&apos;t save the photo. Try sending it again.
       </div>
     );
@@ -339,14 +380,16 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div className="rounded-xl border border-emerald-900/50 bg-emerald-950/30 border-l-[3px] border-l-emerald-600 px-4 py-3">
+    <div className="rounded-radius-lg border border-semantic-success/30 bg-semantic-success-muted border-l-[3px] border-l-semantic-success px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Camera size={13} className="text-emerald-400" />
-          <span className="text-[13px] font-medium text-emerald-400">Progress photo saved</span>
+          <Camera size={13} className="text-semantic-success" />
+          <span className="text-sm font-medium text-semantic-success">
+            Progress photo saved
+          </span>
         </div>
         {totalCount != null && (
-          <span className="rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-500">
+          <span className="rounded-full bg-semantic-success/15 px-2 py-0.5 text-xs font-medium text-semantic-success">
             #{totalCount}
           </span>
         )}
@@ -371,11 +414,11 @@ function SavedPhotoCard({ data }: { data: Record<string, unknown> }) {
 
 function SavedMealCard({ data }: { data: Record<string, unknown> }) {
   const [date, setDate] = useState(data.capturedAt as string | undefined);
-  const [mt, setMt] = useState(data.mealType as string | null ?? null);
+  const [mt, setMt] = useState((data.mealType as string | null) ?? null);
 
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Couldn&apos;t log the meal. Try sending the photo again.
       </div>
     );
@@ -397,34 +440,52 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div className="rounded-xl border border-green-900/50 bg-green-950/30 border-l-[3px] border-l-green-600 px-4 py-3 space-y-2">
+    <div className="rounded-radius-lg border border-domain-nutrition/30 bg-domain-nutrition-muted border-l-[3px] border-l-domain-nutrition px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Utensils size={13} className="text-green-400" />
-          <span className="text-[13px] font-medium text-green-400">Meal logged</span>
+          <Utensils size={13} className="text-domain-nutrition" />
+          <span className="text-sm font-medium text-domain-nutrition">
+            Meal logged
+          </span>
         </div>
-        <EditableMealType value={mt} onUpdate={(v) => { setMt(v); patchMeal({ mealType: v }); }} />
+        <EditableMealType
+          value={mt}
+          onUpdate={(v) => {
+            setMt(v);
+            patchMeal({ mealType: v });
+          }}
+        />
       </div>
       {description && (
-        <p className="text-[12px] text-zinc-400 line-clamp-2 leading-relaxed">{description}</p>
+        <p className="text-xs text-text-tertiary line-clamp-2 leading-relaxed">
+          {description}
+        </p>
       )}
       <div className="flex items-center justify-between">
-        {(cal != null || protein != null) ? (
+        {cal != null || protein != null ? (
           <div className="flex gap-2">
             {cal != null && (
-              <span className="rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] text-zinc-500">
+              <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-text-muted">
                 ~{cal} cal
               </span>
             )}
             {protein != null && (
-              <span className="rounded-full bg-zinc-800/60 px-2 py-0.5 text-[10px] text-zinc-500">
+              <span className="rounded-full bg-surface-elevated px-2 py-0.5 text-xs text-text-muted">
                 ~{protein}g protein
               </span>
             )}
           </div>
-        ) : <div />}
+        ) : (
+          <div />
+        )}
         {date && (
-          <EditableDate date={date} onUpdate={(d) => { setDate(d); patchMeal({ capturedAt: d }); }} />
+          <EditableDate
+            date={date}
+            onUpdate={(d) => {
+              setDate(d);
+              patchMeal({ capturedAt: d });
+            }}
+          />
         )}
       </div>
       {imageUrl ? (
@@ -443,7 +504,7 @@ function SavedMealCard({ data }: { data: Record<string, unknown> }) {
 function WeightLogCard({ data }: { data: Record<string, unknown> }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Couldn&apos;t log weight right now. Try again in a moment.
       </div>
     );
@@ -457,30 +518,38 @@ function WeightLogCard({ data }: { data: Record<string, unknown> }) {
   const date = entry.date as string | undefined;
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
       <div className="flex items-start gap-3 px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-400/10">
-          <Scale size={14} className="text-sky-400" />
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-radius-sm bg-semantic-info/10">
+          <Scale size={14} className="text-semantic-info" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold leading-tight text-zinc-100">
-            {weightKg} <span className="text-sm font-normal text-zinc-500">kg</span>
+          <p className="text-2xl font-bold leading-tight text-text-primary">
+            {weightKg}{" "}
+            <span className="text-sm font-normal text-text-muted">kg</span>
           </p>
           {date && (
-            <p className="mt-0.5 text-xs text-zinc-500">
-              {new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+            <p className="mt-0.5 text-xs text-text-muted">
+              {new Date(date + "T12:00:00").toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
             </p>
           )}
         </div>
 
         {deltaKg != null && deltaKg !== 0 && (
-          <span className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold ${
-            deltaKg < 0
-              ? "border-green-400/30 bg-green-400/10 text-green-400"
-              : "border-amber-400/30 bg-amber-400/10 text-amber-400"
-          }`}>
-            {deltaKg > 0 ? "+" : ""}{deltaKg} kg
+          <span
+            className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-bold ${
+              deltaKg < 0
+                ? "border-semantic-success/30 bg-semantic-success/10 text-semantic-success"
+                : "border-semantic-warning/30 bg-semantic-warning/10 text-semantic-warning"
+            }`}
+          >
+            {deltaKg > 0 ? "+" : ""}
+            {deltaKg} kg
           </span>
         )}
       </div>

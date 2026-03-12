@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
+
 const SIZES = {
-  sm: "h-6 w-6 text-[10px]",
+  sm: "h-6 w-6 text-xs",
   md: "h-8 w-8 text-xs",
   lg: "h-12 w-12 text-lg",
 } as const;
@@ -13,15 +15,23 @@ interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({ src, name, size = "md", className = "" }: AvatarProps) {
+export function Avatar({
+  src,
+  name,
+  size = "md",
+  className = "",
+}: AvatarProps) {
+  const [failed, setFailed] = useState(false);
   const sizeClass = SIZES[size];
   const initial = (name || "?").charAt(0).toUpperCase();
 
-  if (src) {
+  if (src && !failed) {
     return (
       <img
         src={src}
         alt={name || "Avatar"}
+        loading="lazy"
+        onError={() => setFailed(true)}
         className={`${sizeClass} rounded-full object-cover ${className}`}
       />
     );

@@ -21,17 +21,17 @@ export function SessionDetailCard({ data }: { data: Record<string, unknown> }) {
 
   if (!session) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-muted">
         Couldn&apos;t load this session. Ask me to show your plan instead.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-zinc-800/50">
-        <p className="text-sm font-semibold text-zinc-200">{session.title}</p>
-        <p className="text-xs text-zinc-500 capitalize">{session.domain}</p>
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
+      <div className="px-4 py-3 border-b border-border-subtle">
+        <p className="text-sm font-semibold text-text-primary">{session.title}</p>
+        <p className="text-xs text-text-muted capitalize">{session.domain}</p>
       </div>
       <div className="px-4 py-3">
         <SessionDetailInline domain={session.domain} detail={session.detail} />
@@ -65,6 +65,6 @@ export function SessionDetailInline({
     case "sleep":
       return <SleepDetail detail={detail} />;
     default:
-      return <p className="text-xs text-zinc-500">Unknown session type</p>;
+      return <p className="text-xs text-text-muted">Unknown session type</p>;
   }
 }

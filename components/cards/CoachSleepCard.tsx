@@ -26,7 +26,7 @@ export function CoachSleepCard({
 }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-muted">
         Couldn&apos;t log sleep. Try again in a moment.
       </div>
     );

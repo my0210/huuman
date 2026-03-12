@@ -1,32 +1,34 @@
 "use client";
 
-import { motion, type HTMLMotionProps } from "framer-motion";
-import { spring, press } from "@/lib/motion";
-import type { ReactNode } from "react";
+import { haptics } from "@/lib/haptics";
+import type { ReactNode, HTMLAttributes } from "react";
 
-interface CardProps extends Omit<HTMLMotionProps<"div">, "ref"> {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
   pressable?: boolean;
-  glow?: string;
 }
 
 export function Card({
   pressable = false,
-  glow,
   className = "",
+  onClick,
   children,
-  style,
   ...props
 }: CardProps) {
   return (
-    <motion.div
-      whileTap={pressable ? press.card : undefined}
-      transition={spring.snappy}
-      className={`rounded-radius-lg border border-border-default bg-surface-raised ${className}`}
-      style={glow ? { boxShadow: glow, ...style } : style}
+    <div
+      onClick={(e) => {
+        if (pressable) haptics.light();
+        onClick?.(e);
+      }}
+      className={`rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden ${
+        pressable
+          ? "cursor-pointer active:scale-[0.99] transition-transform duration-100"
+          : ""
+      } ${className}`}
       {...props}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -64,9 +66,7 @@ function CardFooter({
   className?: string;
 }) {
   return (
-    <div
-      className={`px-4 py-3 border-t border-border-subtle ${className}`}
-    >
+    <div className={`px-4 py-3 border-t border-border-subtle ${className}`}>
       {children}
     </div>
   );

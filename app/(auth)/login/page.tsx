@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -46,7 +47,7 @@ export default function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center bg-surface-base">
       <div className="w-full max-w-sm space-y-8 px-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-text-primary">huuman</h1>
+          <h1 className="text-2xl font-bold text-text-primary">huuman</h1>
           <p className="mt-2 text-sm text-text-muted">Sign in to your account</p>
         </div>
 
@@ -82,9 +83,9 @@ export default function LoginPage() {
 
         <p className="text-center text-xs text-text-muted">
           No account?{" "}
-          <a href="/signup" className="text-text-secondary">
+          <Link href="/signup" className="text-text-secondary active:text-text-primary">
             Sign up
-          </a>
+          </Link>
         </p>
       </div>
     </div>

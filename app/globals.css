@@ -1,30 +1,33 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Font */
   --font-sans: var(--font-inter);
-  --font-heading: var(--font-satoshi);
   --font-mono: var(--font-geist-mono);
 
-  /* Surfaces — elevation through lightness (defaults, overridden by phase) */
-  --color-surface-base: #18181B;
-  --color-surface-raised: #1E1E22;
-  --color-surface-overlay: #27272A;
-  --color-surface-elevated: #3f3f46;
+  /* Typography — iOS Dynamic Type aligned */
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  /* Surfaces — iOS dark mode, clear elevation steps */
+  --color-surface-base: #111114;
+  --color-surface-raised: #1C1C1E;
+  --color-surface-overlay: #2C2C2E;
+  --color-surface-elevated: #3A3A3C;
 
   /* Borders */
-  --color-border-subtle: #1C1C1F;
-  --color-border-default: #27272A;
-  --color-border-strong: #3f3f46;
+  --color-border-subtle: #1F1F23;
+  --color-border-default: #2C2C30;
+  --color-border-strong: #3A3A3E;
 
-  /* Text hierarchy — solid hex, always readable */
+  /* Text hierarchy */
   --color-text-primary: #fafafa;
   --color-text-secondary: #a1a1aa;
   --color-text-tertiary: #71717a;
   --color-text-muted: #52525b;
-
-  /* Circadian accent (overridden by phase) */
-  --color-phase-accent: #fb923c;
 
   /* Domain accents — muted / default / bright */
   --color-domain-cardio-muted: oklch(0.25 0.04 25);
@@ -52,6 +55,12 @@
   --color-semantic-warning: #fbbf24;
   --color-semantic-error: #f87171;
   --color-semantic-info: #60a5fa;
+  --color-semantic-success-muted: oklch(0.22 0.04 165);
+  --color-semantic-warning-muted: oklch(0.22 0.04 85);
+  --color-semantic-error-muted: oklch(0.22 0.04 25);
+
+  /* Overlay */
+  --color-overlay: oklch(0 0 0 / 0.6);
 
   /* Radii */
   --radius-sm: 8px;
@@ -59,55 +68,13 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
 
-  /* Domain glow shadows */
-  --shadow-glow-cardio: 0 0 20px oklch(0.65 0.2 25 / 0.15);
-  --shadow-glow-strength: 0 0 20px oklch(0.65 0.2 55 / 0.15);
-  --shadow-glow-mindfulness: 0 0 20px oklch(0.65 0.2 200 / 0.15);
-  --shadow-glow-nutrition: 0 0 20px oklch(0.65 0.2 155 / 0.15);
-  --shadow-glow-sleep: 0 0 20px oklch(0.65 0.2 290 / 0.15);
-}
-
-/* Circadian Phase Definitions — solid hex only */
-body[data-phase="dawn"] {
-  --color-surface-base: #1A1D21;
-  --color-surface-raised: #1F2327;
-  --color-surface-overlay: #262A2F;
-  --color-border-subtle: #232830;
-  --color-border-default: #2A2E33;
-  --color-phase-accent: #22d3ee;
-}
-
-body[data-phase="day"] {
-  --color-surface-base: #18181B;
-  --color-surface-raised: #1E1E22;
-  --color-surface-overlay: #27272A;
-  --color-border-subtle: #1C1C1F;
-  --color-border-default: #27272A;
-  --color-phase-accent: #fb923c;
-}
-
-body[data-phase="dusk"] {
-  --color-surface-base: #1C1A18;
-  --color-surface-raised: #23211E;
-  --color-surface-overlay: #2B2925;
-  --color-border-subtle: #262320;
-  --color-border-default: #2E2B27;
-  --color-phase-accent: #fbbf24;
-}
-
-body[data-phase="midnight"] {
-  --color-surface-base: #0B0C12;
-  --color-surface-raised: #11121A;
-  --color-surface-overlay: #191A24;
-  --color-border-subtle: #14151E;
-  --color-border-default: #1A1B24;
-  --color-phase-accent: #a78bfa;
+  /* Animations */
+  --animate-fade-up: fade-up 200ms ease-out;
 }
 
 body {
   background: var(--color-surface-base);
   color: var(--color-text-primary);
-  transition: background-color 1.5s ease;
 }
 
 .scrollbar-none {
@@ -129,12 +96,27 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-html, body {
+html,
+body {
   overscroll-behavior: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   html {
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) 0
+      env(safe-area-inset-left);
   }
 }

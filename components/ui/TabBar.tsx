@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { spring } from "@/lib/motion";
 import { haptics } from "@/lib/haptics";
 import type { LucideIcon } from "lucide-react";
 
@@ -32,30 +30,12 @@ export function TabBar({ tabs, activeTab, onTabChange }: TabBarProps) {
                 onTabChange(tab.id);
               }
             }}
-            className="relative flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[64px]"
+            className={`relative flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[64px] min-h-[44px] active:scale-95 transition-transform duration-100 ${
+              isActive ? "text-text-primary" : "text-text-muted"
+            }`}
           >
-            <div className="relative">
-              <Icon
-                size={22}
-                className={`transition-colors duration-150 ${
-                  isActive ? "text-text-primary" : "text-text-muted"
-                }`}
-              />
-              {isActive && (
-                <motion.div
-                  layoutId="tab-indicator"
-                  className="absolute -bottom-1 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-text-primary"
-                  transition={spring.snappy}
-                />
-              )}
-            </div>
-            <span
-              className={`text-[10px] font-medium transition-colors duration-150 ${
-                isActive ? "text-text-primary" : "text-text-muted"
-              }`}
-            >
-              {tab.label}
-            </span>
+            <Icon size={22} />
+            <span className="text-xs font-medium">{tab.label}</span>
           </button>
         );
       })}

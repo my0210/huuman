@@ -76,7 +76,7 @@ export function CoachSessionCard({
 }) {
   if (data.error) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-tertiary">
         Couldn&apos;t record that session. Try again in a moment.
       </div>
     );

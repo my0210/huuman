@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trash2, Send, Scale, Plus, ChevronRight, Camera, Utensils } from "lucide-react";
+import { Trash2, Send, Scale, Plus, ChevronRight, Camera, Utensils } from "lucide-react";
+import { NavHeader } from "@/components/ui/NavHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Badge } from "@/components/ui/Badge";
+import { haptics } from "@/lib/haptics";
+import { domainStyle } from "@/lib/domain-colors";
 import { DOMAIN_META } from "@/lib/types";
 import type { ContextCategory, ContextScope, DomainBaselines } from "@/lib/types";
 import { formatSingleDomainBaseline } from "@/lib/onboarding/formatBaselines";
@@ -96,6 +103,7 @@ export default function DataPage() {
 
   const handleAdd = async () => {
     if (!newContent.trim()) return;
+    haptics.medium();
     setAdding(true);
     const res = await fetch("/api/context", {
       method: "POST",
@@ -117,40 +125,40 @@ export default function DataPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 min-h-0 items-center justify-center bg-zinc-950">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-300" />
+      <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+        <NavHeader title="Your Data" onBack={() => router.push("/")} />
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+          <Skeleton className="h-20 w-full rounded-radius-lg" />
+          <Skeleton className="h-28 w-full rounded-radius-lg" />
+          <Skeleton className="h-36 w-full rounded-radius-lg" />
+          <Skeleton className="h-24 w-full rounded-radius-lg" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-zinc-950">
-      <header className="flex-none border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={() => router.push("/")}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <h1 className="text-lg font-semibold text-zinc-100">Your data</h1>
-      </header>
+    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+      <NavHeader title="Your Data" onBack={() => router.push("/")} />
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
-        {/* Profile basics */}
         {profile && (
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Profile</h2>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+              Profile
+            </h2>
+            <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
               <ProfileRow label="Email" value={profile.email} />
               {profile.age && <ProfileRow label="Age" value={`${profile.age}`} />}
             </div>
           </section>
         )}
 
-        {/* Weight history */}
         <WeightHistorySection
           entries={weightEntries}
-          onAdd={(entry) => setWeightEntries((prev) => [entry, ...prev.filter((e) => e.date !== entry.date)])}
+          onAdd={(entry) =>
+            setWeightEntries((prev) => [entry, ...prev.filter((e) => e.date !== entry.date)])
+          }
           onDelete={async (id) => {
             const res = await fetch("/api/weight-entries", {
               method: "DELETE",
@@ -161,72 +169,83 @@ export default function DataPage() {
           }}
         />
 
-        {/* Domain baselines */}
         {profile?.domainBaselines && (
           <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Baselines</h2>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
-              {(["cardio", "strength", "mindfulness", "nutrition", "sleep"] as const).map((domain) => (
-                <div key={domain} className="px-4 py-3">
-                  <p className="text-xs font-medium text-zinc-400" style={{ color: DOMAIN_META[domain].color }}>
-                    {DOMAIN_META[domain].label}
-                  </p>
-                  <p className="text-sm text-zinc-300 mt-0.5">
-                    {formatSingleDomainBaseline(domain, profile.domainBaselines!)}
-                  </p>
-                </div>
-              ))}
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+              Baselines
+            </h2>
+            <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
+              {(["cardio", "strength", "mindfulness", "nutrition", "sleep"] as const).map(
+                (domain) => (
+                  <div key={domain} className="px-4 py-3">
+                    <p className={`text-xs font-medium ${domainStyle[domain].text}`}>
+                      {DOMAIN_META[domain].label}
+                    </p>
+                    <p className="text-sm text-text-secondary mt-0.5">
+                      {formatSingleDomainBaseline(domain, profile.domainBaselines!)}
+                    </p>
+                  </div>
+                ),
+              )}
             </div>
-            <p className="text-[11px] text-zinc-600 px-1">Collected during onboarding</p>
+            <p className="text-xs text-text-muted px-1">Collected during onboarding</p>
           </section>
         )}
 
-        {/* Photo tracking links */}
         <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Tracking</h2>
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+            Tracking
+          </h2>
+          <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
             <button
-              onClick={() => router.push("/data/progress-photos")}
-              className="flex items-center justify-between w-full px-4 py-3.5 text-left hover:bg-zinc-800/50 transition-colors"
+              onClick={() => {
+                haptics.light();
+                router.push("/data/progress-photos");
+              }}
+              className="flex items-center justify-between w-full px-4 min-h-[44px] text-left active:bg-surface-elevated transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Camera size={14} className="text-emerald-500" />
-                <span className="text-sm text-zinc-200">Progress Photos</span>
+                <Camera size={14} className="text-domain-strength" />
+                <span className="text-sm text-text-primary">Progress Photos</span>
               </div>
               <div className="flex items-center gap-2">
                 {photoCounts.progress > 0 && (
-                  <span className="text-xs text-zinc-500">{photoCounts.progress}</span>
+                  <span className="text-xs text-text-muted">{photoCounts.progress}</span>
                 )}
-                <ChevronRight size={14} className="text-zinc-600" />
+                <ChevronRight size={14} className="text-text-muted" />
               </div>
             </button>
             <button
-              onClick={() => router.push("/data/meal-log")}
-              className="flex items-center justify-between w-full px-4 py-3.5 text-left hover:bg-zinc-800/50 transition-colors"
+              onClick={() => {
+                haptics.light();
+                router.push("/data/meal-log");
+              }}
+              className="flex items-center justify-between w-full px-4 min-h-[44px] text-left active:bg-surface-elevated transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Utensils size={14} className="text-green-500" />
-                <span className="text-sm text-zinc-200">Meal Log</span>
+                <Utensils size={14} className="text-domain-nutrition" />
+                <span className="text-sm text-text-primary">Meal Log</span>
               </div>
               <div className="flex items-center gap-2">
                 {photoCounts.meals > 0 && (
-                  <span className="text-xs text-zinc-500">{photoCounts.meals}</span>
+                  <span className="text-xs text-text-muted">{photoCounts.meals}</span>
                 )}
-                <ChevronRight size={14} className="text-zinc-600" />
+                <ChevronRight size={14} className="text-text-muted" />
               </div>
             </button>
           </div>
         </section>
 
-        {/* Context items by category */}
         {grouped.length > 0 && (
           <section className="space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
               What the coach knows
             </h2>
             {grouped.map(({ category, items: catItems }) => (
               <div key={category} className="space-y-2">
-                <h3 className="text-xs font-medium text-zinc-400 px-1">{CATEGORY_LABELS[category]}</h3>
+                <h3 className="text-xs font-medium text-text-tertiary px-1">
+                  {CATEGORY_LABELS[category]}
+                </h3>
                 <div className="space-y-2">
                   {catItems.map((item) => (
                     <ContextCard
@@ -247,42 +266,42 @@ export default function DataPage() {
 
         {grouped.length === 0 && (
           <section className="py-8 text-center">
-            <p className="text-sm text-zinc-500">No context items yet.</p>
-            <p className="text-xs text-zinc-600 mt-1">
+            <p className="text-sm text-text-muted">No context items yet.</p>
+            <p className="text-xs text-text-muted mt-1">
               Add something the coach should know, or tell the coach in chat.
             </p>
           </section>
         )}
 
-        {/* Spacer for sticky add bar */}
         <div className="h-20" />
       </div>
 
-      {/* Add new context */}
       <form
-        onSubmit={(e) => { e.preventDefault(); handleAdd(); }}
-        className="flex-none border-t border-zinc-800 bg-zinc-950 px-4 py-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleAdd();
+        }}
+        className="flex-none border-t border-border-default bg-surface-base px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
         <div className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={newContent}
             onChange={(e) => setNewContent(e.target.value)}
             placeholder="Bad left knee, training at home this week..."
             disabled={adding}
-            className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none disabled:opacity-50"
+            fullWidth={false}
+            className="flex-1 min-w-0 text-sm"
           />
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={!newContent.trim() || adding}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 text-zinc-900 disabled:opacity-30 transition-opacity"
+            className="flex-none shrink-0"
           >
-            {adding ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-400 border-t-zinc-900" />
-            ) : (
-              <Send size={16} />
-            )}
-          </button>
+            <Send size={16} />
+          </Button>
         </div>
       </form>
     </div>
@@ -292,8 +311,8 @@ export default function DataPage() {
 function ProfileRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-xs text-zinc-500">{label}</span>
-      <span className="text-sm text-zinc-300">{value}</span>
+      <span className="text-xs text-text-muted">{label}</span>
+      <span className="text-sm text-text-secondary">{value}</span>
     </div>
   );
 }
@@ -317,45 +336,36 @@ function ContextCard({
   const timeLabel = formatRelativeDate(created);
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+    <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-zinc-200">{item.content}</p>
+          <p className="text-sm text-text-primary">{item.content}</p>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${
-              item.scope === "permanent"
-                ? "bg-zinc-800 text-zinc-400"
-                : "bg-amber-900/30 text-amber-400"
-            }`}>
+            <Badge variant={item.scope === "permanent" ? "default" : "warning"}>
               {item.scope === "temporary" && item.expiresAt
                 ? `until ${item.expiresAt}`
                 : item.scope}
-            </span>
-            <span className="inline-block rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-500">
-              {item.source}
-            </span>
-            <span className="text-[10px] text-zinc-600">{timeLabel}</span>
+            </Badge>
+            <Badge variant="default">{item.source}</Badge>
+            <span className="text-xs text-text-muted">{timeLabel}</span>
           </div>
         </div>
 
         <div className="flex-none pt-0.5">
           {!confirming ? (
-            <IconButton
-              label="Delete"
-              size="sm"
-              onClick={onRequestDelete}
-            >
+            <IconButton label="Delete" size="sm" onClick={onRequestDelete}>
               <Trash2 size={14} />
             </IconButton>
           ) : (
-            <button
+            <Button
+              variant="danger"
+              size="sm"
               onClick={onConfirmDelete}
               onBlur={onCancelDelete}
               disabled={deleting}
-              className="rounded-lg bg-red-900/40 px-2.5 py-1 text-[11px] font-medium text-red-400 hover:bg-red-900/60 transition-colors disabled:opacity-50"
             >
               {deleting ? "..." : "Delete?"}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -391,6 +401,7 @@ function WeightHistorySection({
       setError("Enter a weight between 20–300 kg");
       return;
     }
+    haptics.medium();
     setSubmitting(true);
     try {
       const res = await fetch("/api/weight-entries", {
@@ -416,10 +427,13 @@ function WeightHistorySection({
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Weight</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">Weight</h2>
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1 text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          onClick={() => {
+            haptics.light();
+            setShowForm(!showForm);
+          }}
+          className="flex items-center gap-1 min-h-[44px] px-2 text-xs text-text-muted active:text-text-secondary transition-colors"
         >
           <Plus size={12} />
           Log
@@ -428,83 +442,98 @@ function WeightHistorySection({
 
       {showForm && (
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             inputMode="decimal"
             value={weightInput}
             onChange={(e) => setWeightInput(e.target.value)}
             placeholder="kg"
-            className="w-20 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-500 focus:outline-none"
+            fullWidth={false}
+            className="w-20 text-sm"
           />
-          <input
+          <Input
             type="date"
             value={dateInput}
             onChange={(e) => setDateInput(e.target.value)}
-            className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-400 focus:border-zinc-500 focus:outline-none"
+            fullWidth={false}
+            className="text-sm"
           />
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={submitting || !weightInput}
-            className="rounded-lg bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-900 disabled:opacity-30 transition-opacity"
           >
             {submitting ? "..." : "Save"}
-          </button>
+          </Button>
         </form>
       )}
-      {error && (
-        <p className="text-xs text-red-400">{error}</p>
-      )}
+      {error && <p className="text-xs text-semantic-error">{error}</p>}
 
       {latest ? (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
+        <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3">
           <div className="flex items-center gap-2 mb-1">
-            <Scale size={12} className="text-zinc-500" />
-            <span className="text-xs text-zinc-500">Current</span>
+            <Scale size={12} className="text-text-muted" />
+            <span className="text-xs text-text-muted">Current</span>
           </div>
-          <span className="text-lg font-semibold text-zinc-100">{latest.weightKg} kg</span>
-          <span className="ml-2 text-xs text-zinc-500">
-            {new Date(latest.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          <span className="text-lg font-semibold text-text-primary">{latest.weightKg} kg</span>
+          <span className="ml-2 text-xs text-text-muted">
+            {new Date(latest.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
           </span>
         </div>
       ) : (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
-          <p className="text-xs text-zinc-500">No weight entries yet. Log your first one above.</p>
+        <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3">
+          <p className="text-xs text-text-muted">No weight entries yet. Log your first one above.</p>
         </div>
       )}
 
       {sorted.length > 1 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 divide-y divide-zinc-800">
+        <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
           {sorted.map((entry, i) => {
             const prev = sorted[i + 1];
             const delta = prev ? Number((entry.weightKg - prev.weightKg).toFixed(1)) : null;
             return (
               <div key={entry.id} className="flex items-center justify-between px-4 py-2.5">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-zinc-500 w-16">
-                    {new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  <span className="text-xs text-text-muted w-16">
+                    {new Date(entry.date).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </span>
-                  <span className="text-sm text-zinc-300">{entry.weightKg} kg</span>
+                  <span className="text-sm text-text-secondary">{entry.weightKg} kg</span>
                   {delta != null && delta !== 0 && (
-                    <span className={`text-[11px] ${delta < 0 ? "text-green-400" : "text-amber-400"}`}>
-                      {delta > 0 ? "+" : ""}{delta}
+                    <span
+                      className={`text-xs ${delta < 0 ? "text-semantic-success" : "text-semantic-warning"}`}
+                    >
+                      {delta > 0 ? "+" : ""}
+                      {delta}
                     </span>
                   )}
                 </div>
                 {confirmingId === entry.id ? (
-                  <button
-                    onClick={() => { onDelete(entry.id); setConfirmingId(null); }}
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      onDelete(entry.id);
+                      setConfirmingId(null);
+                    }}
                     onBlur={() => setConfirmingId(null)}
-                    className="rounded-lg bg-red-900/40 px-2 py-0.5 text-[11px] font-medium text-red-400 hover:bg-red-900/60 transition-colors"
                   >
                     Delete?
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <IconButton
+                    label="Delete weight entry"
+                    size="sm"
                     onClick={() => setConfirmingId(entry.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded-lg text-zinc-700 hover:text-zinc-400 hover:bg-zinc-800 transition-colors"
                   >
                     <Trash2 size={12} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             );

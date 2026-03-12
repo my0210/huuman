@@ -1,24 +1,24 @@
 ---
-description: huuman design system -- tokens, components, motion, haptics. Follow this for ALL UI work.
+description: huuman design system -- tokens, components, interactions, haptics. Follow this for ALL UI work.
 alwaysApply: true
 ---
 
 # huuman Design System
 
-Mobile-first, dark-only health app. Every UI change must use these tokens, components, and patterns.
+Mobile-first, dark-only health app running in Capacitor (iOS). CSS transitions for all interactions. No framer-motion in components. One stable dark theme (no circadian phases).
 
 ## Design Tokens (globals.css)
 
-### Surfaces (elevation = lighter, not shadows)
-- `bg-surface-base` (#09090b) -- page background
-- `bg-surface-raised` (#18181b) -- cards, inputs, list items
-- `bg-surface-overlay` (#27272a) -- sheets, drawers, popovers
-- `bg-surface-elevated` (#3f3f46) -- hover/active states, tooltips
+### Surfaces (iOS dark mode aligned, elevation = lighter)
+- `bg-surface-base` (#111114) -- page background
+- `bg-surface-raised` (#1C1C1E) -- cards, inputs, list items
+- `bg-surface-overlay` (#2C2C2E) -- sheets, drawers, popovers
+- `bg-surface-elevated` (#3A3A3C) -- active states, tooltips
 
 ### Borders
-- `border-border-subtle` -- faint separators
-- `border-border-default` -- standard borders (cards, inputs)
-- `border-border-strong` -- emphasized borders
+- `border-border-subtle` (#1F1F23) -- faint separators
+- `border-border-default` (#2C2C30) -- standard borders (cards, inputs)
+- `border-border-strong` (#3A3A3E) -- emphasized borders
 
 ### Text hierarchy
 - `text-text-primary` (#fafafa) -- headings, important text
@@ -27,7 +27,8 @@ Mobile-first, dark-only health app. Every UI change must use these tokens, compo
 - `text-text-muted` (#52525b) -- timestamps, disabled, placeholders
 
 ### Domain accent colors (3 intensities each)
-Each domain has `-muted` (backgrounds), default (text/icons), `-bright` (interactive):
+Import `domainStyle` from `@/lib/domain-colors` for all domain-specific styling. Never define local domain color maps.
+
 - Cardio: `text-domain-cardio`, `bg-domain-cardio-muted`, `text-domain-cardio-bright`
 - Strength: `text-domain-strength`, `bg-domain-strength-muted`, `text-domain-strength-bright`
 - Mindfulness: `text-domain-mindfulness`, `bg-domain-mindfulness-muted`, `text-domain-mindfulness-bright`
@@ -35,106 +36,107 @@ Each domain has `-muted` (backgrounds), default (text/icons), `-bright` (interac
 - Sleep: `text-domain-sleep`, `bg-domain-sleep-muted`, `text-domain-sleep-bright`
 
 ### Semantic colors
-- `text-semantic-success` / `bg-semantic-success` -- completions, positive
-- `text-semantic-warning` / `bg-semantic-warning` -- caution, attention
-- `text-semantic-error` / `bg-semantic-error` -- errors, destructive
+- `text-semantic-success` / `bg-semantic-success` / `bg-semantic-success-muted` -- completions, positive
+- `text-semantic-warning` / `bg-semantic-warning` / `bg-semantic-warning-muted` -- caution, attention
+- `text-semantic-error` / `bg-semantic-error` / `bg-semantic-error-muted` -- errors, destructive
+- `text-semantic-info` / `bg-semantic-info` -- informational
+
+### Overlay
+- `bg-[--color-overlay]` -- scrim for sheets and dialogs
 
 ### Radii
 - `rounded-radius-sm` (8px), `rounded-radius-md` (12px), `rounded-radius-lg` (16px), `rounded-radius-xl` (20px)
 
 ## Typography
-Font: Inter (loaded via `next/font/google` in layout.tsx).
+Font: Inter (loaded via `next/font/google` in layout.tsx). Sizes match iOS Dynamic Type.
 
-| Class | Size | Use |
+| Class | Size | iOS Style |
 |---|---|---|
-| `text-xs` | 11px | timestamps, metadata, badges |
-| `text-sm` | 13px | labels, captions, secondary |
-| `text-base` | 15px | body, chat messages |
-| `text-lg` | 17px | card titles, section headers |
-| `text-xl` | 20px | page titles |
-| `text-2xl` | 24px | hero numbers |
+| `text-xs` | 11px | Caption 2 |
+| `text-sm` | 13px | Footnote |
+| `text-base` | 15px | Subheadline |
+| `text-lg` | 17px | Body / Headline |
+| `text-xl` | 20px | Title 3 |
+| `text-2xl` | 24px | Title 2 |
 
 Weights: `font-normal` (400), `font-medium` (500), `font-semibold` (600).
 
-## Motion (lib/motion.ts)
+## Interactions (CSS only)
 
-Import from `@/lib/motion`. Never define inline spring/transition values.
+All press feedback uses CSS transitions. No framer-motion `whileTap` or `motion.button`.
 
-### Springs
-- `spring.snappy` -- button presses, toggles, quick feedback
-- `spring.smooth` -- drawers, sheets, page transitions
-- `spring.bouncy` -- achievements, completion celebrations
+### Press feedback
+- Buttons: `active:scale-[0.97] active:brightness-110 transition-[transform,filter] duration-100`
+- Cards: `active:scale-[0.99] transition-transform duration-100`
+- Icon buttons: `active:brightness-125 transition-[color,filter] duration-100`
+- Text buttons: `active:opacity-70 transition-opacity`
 
-### Press feedback (whileTap)
-- `press.button` (scale: 0.97) -- all tappable buttons
-- `press.card` (scale: 0.99) -- tappable cards
-- `press.compact` (scale: 0.95) -- inline/contextual buttons (between button and icon)
-- `press.icon` (scale: 0.92) -- icon-only buttons
+### Expand/collapse
+Use CSS grid for height animation: `grid grid-rows-[0fr]` -> `grid-rows-[1fr]` with `transition-[grid-template-rows] duration-200` on the container, `overflow-hidden` on the inner div.
 
-### Transitions
-- `transition.fade` -- opacity changes (150ms)
-- `transition.slide` -- position changes (smooth spring)
-- `transition.expand` -- height/width changes (250ms)
-
-**Rule: every tappable element MUST have `whileTap` from press presets.**
+### Enter/exit
+Use CSS keyframes `fadeIn` and `scaleIn` (defined in globals.css). Apply via `animate-[fadeIn_150ms_ease-out]`.
 
 ## Haptics (lib/haptics.ts)
 
 Import from `@/lib/haptics`. Call on meaningful interactions.
 
-- `haptics.light()` -- tab switches, toggles, selections
-- `haptics.medium()` -- button taps, sheet open/close
+- `haptics.light()` -- selections, toggles, navigation taps
+- `haptics.medium()` -- form submissions, sheet open, primary actions
 - `haptics.heavy()` -- destructive actions
 - `haptics.success()` -- session completed, plan generated
-
-**iOS Safari caveat:** `navigator.vibrate()` is not supported on iOS Safari. All haptics calls are silent there. To compensate, `Button` and `IconButton` include `active:brightness-110/125` CSS for visual press feedback that works on all platforms without JS.
 
 ## Components (components/ui/)
 
 Always use these instead of raw HTML elements:
 
-| Component | Import | Use instead of |
+| Component | Import | Purpose |
 |---|---|---|
-| `<Button>` | `@/components/ui/Button` | `<button>` with hand-rolled classes |
-| `<IconButton>` | `@/components/ui/IconButton` | icon-only `<button>` elements |
-| `<Input>` | `@/components/ui/Input` | `<input>` or `<textarea>` |
-| `<Toggle>` | `@/components/ui/Toggle` | custom checkbox/toggle switches |
-| `<Badge>` | `@/components/ui/Badge` | status spans with domain colors |
-| `<Skeleton>` | `@/components/ui/Skeleton` | loading placeholders |
-| `<Card>` | `@/components/ui/Card` | `Card`, `Card.Header`, `Card.Body`, `Card.Footer` |
-| `<Sheet>` | `@/components/ui/Sheet` | the old Drawer component (now Vaul-based) |
-| `<TabBar>` | `@/components/ui/TabBar` | bottom navigation |
+| `<Button>` | `@/components/ui/Button` | All tappable buttons (primary, secondary, ghost, danger) |
+| `<IconButton>` | `@/components/ui/IconButton` | Icon-only buttons with 44px hit area |
+| `<Input>` | `@/components/ui/Input` | Text inputs with min-h-[44px] and focus ring |
+| `<Toggle>` | `@/components/ui/Toggle` | iOS-exact toggle (31x51px) via Radix Switch |
+| `<Badge>` | `@/components/ui/Badge` | Domain and semantic badges |
+| `<Skeleton>` | `@/components/ui/Skeleton` | Loading placeholders |
+| `<Card>` | `@/components/ui/Card` | Card with Header/Body/Footer |
+| `<Sheet>` | `@/components/ui/Sheet` | Bottom sheet via Vaul with Header/Body/Footer |
+| `<NavHeader>` | `@/components/ui/NavHeader` | Navigation bar for sub-pages with back button |
+| `<ConfirmDialog>` | `@/components/ui/ConfirmDialog` | iOS-style confirmation dialog (replaces confirm()) |
+| `<ScrollToBottom>` | `@/components/ui/ScrollToBottom` | FAB for chat scroll |
+| `<Avatar>` | `@/components/ui/Avatar` | Avatar with onError fallback |
 
-Toast: call `toast()` / `toast.success()` / `toast.error()` from `sonner`. Toaster is mounted in root layout.
+Toast: call `toast()` / `toast.success()` / `toast.error()` from `sonner`.
+
+## Navigation Pattern
+
+The app uses header-icon navigation (no TabBar):
+
+- **Chat header**: Avatar (left, opens ProfileSheet) + "huuman" (center) + Data icon (right, navigates to /data)
+- **Data pages**: NavHeader with back chevron to return to chat
+- **Overlays**: Sheet for settings/profile, ConfirmDialog for destructive confirmations
+- **Never use** `confirm()`, `alert()`, or `window.location.reload()`
 
 ## Touch targets
 
-All standalone tappable elements must be at least **44px** in both dimensions (Apple HIG minimum). When the visual element must be smaller, use `min-h-[44px] min-w-[44px]` to keep the hit area accessible.
+All standalone tappable elements must be at least **44px** in both dimensions (Apple HIG). `Button` and `IconButton` enforce this via `min-h-[44px]`.
 
-- `IconButton` sm = 36px visual + 44px hit area, md = 44px, lg = 48px
-- `Button` sm/md enforce `min-h-[44px]`
-- Never create a raw `<button>` with `h-7` / `h-8` -- use `IconButton` or `Button`
+## Domain color utility
+
+Import `domainStyle` from `@/lib/domain-colors` for domain-specific UI:
+```
+import { domainStyle } from "@/lib/domain-colors";
+const style = domainStyle[session.domain]; // .text, .bg, .bright, .border
+```
 
 ## Anti-patterns (NEVER do these)
 
 1. **Never use raw zinc values** -- use semantic tokens (`bg-surface-raised` not `bg-zinc-900/50`)
-2. **Never define inline springs** -- import from `@/lib/motion`
-3. **Never create a `<button>` without whileTap** -- use `<Button>` or `<IconButton>`
-4. **Never use `hover:` without `active:`** -- mobile has no hover. Prefer `whileTap`.
-5. **Never use spinners for loading** -- use `<Skeleton>` components
-6. **Never hardcode spacing** -- use the 4px grid via Tailwind spacing utilities
-7. **Never forget safe-area padding** -- bottom bars need `pb-[env(safe-area-inset-bottom)]`
-8. **Never create touch targets below 44px** -- use `IconButton`/`Button` which enforce minimums
-
-## Domain color mapping
-
-When rendering domain-specific UI (sessions, cards, badges):
-```
-const domainColors = {
-  cardio: { text: 'text-domain-cardio', bg: 'bg-domain-cardio-muted', bright: 'text-domain-cardio-bright', glow: 'shadow-glow-cardio' },
-  strength: { text: 'text-domain-strength', bg: 'bg-domain-strength-muted', bright: 'text-domain-strength-bright', glow: 'shadow-glow-strength' },
-  mindfulness: { text: 'text-domain-mindfulness', bg: 'bg-domain-mindfulness-muted', bright: 'text-domain-mindfulness-bright', glow: 'shadow-glow-mindfulness' },
-  nutrition: { text: 'text-domain-nutrition', bg: 'bg-domain-nutrition-muted', bright: 'text-domain-nutrition-bright', glow: 'shadow-glow-nutrition' },
-  sleep: { text: 'text-domain-sleep', bg: 'bg-domain-sleep-muted', bright: 'text-domain-sleep-bright', glow: 'shadow-glow-sleep' },
-};
-```
+2. **Never import framer-motion** -- use CSS `active:` + `transition` for press feedback
+3. **Never use `hover:` without `active:`** -- mobile has no hover. Use `active:` only.
+4. **Never use spinners for loading** -- use `<Skeleton>` components
+5. **Never use `confirm()` or `alert()`** -- use `<ConfirmDialog>`
+6. **Never use `window.location.reload()`** -- use `router.refresh()`
+7. **Never define local domain color maps** -- import `domainStyle` from `@/lib/domain-colors`
+8. **Never create touch targets below 44px** -- use `Button`/`IconButton` which enforce minimums
+9. **Never hardcode spacing** -- use the 4px grid via Tailwind spacing utilities
+10. **Never forget safe-area padding** -- bottom bars need `safe-bottom` class

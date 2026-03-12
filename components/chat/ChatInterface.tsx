@@ -3,10 +3,16 @@
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage, FileUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
-import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
-import { Send, X, Plus, Camera, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { spring, press } from "@/lib/motion";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import { Send, X, Plus, Camera, Loader2, BarChart3 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { haptics } from "@/lib/haptics";
 import { CommandMenu } from "./CommandMenu";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +25,7 @@ import { pickPhoto } from "@/lib/camera";
 import { ProfileSheet } from "@/components/layout/ProfileSheet";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
+import { ScrollToBottom } from "@/components/ui/ScrollToBottom";
 
 interface PendingImage {
   file: File;
@@ -34,7 +41,15 @@ interface ChatInterfaceProps {
   avatarUrl?: string;
 }
 
-export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userEmail, displayName, avatarUrl }: ChatInterfaceProps) {
+export function ChatInterface({
+  chatId,
+  initialMessages,
+  hasOlderMessages,
+  userEmail,
+  displayName,
+  avatarUrl,
+}: ChatInterfaceProps) {
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState<LanguageCode>("en");
@@ -44,11 +59,11 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   const [commandMenuOpen, setCommandMenuOpen] = useState(false);
   const [hasMore, setHasMore] = useState(hasOlderMessages ?? false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isLoadingOlderRef = useRef(false);
   const prevScrollHeightRef = useRef(0);
   const autoSentRef = useRef(false);
-
 
   const transport = useMemo(
     () =>
@@ -79,10 +94,10 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     if (!isLoading) return false;
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.role === "user") return true;
-
-    return !lastMsg.parts.some(part =>
-      (part.type === "text" && part.text.trim()) ||
-      part.type === "tool-invocation"
+    return !lastMsg.parts.some(
+      (part) =>
+        (part.type === "text" && part.text.trim()) ||
+        part.type === "tool-invocation",
     );
   }, [isLoading, messages]);
 
@@ -106,7 +121,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     }
 
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    if (distFromBottom < 150) {
+    if (distFromBottom < 100) {
       el.scrollTop = el.scrollHeight;
     }
   }, [messages]);
@@ -116,36 +131,63 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     if (!el || !hasMore || loadingOlder) return;
 
     setLoadingOlder(true);
-    const earliest = messages[0] as unknown as { createdAt?: string | Date } | undefined;
+    const earliest = messages[0] as unknown as {
+      createdAt?: string | Date;
+    } | undefined;
     const cursor = earliest?.createdAt
       ? new Date(earliest.createdAt).toISOString()
       : undefined;
-    if (!cursor) { setLoadingOlder(false); return; }
+    if (!cursor) {
+      setLoadingOlder(false);
+      return;
+    }
 
     try {
-      const res = await fetch(`/api/chat/messages?chatId=${chatId}&before=${encodeURIComponent(cursor)}&limit=50`);
-      if (!res.ok) { setLoadingOlder(false); return; }
+      const res = await fetch(
+        `/api/chat/messages?chatId=${chatId}&before=${encodeURIComponent(cursor)}&limit=50`,
+      );
+      if (!res.ok) {
+        setLoadingOlder(false);
+        return;
+      }
       const data = await res.json();
-      const older: UIMessage[] = (data.messages ?? []).map((m: Record<string, unknown>) => ({
-        ...m,
-        createdAt: m.createdAt ? new Date(m.createdAt as string) : undefined,
-      }));
+      const older: UIMessage[] = (data.messages ?? []).map(
+        (m: Record<string, unknown>) => ({
+          ...m,
+          createdAt: m.createdAt
+            ? new Date(m.createdAt as string)
+            : undefined,
+        }),
+      );
 
       if (older.length === 0 || !data.hasMore) setHasMore(false);
       if (older.length > 0) {
         isLoadingOlderRef.current = true;
         prevScrollHeightRef.current = el.scrollHeight;
-        setMessages(prev => [...older, ...prev]);
+        setMessages((prev) => [...older, ...prev]);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setLoadingOlder(false);
   }, [hasMore, loadingOlder, messages, chatId, setMessages]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
-    if (!el || el.scrollTop > 80 || loadingOlder || isLoading) return;
-    loadOlderMessages();
+    if (!el) return;
+
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollBtn(distFromBottom > 200);
+
+    if (el.scrollTop < 80 && !loadingOlder && !isLoading) {
+      loadOlderMessages();
+    }
   }, [loadOlderMessages, loadingOlder, isLoading]);
+
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     if (autoSentRef.current || initialMessages.length === 0) return;
@@ -200,14 +242,26 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
       setUploading(true);
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
         fileParts = await Promise.all(
           pendingImages.map(async ({ file }) => {
             const compressed = await compressImage(file);
-            const url = await uploadChatImage(supabase, user.id, compressed, file.name);
-            return { type: "file" as const, mediaType: "image/jpeg", url, filename: file.name };
+            const url = await uploadChatImage(
+              supabase,
+              user.id,
+              compressed,
+              file.name,
+            );
+            return {
+              type: "file" as const,
+              mediaType: "image/jpeg",
+              url,
+              filename: file.name,
+            };
           }),
         );
       } catch {
@@ -219,7 +273,9 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
     }
 
     const text = hasText ? input : "Sent a photo";
-    sendMessage(fileParts.length > 0 ? { text, files: fileParts } : { text });
+    sendMessage(
+      fileParts.length > 0 ? { text, files: fileParts } : { text },
+    );
 
     setInput("");
     pendingImages.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
@@ -228,13 +284,33 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
-      {/* Header */}
       <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
-        <button onClick={() => setProfileOpen(true)} className="active:opacity-70 transition-opacity">
-          <Avatar src={avatarUrl} name={displayName || userEmail} size="md" />
+        <button
+          onClick={() => {
+            haptics.light();
+            setProfileOpen(true);
+          }}
+          className="active:opacity-70 transition-opacity"
+        >
+          <Avatar
+            src={avatarUrl}
+            name={displayName || userEmail}
+            size="md"
+          />
         </button>
-        <h1 className="text-lg font-heading font-medium text-text-primary tracking-tight">huuman</h1>
-        <div className="w-9" />
+        <h1 className="text-lg font-semibold text-text-primary tracking-tight">
+          huuman
+        </h1>
+        <IconButton
+          label="Your data"
+          size="sm"
+          onClick={() => {
+            haptics.light();
+            router.push("/data");
+          }}
+        >
+          <BarChart3 size={20} />
+        </IconButton>
       </header>
 
       <ProfileSheet
@@ -245,116 +321,154 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
         avatarUrl={avatarUrl}
       />
 
-      {/* Messages */}
       <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 [-webkit-overflow-scrolling:touch]">
-        {loadingOlder && (
-          <div className="flex justify-center py-2">
-            <Loader2 size={16} className="animate-spin text-text-muted" />
-          </div>
-        )}
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
-            <p className="text-text-secondary text-sm max-w-xs">
-              {t("chat.ready", currentLanguage)}
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {([
-                { key: "chat.today" as const, en: "What should I do today?" },
-                { key: "chat.week" as const, en: "Show me my week" },
-                { key: "chat.progress" as const, en: "How am I doing?" },
-              ]).map(({ key, en }) => (
-                <motion.button
-                  key={key}
-                  whileTap={press.button}
-                  transition={spring.snappy}
-                  onClick={() => {
-                    haptics.light();
-                    sendMessage({ text: t(key, currentLanguage) || en });
-                  }}
-                  className="rounded-full border border-border-default px-3 py-1.5 text-xs text-text-secondary active:bg-surface-raised transition-colors"
-                >
-                  {t(key, currentLanguage)}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((message, i) => {
-          const ts = (message as unknown as { createdAt?: Date | string }).createdAt;
-          const time = ts ? new Date(ts) : null;
-          const prevTs = i > 0
-            ? (messages[i - 1] as unknown as { createdAt?: Date | string }).createdAt
-            : null;
-          const prevTime = prevTs ? new Date(prevTs) : null;
-
-          const newDay = time && (!prevTime || time.toDateString() !== prevTime.toDateString());
-          const timeGap = time && prevTime && !newDay &&
-            time.getTime() - prevTime.getTime() > 5 * 60 * 1000;
-
-          return (
-            <div key={message.id}>
-              {newDay && time && (
-                <p className="text-center text-[11px] font-medium text-text-muted py-3">
-                  {formatDateLabel(time)}
+        <div className="relative flex-1 min-h-0">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="absolute inset-0 overflow-y-auto px-4 py-4 space-y-4 [-webkit-overflow-scrolling:touch] scrollbar-none"
+          >
+            {loadingOlder && (
+              <div className="flex justify-center py-2">
+                <Loader2
+                  size={16}
+                  className="animate-spin text-text-muted"
+                />
+              </div>
+            )}
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-20">
+                <p className="text-text-secondary text-sm max-w-xs">
+                  {t("chat.ready", currentLanguage)}
                 </p>
-              )}
-              {timeGap && time && (
-                <p className="text-center text-[10px] text-text-muted py-1.5">
-                  {formatTime(time)}
-                </p>
-              )}
-              <div className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[85%] ${
-                    message.role === "user"
-                      ? "rounded-2xl rounded-br-md bg-surface-raised px-4 py-2.5"
-                      : "space-y-3"
-                  }`}
-                >
-                  {message.parts.map((part, index) => (
-                    <MessagePart key={index} part={part} role={message.role} />
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {(
+                    [
+                      {
+                        key: "chat.today" as const,
+                        en: "What should I do today?",
+                      },
+                      {
+                        key: "chat.week" as const,
+                        en: "Show me my week",
+                      },
+                      {
+                        key: "chat.progress" as const,
+                        en: "How am I doing?",
+                      },
+                    ] as const
+                  ).map(({ key, en }) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        haptics.light();
+                        sendMessage({
+                          text: t(key, currentLanguage) || en,
+                        });
+                      }}
+                      className="min-h-[44px] rounded-full border border-border-default px-4 py-2 text-sm text-text-secondary active:bg-surface-raised active:scale-[0.97] transition-[background-color,transform] duration-100"
+                    >
+                      {t(key, currentLanguage)}
+                    </button>
                   ))}
                 </div>
               </div>
-            </div>
-          );
-        })}
+            )}
 
-        {shouldShowThinking && (
-          <div className="flex justify-start">
-            <div className="flex items-center gap-1 px-3 py-2">
-              <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse" />
-              <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse [animation-delay:150ms]" />
-              <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse [animation-delay:300ms]" />
-            </div>
+            {messages.map((message, i) => {
+              const ts = (
+                message as unknown as { createdAt?: Date | string }
+              ).createdAt;
+              const time = ts ? new Date(ts) : null;
+              const prevTs =
+                i > 0
+                  ? (
+                      messages[i - 1] as unknown as {
+                        createdAt?: Date | string;
+                      }
+                    ).createdAt
+                  : null;
+              const prevTime = prevTs ? new Date(prevTs) : null;
+
+              const newDay =
+                time &&
+                (!prevTime ||
+                  time.toDateString() !== prevTime.toDateString());
+              const timeGap =
+                time &&
+                prevTime &&
+                !newDay &&
+                time.getTime() - prevTime.getTime() > 5 * 60 * 1000;
+
+              return (
+                <div key={message.id}>
+                  {newDay && time && (
+                    <p className="text-center text-xs font-medium text-text-muted py-3">
+                      {formatDateLabel(time)}
+                    </p>
+                  )}
+                  {timeGap && time && (
+                    <p className="text-center text-xs text-text-muted py-1.5">
+                      {formatTime(time)}
+                    </p>
+                  )}
+                  <div
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[85%] ${
+                        message.role === "user"
+                          ? "rounded-radius-lg rounded-br-radius-sm bg-surface-raised px-4 py-2.5"
+                          : "space-y-3"
+                      }`}
+                    >
+                      {message.parts.map((part, index) => (
+                        <MessagePart
+                          key={index}
+                          part={part}
+                          role={message.role}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {shouldShowThinking && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1 px-3 py-2">
+                  <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse [animation-delay:150ms]" />
+                  <span className="h-2 w-2 rounded-full bg-text-muted animate-pulse [animation-delay:300ms]" />
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          <ScrollToBottom visible={showScrollBtn} onClick={scrollToBottom} />
+        </div>
       </ChatActionsProvider>
 
-      {/* Command menu panel */}
       <CommandMenu
         open={commandMenuOpen}
         onSelect={(message) => sendMessage({ text: message })}
         onClose={() => setCommandMenuOpen(false)}
       />
 
-      {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
+        className="flex-none border-t border-border-subtle px-4 pt-3 pb-2 safe-bottom"
       >
         {error && (
-          <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error/10 px-3 py-2 text-xs text-semantic-error">
+          <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
             {error}
           </div>
         )}
         {pendingImages.length > 0 && (
           <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
             {pendingImages.map((img, i) => (
-              <div key={i} className="relative flex-none group">
+              <div key={i} className="relative flex-none">
                 <img
                   src={img.previewUrl}
                   alt={img.file.name}
@@ -376,7 +490,11 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           <IconButton
             label={commandMenuOpen ? "Close menu" : "Open menu"}
             onClick={() => setCommandMenuOpen(!commandMenuOpen)}
-            className={commandMenuOpen ? "bg-surface-elevated text-text-secondary" : ""}
+            className={
+              commandMenuOpen
+                ? "bg-surface-elevated text-text-secondary"
+                : ""
+            }
           >
             {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
           </IconButton>
@@ -387,25 +505,38 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
               setInput(e.target.value);
               if (commandMenuOpen) setCommandMenuOpen(false);
             }}
-            onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
-            placeholder={pendingImages.length > 0 ? "Add a note..." : t("chat.placeholder", currentLanguage)}
-            className="flex-1 rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-[15px] text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
+            onFocus={() => {
+              if (commandMenuOpen) setCommandMenuOpen(false);
+            }}
+            placeholder={
+              pendingImages.length > 0
+                ? "Add a note..."
+                : t("chat.placeholder", currentLanguage)
+            }
+            className="flex-1 min-h-[44px] rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
           />
           <IconButton
             label="Upload image"
             onClick={handleNativeCamera}
             disabled={isLoading || uploading}
-            className=""
           >
             <Camera size={20} />
           </IconButton>
           <IconButton
             label="Send"
             type="submit"
-            disabled={(!input.trim() && pendingImages.length === 0) || isLoading || uploading}
-            className="h-11 w-11 flex-none bg-text-primary text-surface-base"
+            disabled={
+              (!input.trim() && pendingImages.length === 0) ||
+              isLoading ||
+              uploading
+            }
+            className="h-11 w-11 flex-none rounded-full bg-white text-black"
           >
-            {uploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+            {uploading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Send size={18} />
+            )}
           </IconButton>
         </div>
       </form>
@@ -431,5 +562,8 @@ function formatDateLabel(date: Date): string {
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

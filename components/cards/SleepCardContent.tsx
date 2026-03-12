@@ -2,6 +2,9 @@
 
 import { Moon } from "lucide-react";
 import type { SleepCardDetail } from "@/lib/types";
+import { domainStyle } from "@/lib/domain-colors";
+
+const ds = domainStyle.sleep;
 
 const QUALITY_LABEL: Record<number, string> = {
   1: "Poor",
@@ -15,8 +18,8 @@ export function SleepCardContent({ detail }: { detail: SleepCardDetail }) {
   return (
     <div className="rounded-radius-lg border border-border-default bg-surface-raised overflow-hidden">
       <div className="flex items-start gap-3 px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-400/10">
-          <Moon size={14} className="text-violet-400" />
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-radius-sm ${ds.bg}`}>
+          <Moon size={14} className={ds.text} />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -34,7 +37,7 @@ export function SleepCardContent({ detail }: { detail: SleepCardDetail }) {
         </div>
 
         {detail.streak != null && detail.streak > 0 && (
-          <span className="whitespace-nowrap rounded-full border border-violet-400/30 bg-violet-400/10 px-2 py-0.5 text-[10px] font-bold text-violet-400">
+          <span className={`whitespace-nowrap rounded-full border ${ds.border} ${ds.bg} px-2 py-0.5 text-xs font-bold ${ds.text}`}>
             {detail.streak}d streak
           </span>
         )}

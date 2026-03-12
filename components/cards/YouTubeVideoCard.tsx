@@ -33,7 +33,7 @@ export function YouTubeVideoCard({ data }: { data: Record<string, unknown> }) {
 
   if (data.error || videos.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 text-xs text-zinc-400">
+      <div className="rounded-radius-lg border border-border-default bg-surface-raised px-4 py-3 text-xs text-text-muted">
         No videos found. Try a different search.
       </div>
     );
@@ -47,30 +47,30 @@ export function YouTubeVideoCard({ data }: { data: Record<string, unknown> }) {
           href={video.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 hover:border-zinc-700 hover:bg-zinc-900/80 transition-colors group"
+          className="flex gap-3 rounded-radius-lg border border-border-default bg-surface-raised p-3 active:border-border-strong active:bg-surface-overlay transition-colors group"
         >
-          <div className="relative flex-none w-32 h-20 rounded-lg overflow-hidden bg-zinc-800">
+          <div className="relative flex-none w-32 h-20 rounded-radius-sm overflow-hidden bg-surface-overlay">
             <img
               src={video.thumbnail}
               alt=""
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-active:opacity-100 transition-opacity">
               <Play size={24} className="text-white" fill="white" />
             </div>
             {video.duration && (
-              <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] px-1 rounded">
+              <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 rounded">
                 {formatDuration(video.duration)}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-zinc-200 line-clamp-2 leading-snug">
+            <p className="text-sm font-medium text-text-primary line-clamp-2 leading-snug">
               {video.title}
             </p>
-            <p className="text-xs text-zinc-500 mt-1 truncate">{video.channel}</p>
+            <p className="text-xs text-text-muted mt-1 truncate">{video.channel}</p>
             {video.viewCount && (
-              <p className="text-xs text-zinc-600 mt-0.5">
+              <p className="text-xs text-text-muted mt-0.5">
                 {formatViews(video.viewCount)}
               </p>
             )}

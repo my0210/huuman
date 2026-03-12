@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
-import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -14,15 +13,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// const satoshi = localFont({
-//   src: "../public/fonts/Satoshi-Variable.woff2",
-//   variable: "--font-satoshi",
-//   display: "swap",
-// });
-
 export const metadata: Metadata = {
   title: "huuman",
-  description: "Your longevity coach. Because you deserve to be in your prime.",
+  description:
+    "Your longevity coach. Because you deserve to be in your prime.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -35,11 +29,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   interactiveWidget: "resizes-content",
-  themeColor: "#09090b",
+  themeColor: "#111114",
   viewportFit: "cover",
 };
-
-import { ThemeProvider } from "@/components/layout/ThemeProvider";
 
 export default function RootLayout({
   children,
@@ -51,7 +43,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geistMono.variable} antialiased bg-surface-base text-text-primary`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
         <Toaster
           theme="dark"
           position="top-center"

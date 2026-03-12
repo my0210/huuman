@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Play, Pause, RotateCcw } from "lucide-react";
+import { domainStyle } from "@/lib/domain-colors";
 
 interface TimerData {
   minutes: number;
   label: string;
   autoTrigger?: boolean;
 }
+
+const ds = domainStyle.mindfulness;
 
 export function BreathworkTimer({ data }: { data: Record<string, unknown> }) {
   const { minutes, label, autoTrigger } = data as unknown as TimerData;
@@ -39,22 +42,22 @@ export function BreathworkTimer({ data }: { data: Record<string, unknown> }) {
   const progress = ((totalSeconds - remaining) / totalSeconds) * 100;
 
   return (
-    <div className="rounded-xl border border-cyan-900/50 bg-cyan-950/20 px-4 py-4 space-y-3">
-      <p className="text-xs font-medium text-cyan-400">{label}</p>
+    <div className={`rounded-radius-lg border ${ds.border} ${ds.bg} px-4 py-4 space-y-3`}>
+      <p className={`text-xs font-medium ${ds.text}`}>{label}</p>
 
       <div className="flex items-center justify-center">
         <div className="relative h-24 w-24">
           <svg className="h-24 w-24 -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" className="text-zinc-800" />
+            <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="3" className="text-surface-overlay" />
             <circle
               cx="50" cy="50" r="42"
               fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"
-              className="text-cyan-400 transition-all duration-1000"
+              className={`${ds.text} transition-all duration-1000`}
               strokeDasharray={2 * Math.PI * 42}
               strokeDashoffset={(2 * Math.PI * 42) * (1 - progress / 100)}
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xl font-mono text-zinc-200">
+          <span className="absolute inset-0 flex items-center justify-center text-xl font-mono text-text-primary">
             {mins}:{secs.toString().padStart(2, "0")}
           </span>
         </div>
@@ -63,20 +66,20 @@ export function BreathworkTimer({ data }: { data: Record<string, unknown> }) {
       <div className="flex items-center justify-center gap-3">
         <button
           onClick={() => setRunning(!running)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+          className={`flex h-11 w-11 items-center justify-center rounded-full ${ds.bg} ${ds.text} active:scale-[0.97] transition-[transform] duration-100`}
         >
           {running ? <Pause size={16} /> : <Play size={16} />}
         </button>
         <button
           onClick={() => { setRunning(false); setRemaining(totalSeconds); }}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:bg-zinc-700 transition-colors"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-overlay text-text-muted active:scale-[0.97] transition-[transform] duration-100"
         >
           <RotateCcw size={16} />
         </button>
       </div>
 
       {remaining === 0 && (
-        <p className="text-center text-xs text-emerald-400">Session complete!</p>
+        <p className="text-center text-xs text-semantic-success">Session complete!</p>
       )}
     </div>
   );

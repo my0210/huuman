@@ -3,8 +3,7 @@
 import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
-import { transition } from "@/lib/motion";
+import Link from "next/link";
 import LanguageSelector from "@/components/auth/LanguageSelector";
 import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
@@ -68,59 +67,51 @@ function SignupForm() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key="signup-form"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={transition.fade}
-        className="flex min-h-dvh items-center justify-center bg-surface-base"
-      >
-        <div className="w-full max-w-sm space-y-8 px-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-text-primary">huuman</h1>
-            <p className="mt-2 text-sm text-text-muted">{t("signup.title", lang)}</p>
-          </div>
-
-          <form onSubmit={handleSignup} className="space-y-4">
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("signup.email", lang)}
-              required
-            />
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t("signup.password", lang)}
-              required
-              minLength={6}
-            />
-
-            {error && (
-              <p className="text-xs text-semantic-error">{error}</p>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              fullWidth
-              size="lg"
-            >
-              {loading ? t("signup.loading", lang) : t("signup.submit", lang)}
-            </Button>
-          </form>
-
-          <p className="text-center text-xs text-text-muted">
-            {t("signup.hasAccount", lang)}{" "}
-            <a href="/login" className="text-text-secondary">
-              {t("signup.signin", lang)}
-            </a>
-          </p>
+    <div className="flex min-h-dvh items-center justify-center bg-surface-base animate-fade-up">
+      <div className="w-full max-w-sm space-y-8 px-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-text-primary">huuman</h1>
+          <p className="mt-2 text-sm text-text-muted">{t("signup.title", lang)}</p>
         </div>
-      </motion.div>
-    </AnimatePresence>
+
+        <form onSubmit={handleSignup} className="space-y-4">
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t("signup.email", lang)}
+            required
+          />
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t("signup.password", lang)}
+            required
+            minLength={6}
+          />
+
+          {error && (
+            <p className="text-xs text-semantic-error">{error}</p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={loading}
+            fullWidth
+            size="lg"
+          >
+            {loading ? t("signup.loading", lang) : t("signup.submit", lang)}
+          </Button>
+        </form>
+
+        <p className="text-center text-xs text-text-muted">
+          {t("signup.hasAccount", lang)}{" "}
+          <Link href="/login" className="text-text-secondary active:text-text-primary">
+            {t("signup.signin", lang)}
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }
