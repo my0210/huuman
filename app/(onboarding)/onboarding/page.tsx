@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Heart, Dumbbell, Leaf, Moon, Brain, Loader2 } from "lucide-react";
+import { IonPage, IonContent, IonFooter, IonToolbar, IonProgressBar } from "@ionic/react";
 import { DOMAIN_CONTENT } from "@/lib/convictions/content";
 import type { DomainBaselines, Domain } from "@/lib/types";
 import {
@@ -146,57 +147,55 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-      <div className="w-full max-w-lg">
-        <div className="mb-8 flex items-center gap-2">
-          <div className="h-1 flex-1 rounded-full bg-surface-raised">
-            <div
-              className="h-1 rounded-full bg-white transition-all duration-300"
-              style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
-            />
+    <IonPage>
+      <IonProgressBar
+        value={(step + 1) / totalSteps}
+        style={{ "--progress-background": "white", "--background": "var(--color-surface-raised)" } as React.CSSProperties}
+      />
+      <IonContent className="ion-padding">
+        <div className="flex min-h-full flex-col items-center justify-center py-8">
+          <div className="w-full max-w-lg">
+            <div className="mb-4 text-right">
+              <span className="text-xs text-text-muted tabular-nums">
+                {step + 1}/{totalSteps}
+              </span>
+            </div>
+            <div className="min-h-[400px]">
+              <StepRenderer step={currentStep} data={data} setData={setData} generating={generating} error={error} />
+            </div>
           </div>
-          <span className="text-xs text-text-muted tabular-nums">
-            {step + 1}/{totalSteps}
-          </span>
         </div>
-
-        <div className="min-h-[400px]">
-          <StepRenderer step={currentStep} data={data} setData={setData} generating={generating} error={error} />
-        </div>
-
-        <div className="mt-8 flex items-center justify-between">
-          <div className={step === 0 || generating ? "invisible" : ""}>
-            <Button variant="ghost" onClick={back} disabled={step === 0 || generating}>
-              <ArrowLeft size={16} />
-              Back
-            </Button>
+      </IonContent>
+      <IonFooter>
+        <IonToolbar>
+          <div className="flex items-center justify-between px-4 py-2">
+            <div className={step === 0 || generating ? "invisible" : ""}>
+              <Button variant="ghost" onClick={back} disabled={step === 0 || generating}>
+                <ArrowLeft size={16} />
+                Back
+              </Button>
+            </div>
+            {step < totalSteps - 1 ? (
+              <Button variant="primary" onClick={next}>
+                Next
+                <ArrowRight size={16} />
+              </Button>
+            ) : (
+              <Button variant="primary" fullWidth onClick={handleBuildPlan} disabled={generating}>
+                {generating ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Build My Plan"
+                )}
+              </Button>
+            )}
           </div>
-
-          {step < totalSteps - 1 ? (
-            <Button variant="primary" onClick={next}>
-              Next
-              <ArrowRight size={16} />
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={handleBuildPlan}
-              disabled={generating}
-            >
-              {generating ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Build My Plan"
-              )}
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
+        </IonToolbar>
+      </IonFooter>
+    </IonPage>
   );
 }
 

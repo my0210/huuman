@@ -11,7 +11,7 @@ import {
   useMemo,
   useCallback,
 } from "react";
-import { Send, X, Plus, Camera, Loader2, BarChart3 } from "lucide-react";
+import { Send, X, Plus, Camera, Loader2, BarChart3, ArrowUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   IonPage,
@@ -20,6 +20,7 @@ import {
   IonContent,
   IonFooter,
   IonButtons,
+  IonButton,
   IonTitle,
 } from "@ionic/react";
 import { haptics } from "@/lib/haptics";
@@ -33,7 +34,6 @@ import { compressImage, uploadChatImage } from "@/lib/images";
 import { pickPhoto } from "@/lib/camera";
 import { ProfileSheet } from "@/components/layout/ProfileSheet";
 import { Avatar } from "@/components/ui/Avatar";
-import { IconButton } from "@/components/ui/IconButton";
 import { ScrollToBottom } from "@/components/ui/ScrollToBottom";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -292,39 +292,22 @@ export function ChatInterface({
     setPendingImages([]);
   };
 
+  const canSend = (input.trim().length > 0 || pendingImages.length > 0) && !isLoading && !uploading;
+
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader translucent>
         <IonToolbar>
           <IonButtons slot="start">
-            <button
-              onClick={() => {
-                haptics.light();
-                setProfileOpen(true);
-              }}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full active:scale-[0.97] active:opacity-80 transition-[transform,opacity] duration-100"
-            >
-              <Avatar
-                src={avatarUrl}
-                name={displayName || userEmail}
-                size="md"
-              />
-            </button>
+            <IonButton fill="clear" onClick={() => { haptics.light(); setProfileOpen(true); }}>
+              <Avatar src={avatarUrl} name={displayName || userEmail} size="sm" />
+            </IonButton>
           </IonButtons>
-          <IonTitle className="text-lg font-semibold tracking-tight">
-            huuman
-          </IonTitle>
+          <IonTitle>huuman</IonTitle>
           <IonButtons slot="end">
-            <IconButton
-              label="Your data"
-              size="sm"
-              onClick={() => {
-                haptics.light();
-                router.push("/data");
-              }}
-            >
-              <BarChart3 size={20} />
-            </IconButton>
+            <IonButton fill="clear" onClick={() => { haptics.light(); router.push("/data"); }}>
+              <BarChart3 size={20} className="text-text-secondary" />
+            </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
@@ -348,10 +331,7 @@ export function ChatInterface({
         });
       }}>
         <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-          <div
-            ref={scrollRef}
-            className="px-4 py-4 space-y-4"
-          >
+          <div ref={scrollRef} className="px-4 py-4 space-y-4">
             {loadingOlder && (
               <div className="flex justify-center py-2">
                 <div className="flex items-center gap-1">
@@ -367,30 +347,14 @@ export function ChatInterface({
                   {t("chat.ready", currentLanguage)}
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {(
-                    [
-                      {
-                        key: "chat.today" as const,
-                        en: "What should I do today?",
-                      },
-                      {
-                        key: "chat.week" as const,
-                        en: "Show me my week",
-                      },
-                      {
-                        key: "chat.progress" as const,
-                        en: "How am I doing?",
-                      },
-                    ] as const
-                  ).map(({ key, en }) => (
+                  {([
+                    { key: "chat.today" as const, en: "What should I do today?" },
+                    { key: "chat.week" as const, en: "Show me my week" },
+                    { key: "chat.progress" as const, en: "How am I doing?" },
+                  ] as const).map(({ key, en }) => (
                     <button
                       key={key}
-                      onClick={() => {
-                        haptics.light();
-                        sendMessage({
-                          text: t(key, currentLanguage) || en,
-                        });
-                      }}
+                      onClick={() => { haptics.light(); sendMessage({ text: t(key, currentLanguage) || en }); }}
                       className="min-h-[44px] rounded-full border border-border-default px-4 py-2 text-sm text-text-secondary active:bg-surface-raised active:scale-[0.97] transition-[background-color,transform] duration-100"
                     >
                       {t(key, currentLanguage)}
@@ -401,58 +365,29 @@ export function ChatInterface({
             )}
 
             {messages.map((message, i) => {
-              const ts = (
-                message as unknown as { createdAt?: Date | string }
-              ).createdAt;
+              const ts = (message as unknown as { createdAt?: Date | string }).createdAt;
               const time = ts ? new Date(ts) : null;
-              const prevTs =
-                i > 0
-                  ? (
-                      messages[i - 1] as unknown as {
-                        createdAt?: Date | string;
-                      }
-                    ).createdAt
-                  : null;
+              const prevTs = i > 0 ? (messages[i - 1] as unknown as { createdAt?: Date | string }).createdAt : null;
               const prevTime = prevTs ? new Date(prevTs) : null;
-
-              const newDay =
-                time &&
-                (!prevTime ||
-                  time.toDateString() !== prevTime.toDateString());
-              const timeGap =
-                time &&
-                prevTime &&
-                !newDay &&
-                time.getTime() - prevTime.getTime() > 5 * 60 * 1000;
+              const newDay = time && (!prevTime || time.toDateString() !== prevTime.toDateString());
+              const timeGap = time && prevTime && !newDay && time.getTime() - prevTime.getTime() > 5 * 60 * 1000;
 
               return (
                 <div key={message.id}>
                   {newDay && time && (
-                    <p className="text-center text-xs font-medium text-text-muted py-3">
-                      {formatDateLabel(time)}
-                    </p>
+                    <p className="text-center text-xs font-medium text-text-muted py-3">{formatDateLabel(time)}</p>
                   )}
                   {timeGap && time && (
-                    <p className="text-center text-xs text-text-muted py-1.5">
-                      {formatTime(time)}
-                    </p>
+                    <p className="text-center text-xs text-text-muted py-1.5">{formatTime(time)}</p>
                   )}
-                  <div
-                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[85%] ${
-                        message.role === "user"
-                          ? "rounded-radius-lg rounded-br-radius-sm bg-surface-raised px-4 py-2.5"
-                          : "space-y-3"
-                      }`}
-                    >
+                  <div className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[85%] ${
+                      message.role === "user"
+                        ? "rounded-[18px] rounded-br-[6px] bg-surface-raised px-4 py-2.5"
+                        : "space-y-3"
+                    }`}>
                       {message.parts.map((part, index) => (
-                        <MessagePart
-                          key={index}
-                          part={part}
-                          role={message.role}
-                        />
+                        <MessagePart key={index} part={part} role={message.role} />
                       ))}
                     </div>
                   </div>
@@ -470,7 +405,6 @@ export function ChatInterface({
               </div>
             )}
           </div>
-
           <ScrollToBottom visible={showScrollBtn} onClick={scrollToBottom} />
         </ChatActionsProvider>
       </IonContent>
@@ -482,10 +416,10 @@ export function ChatInterface({
       />
 
       <IonFooter>
-        <IonToolbar>
-          <form onSubmit={handleSubmit} className="px-4 py-2">
+        <IonToolbar className="ion-no-border">
+          <form onSubmit={handleSubmit} className="px-3 py-2">
             {error && (
-              <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
+              <div className="mb-2 rounded-xl border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">
                 {error}
               </div>
             )}
@@ -493,79 +427,57 @@ export function ChatInterface({
               <div className="flex gap-2 mb-2 overflow-x-auto pb-1">
                 {pendingImages.map((img, i) => (
                   <div key={i} className="relative flex-none">
-                    <img
-                      src={img.previewUrl}
-                      alt={img.file.name}
-                      className="h-16 w-16 rounded-radius-sm object-cover border border-border-default"
-                    />
+                    <img src={img.previewUrl} alt={img.file.name} className="h-16 w-16 rounded-lg object-cover border border-border-default" />
                     <button
                       type="button"
                       onClick={() => removeImage(i)}
                       disabled={uploading}
-                      className="absolute -top-3 -right-3 flex min-h-[44px] min-w-[44px] items-start justify-end p-2 transition-opacity disabled:opacity-30"
+                      className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-surface-elevated border border-border-default text-text-secondary"
                     >
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border-default bg-surface-elevated text-text-secondary active:scale-[0.97] transition-transform duration-100">
-                        <X size={12} />
-                      </span>
+                      <X size={12} />
                     </button>
                   </div>
                 ))}
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <IconButton
-                label={commandMenuOpen ? "Close menu" : "Open menu"}
+            {/* ChatGPT-style pill input bar */}
+            <div className="flex items-end gap-2">
+              <button
                 type="button"
-                onClick={() => setCommandMenuOpen(!commandMenuOpen)}
-                className={
-                  commandMenuOpen
-                    ? "bg-surface-elevated text-text-secondary"
-                    : ""
-                }
+                onClick={() => { haptics.light(); setCommandMenuOpen(!commandMenuOpen); }}
+                className="flex h-[36px] w-[36px] flex-none items-center justify-center rounded-full bg-surface-elevated text-text-secondary active:scale-[0.93] transition-transform mb-[2px]"
               >
                 {commandMenuOpen ? <X size={18} /> : <Plus size={20} />}
-              </IconButton>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  if (commandMenuOpen) setCommandMenuOpen(false);
-                }}
-                onFocus={() => {
-                  if (commandMenuOpen) setCommandMenuOpen(false);
-                }}
-                placeholder={
-                  pendingImages.length > 0
-                    ? "Add a note..."
-                    : t("chat.placeholder", currentLanguage)
-                }
-                className="flex-1 min-h-[44px] rounded-radius-md border border-border-default bg-surface-raised px-4 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:border-border-strong focus:outline-none transition-colors"
-              />
-              <IconButton
-                label="Upload image"
-                type="button"
-                onClick={handleNativeCamera}
-                disabled={isLoading || uploading}
-              >
-                <Camera size={20} />
-              </IconButton>
-              <IconButton
-                label="Send"
+              </button>
+              <div className="flex flex-1 items-end rounded-[22px] border border-border-default bg-surface-raised px-1 min-h-[44px]">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => { setInput(e.target.value); if (commandMenuOpen) setCommandMenuOpen(false); }}
+                  onFocus={() => { if (commandMenuOpen) setCommandMenuOpen(false); }}
+                  placeholder={pendingImages.length > 0 ? "Add a note..." : t("chat.placeholder", currentLanguage)}
+                  className="flex-1 bg-transparent px-3 py-2.5 text-[15px] text-text-primary placeholder:text-text-muted focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleNativeCamera}
+                  disabled={isLoading || uploading}
+                  className="flex h-[36px] w-[36px] flex-none items-center justify-center text-text-muted active:text-text-secondary transition-colors disabled:opacity-30 mb-[4px]"
+                >
+                  <Camera size={20} />
+                </button>
+              </div>
+              <button
                 type="submit"
-                disabled={
-                  (!input.trim() && pendingImages.length === 0) ||
-                  isLoading ||
-                  uploading
-                }
-                className="h-11 w-11 flex-none rounded-full bg-white text-black"
+                disabled={!canSend}
+                className={`flex h-[36px] w-[36px] flex-none items-center justify-center rounded-full transition-all mb-[2px] ${
+                  canSend
+                    ? "bg-white text-black active:scale-[0.93]"
+                    : "bg-surface-elevated text-text-muted"
+                }`}
               >
-                {uploading ? (
-                  <Loader2 size={18} className="animate-spin" />
-                ) : (
-                  <Send size={18} />
-                )}
-              </IconButton>
+                {uploading ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={20} strokeWidth={2.5} />}
+              </button>
             </div>
           </form>
         </IonToolbar>

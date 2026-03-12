@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { IonPage, IonContent, IonFooter, IonToolbar } from "@ionic/react";
-import { Trash2, Send, Scale, Plus, ChevronRight, Camera, Utensils } from "lucide-react";
+import { IonPage, IonContent, IonFooter, IonToolbar, IonList, IonItem, IonLabel } from "@ionic/react";
+import { Trash2, Send, Scale, Plus, Camera, Utensils } from "lucide-react";
 import { NavHeader } from "@/components/ui/NavHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { IconButton } from "@/components/ui/IconButton";
@@ -147,14 +147,26 @@ export default function DataPage() {
       <IonContent>
         <div className="px-4 py-6 space-y-8">
         {profile && (
-          <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted px-4 mb-1">
               Profile
             </h2>
-            <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
-              <ProfileRow label="Email" value={profile.email} />
-              {profile.age && <ProfileRow label="Age" value={`${profile.age}`} />}
-            </div>
+            <IonList inset>
+              <IonItem>
+                <IonLabel>
+                  <p>Email</p>
+                  <h2 className="text-sm">{profile.email}</h2>
+                </IonLabel>
+              </IonItem>
+              {profile.age && (
+                <IonItem>
+                  <IonLabel>
+                    <p>Age</p>
+                    <h2 className="text-sm">{profile.age}</h2>
+                  </IonLabel>
+                </IonItem>
+              )}
+            </IonList>
           </section>
         )}
 
@@ -174,70 +186,50 @@ export default function DataPage() {
         />
 
         {profile?.domainBaselines && (
-          <section className="space-y-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted px-4 mb-1">
               Baselines
             </h2>
-            <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
+            <IonList inset>
               {(["cardio", "strength", "mindfulness", "nutrition", "sleep"] as const).map(
                 (domain) => (
-                  <div key={domain} className="px-4 py-3">
-                    <p className={`text-xs font-medium ${domainStyle[domain].text}`}>
-                      {DOMAIN_META[domain].label}
-                    </p>
-                    <p className="text-sm text-text-secondary mt-0.5">
-                      {formatSingleDomainBaseline(domain, profile.domainBaselines!)}
-                    </p>
-                  </div>
+                  <IonItem key={domain}>
+                    <IonLabel>
+                      <h2 className={`text-xs font-medium ${domainStyle[domain].text}`}>
+                        {DOMAIN_META[domain].label}
+                      </h2>
+                      <p className="text-sm text-text-secondary mt-0.5">
+                        {formatSingleDomainBaseline(domain, profile.domainBaselines!)}
+                      </p>
+                    </IonLabel>
+                  </IonItem>
                 ),
               )}
-            </div>
-            <p className="text-xs text-text-muted px-1">Collected during onboarding</p>
+            </IonList>
+            <p className="text-xs text-text-muted px-5 mt-1">Collected during onboarding</p>
           </section>
         )}
 
-        <section className="space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+        <section>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-text-muted px-4 mb-1">
             Tracking
           </h2>
-          <div className="rounded-radius-lg border border-border-default bg-surface-raised divide-y divide-border-default">
-            <button
-              onClick={() => {
-                haptics.light();
-                router.push("/data/progress-photos");
-              }}
-              className="flex items-center justify-between w-full px-4 min-h-[44px] text-left active:bg-surface-elevated transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Camera size={14} className="text-domain-strength" />
-                <span className="text-sm text-text-primary">Progress Photos</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {photoCounts.progress > 0 && (
-                  <span className="text-xs text-text-muted">{photoCounts.progress}</span>
-                )}
-                <ChevronRight size={14} className="text-text-muted" />
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                haptics.light();
-                router.push("/data/meal-log");
-              }}
-              className="flex items-center justify-between w-full px-4 min-h-[44px] text-left active:bg-surface-elevated transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <Utensils size={14} className="text-domain-nutrition" />
-                <span className="text-sm text-text-primary">Meal Log</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {photoCounts.meals > 0 && (
-                  <span className="text-xs text-text-muted">{photoCounts.meals}</span>
-                )}
-                <ChevronRight size={14} className="text-text-muted" />
-              </div>
-            </button>
-          </div>
+          <IonList inset>
+            <IonItem button detail onClick={() => { haptics.light(); router.push("/data/progress-photos"); }}>
+              <Camera size={18} className="text-domain-strength mr-3" />
+              <IonLabel>Progress Photos</IonLabel>
+              {photoCounts.progress > 0 && (
+                <span slot="end" className="text-xs text-text-muted">{photoCounts.progress}</span>
+              )}
+            </IonItem>
+            <IonItem button detail onClick={() => { haptics.light(); router.push("/data/meal-log"); }}>
+              <Utensils size={18} className="text-domain-nutrition mr-3" />
+              <IonLabel>Meal Log</IonLabel>
+              {photoCounts.meals > 0 && (
+                <span slot="end" className="text-xs text-text-muted">{photoCounts.meals}</span>
+              )}
+            </IonItem>
+          </IonList>
         </section>
 
         {grouped.length > 0 && (
@@ -317,14 +309,6 @@ export default function DataPage() {
   );
 }
 
-function ProfileRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between px-4 py-3">
-      <span className="text-xs text-text-muted">{label}</span>
-      <span className="text-sm text-text-secondary">{value}</span>
-    </div>
-  );
-}
 
 function ContextCard({
   item,

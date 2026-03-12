@@ -4,8 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { IonPage, IonContent, IonList, IonItem, IonInput, IonButton } from "@ionic/react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -44,50 +43,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface-base">
-      <div className="w-full max-w-sm space-y-8 px-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-text-primary">huuman</h1>
-          <p className="mt-2 text-sm text-text-muted">Sign in to your account</p>
+    <IonPage>
+      <IonContent className="ion-padding">
+        <div className="flex min-h-full items-center justify-center">
+          <div className="w-full max-w-sm space-y-8">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-text-primary">huuman</h1>
+              <p className="mt-2 text-sm text-text-muted">Sign in to your account</p>
+            </div>
+
+            <form onSubmit={handleLogin}>
+              <IonList inset>
+                <IonItem>
+                  <IonInput
+                    type="email"
+                    value={email}
+                    onIonInput={(e) => setEmail(e.detail.value ?? "")}
+                    placeholder="Email"
+                    required
+                  />
+                </IonItem>
+                <IonItem>
+                  <IonInput
+                    type="password"
+                    value={password}
+                    onIonInput={(e) => setPassword(e.detail.value ?? "")}
+                    placeholder="Password"
+                    required
+                  />
+                </IonItem>
+              </IonList>
+
+              {error && (
+                <p className="text-xs text-semantic-error px-4 mt-2">{error}</p>
+              )}
+
+              <div className="px-4 mt-4">
+                <IonButton expand="block" type="submit" disabled={loading}>
+                  {loading ? "Signing in..." : "Sign in"}
+                </IonButton>
+              </div>
+            </form>
+
+            <p className="text-center text-xs text-text-muted">
+              No account?{" "}
+              <Link href="/signup" className="text-text-secondary active:text-text-primary">
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            required
-          />
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            required
-          />
-
-          {error && (
-            <p className="text-xs text-semantic-error">{error}</p>
-          )}
-
-          <Button
-            type="submit"
-            disabled={loading}
-            fullWidth
-            size="lg"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </Button>
-        </form>
-
-        <p className="text-center text-xs text-text-muted">
-          No account?{" "}
-          <Link href="/signup" className="text-text-secondary active:text-text-primary">
-            Sign up
-          </Link>
-        </p>
-      </div>
-    </div>
+      </IonContent>
+    </IonPage>
   );
 }

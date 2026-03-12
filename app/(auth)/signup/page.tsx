@@ -4,11 +4,10 @@ import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { IonPage, IonContent, IonList, IonItem, IonInput, IonButton } from "@ionic/react";
 import LanguageSelector from "@/components/auth/LanguageSelector";
 import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 
 export default function SignupPage() {
   return (
@@ -67,51 +66,58 @@ function SignupForm() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface-base animate-fade-up">
-      <div className="w-full max-w-sm space-y-8 px-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-text-primary">huuman</h1>
-          <p className="mt-2 text-sm text-text-muted">{t("signup.title", lang)}</p>
+    <IonPage>
+      <IonContent className="ion-padding">
+        <div className="flex min-h-full items-center justify-center animate-fade-up">
+          <div className="w-full max-w-sm space-y-8">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-text-primary">huuman</h1>
+              <p className="mt-2 text-sm text-text-muted">{t("signup.title", lang)}</p>
+            </div>
+
+            <form onSubmit={handleSignup}>
+              <IonList inset>
+                <IonItem>
+                  <IonInput
+                    type="email"
+                    value={email}
+                    onIonInput={(e) => setEmail(e.detail.value ?? "")}
+                    placeholder={t("signup.email", lang)}
+                    required
+                  />
+                </IonItem>
+                <IonItem>
+                  <IonInput
+                    type="password"
+                    value={password}
+                    onIonInput={(e) => setPassword(e.detail.value ?? "")}
+                    placeholder={t("signup.password", lang)}
+                    required
+                    minlength={6}
+                  />
+                </IonItem>
+              </IonList>
+
+              {error && (
+                <p className="text-xs text-semantic-error px-4 mt-2">{error}</p>
+              )}
+
+              <div className="px-4 mt-4">
+                <IonButton expand="block" type="submit" disabled={loading}>
+                  {loading ? t("signup.loading", lang) : t("signup.submit", lang)}
+                </IonButton>
+              </div>
+            </form>
+
+            <p className="text-center text-xs text-text-muted">
+              {t("signup.hasAccount", lang)}{" "}
+              <Link href="/login" className="text-text-secondary active:text-text-primary">
+                {t("signup.signin", lang)}
+              </Link>
+            </p>
+          </div>
         </div>
-
-        <form onSubmit={handleSignup} className="space-y-4">
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder={t("signup.email", lang)}
-            required
-          />
-          <Input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t("signup.password", lang)}
-            required
-            minLength={6}
-          />
-
-          {error && (
-            <p className="text-xs text-semantic-error">{error}</p>
-          )}
-
-          <Button
-            type="submit"
-            disabled={loading}
-            fullWidth
-            size="lg"
-          >
-            {loading ? t("signup.loading", lang) : t("signup.submit", lang)}
-          </Button>
-        </form>
-
-        <p className="text-center text-xs text-text-muted">
-          {t("signup.hasAccount", lang)}{" "}
-          <Link href="/login" className="text-text-secondary active:text-text-primary">
-            {t("signup.signin", lang)}
-          </Link>
-        </p>
-      </div>
-    </div>
+      </IonContent>
+    </IonPage>
   );
 }

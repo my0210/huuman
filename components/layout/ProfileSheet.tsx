@@ -12,8 +12,14 @@ import {
   Camera,
   MessageSquarePlus,
   ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
+import {
+  IonList,
+  IonItem,
+  IonLabel,
+  IonIcon,
+} from "@ionic/react";
+import { checkmark } from "ionicons/icons";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/images";
@@ -213,12 +219,13 @@ export function ProfileSheet({
         </Sheet.Header>
         <Sheet.Body>
           {view === "language" ? (
-            <div className="px-4 py-2">
+            <IonList inset>
               {LANGUAGES.map((lang) => {
                 const isActive = currentLanguage === lang.code;
                 return (
-                  <button
+                  <IonItem
                     key={lang.code}
+                    button
                     onClick={() => {
                       if (lang.code === currentLanguage) return;
                       haptics.light();
@@ -226,57 +233,34 @@ export function ProfileSheet({
                       router.refresh();
                       close();
                     }}
-                    className={`w-full flex items-center justify-between rounded-radius-md px-4 min-h-[44px] text-left text-sm transition-colors duration-100 ${
-                      isActive
-                        ? "bg-semantic-info text-text-primary"
-                        : "text-text-secondary active:bg-surface-raised"
-                    }`}
                   >
-                    <div className="flex items-baseline gap-2 min-w-0">
-                      <span className="font-medium truncate">
-                        {lang.native}
-                      </span>
-                      <span
-                        className={`text-xs flex-none ${isActive ? "text-text-secondary" : "text-text-muted"}`}
-                      >
-                        {lang.region}
-                      </span>
-                    </div>
-                    {isActive && <Check size={14} className="flex-none ml-2" />}
-                  </button>
+                    <IonLabel>
+                      <h2 className="text-sm font-medium">{lang.native}</h2>
+                      <p>{lang.region}</p>
+                    </IonLabel>
+                    {isActive && <IonIcon icon={checkmark} slot="end" style={{ color: "var(--color-semantic-info)" }} />}
+                  </IonItem>
                 );
               })}
-            </div>
+            </IonList>
           ) : (
-            <div className="px-4 py-3 space-y-1">
-              <div className="rounded-radius-md bg-surface-raised p-4">
+            <div className="py-2">
+              <div className="mx-4 mb-3 rounded-radius-md bg-surface-raised p-4">
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleAvatarUpload}
-                    className="relative flex-none active:opacity-70 transition-opacity"
-                  >
+                  <button type="button" onClick={handleAvatarUpload} className="relative flex-none active:opacity-70 transition-opacity">
                     {avatarSrc ? (
-                      <img
-                        src={avatarSrc}
-                        alt="Avatar"
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
+                      <img src={avatarSrc} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
                     ) : (
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-elevated">
-                        <span className="text-lg font-semibold text-text-secondary">
-                          {initial}
-                        </span>
+                        <span className="text-lg font-semibold text-text-secondary">{initial}</span>
                       </div>
                     )}
-                    <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated ring-2 ring-surface-base">
+                    <div className="absolute bottom-0 right-0 flex h-5 w-5 items-center justify-center rounded-full bg-surface-elevated ring-2 ring-surface-overlay">
                       <Camera size={10} className="text-text-secondary" />
                     </div>
                   </button>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">
-                      Name
-                    </p>
+                    <p className="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Name</p>
                     <input
                       ref={nameRef}
                       type="text"
@@ -290,66 +274,57 @@ export function ProfileSheet({
                 </div>
               </div>
 
-              <MenuRow
-                icon={Globe}
-                label={t("settings.language", currentLanguage)}
-                detail={
-                  getLanguageByCode(currentLanguage)?.native ?? "English"
-                }
-                onClick={() => setView("language")}
-                chevron
-              />
+              <IonList inset>
+                <IonItem button detail onClick={() => { haptics.light(); setView("language"); }}>
+                  <Globe size={18} className="text-text-tertiary mr-3" />
+                  <IonLabel>
+                    <h2 className="text-sm font-medium">{t("settings.language", currentLanguage)}</h2>
+                    <p>{getLanguageByCode(currentLanguage)?.native ?? "English"}</p>
+                  </IonLabel>
+                </IonItem>
+                <IonItem button detail onClick={() => { haptics.light(); close(); router.push("/data"); }}>
+                  <Database size={18} className="text-text-tertiary mr-3" />
+                  <IonLabel>
+                    <h2 className="text-sm font-medium">{t("settings.data", currentLanguage)}</h2>
+                    <p>{t("settings.dataDesc", currentLanguage)}</p>
+                  </IonLabel>
+                </IonItem>
+                {userEmail && FEEDBACK_EMAILS.includes(userEmail) && (
+                  <IonItem button detail onClick={() => { haptics.light(); close(); router.push("/feedback"); }}>
+                    <MessageSquarePlus size={18} className="text-text-tertiary mr-3" />
+                    <IonLabel>
+                      <h2 className="text-sm font-medium">Feedback board</h2>
+                      <p>View all user feedback</p>
+                    </IonLabel>
+                  </IonItem>
+                )}
+              </IonList>
 
-              <MenuRow
-                icon={Database}
-                label={t("settings.data", currentLanguage)}
-                detail={t("settings.dataDesc", currentLanguage)}
-                onClick={() => {
-                  close();
-                  router.push("/data");
-                }}
-                chevron
-              />
+              <IonList inset>
+                <IonItem button onClick={() => { haptics.light(); handleRedoOnboarding(); }} disabled={busy}>
+                  <RotateCcw size={18} className="text-text-tertiary mr-3" />
+                  <IonLabel>
+                    <h2 className="text-sm font-medium">{t("settings.redoOnboarding", currentLanguage)}</h2>
+                    <p>{t("settings.redoOnboardingDesc", currentLanguage)}</p>
+                  </IonLabel>
+                </IonItem>
+                <IonItem button onClick={() => { haptics.light(); handleResetEverything(); }} disabled={busy}>
+                  <Trash2 size={18} className="text-text-tertiary mr-3" />
+                  <IonLabel>
+                    <h2 className="text-sm font-medium">{t("settings.reset", currentLanguage)}</h2>
+                    <p>{t("settings.resetDesc", currentLanguage)}</p>
+                  </IonLabel>
+                </IonItem>
+              </IonList>
 
-              {userEmail && FEEDBACK_EMAILS.includes(userEmail) && (
-                <MenuRow
-                  icon={MessageSquarePlus}
-                  label="Feedback board"
-                  detail="View all user feedback"
-                  onClick={() => {
-                    close();
-                    router.push("/feedback");
-                  }}
-                  chevron
-                />
-              )}
-
-              <div className="border-t border-border-subtle my-2" />
-
-              <MenuRow
-                icon={RotateCcw}
-                label={t("settings.redoOnboarding", currentLanguage)}
-                detail={t("settings.redoOnboardingDesc", currentLanguage)}
-                onClick={handleRedoOnboarding}
-                disabled={busy}
-              />
-
-              <MenuRow
-                icon={Trash2}
-                label={t("settings.reset", currentLanguage)}
-                detail={t("settings.resetDesc", currentLanguage)}
-                onClick={handleResetEverything}
-                disabled={busy}
-              />
-
-              <div className="border-t border-border-subtle my-2" />
-
-              <MenuRow
-                icon={LogOut}
-                label={t("settings.signOut", currentLanguage)}
-                onClick={handleLogout}
-                muted
-              />
+              <IonList inset>
+                <IonItem button onClick={() => { haptics.light(); handleLogout(); }}>
+                  <LogOut size={18} className="text-text-tertiary mr-3" />
+                  <IonLabel className="text-text-tertiary">
+                    <h2 className="text-sm font-medium">{t("settings.signOut", currentLanguage)}</h2>
+                  </IonLabel>
+                </IonItem>
+              </IonList>
             </div>
           )}
         </Sheet.Body>
@@ -368,42 +343,3 @@ export function ProfileSheet({
   );
 }
 
-function MenuRow({
-  icon: Icon,
-  label,
-  detail,
-  onClick,
-  disabled,
-  chevron,
-  muted,
-}: {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  detail?: string;
-  onClick: () => void;
-  disabled?: boolean;
-  chevron?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <button
-      onClick={() => {
-        haptics.light();
-        onClick();
-      }}
-      disabled={disabled}
-      className={`w-full flex items-center gap-3 rounded-radius-md px-3 min-h-[44px] py-3 text-left text-sm active:bg-surface-raised transition-colors duration-100 disabled:opacity-40 ${
-        muted ? "text-text-tertiary" : "text-text-secondary"
-      }`}
-    >
-      <Icon size={16} className="flex-none text-text-tertiary" />
-      <div className="flex-1 min-w-0">
-        <p className="font-medium">{label}</p>
-        {detail && <p className="text-xs text-text-muted">{detail}</p>}
-      </div>
-      {chevron && (
-        <ChevronRight size={16} className="flex-none text-text-muted" />
-      )}
-    </button>
-  );
-}
