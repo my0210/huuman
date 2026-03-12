@@ -285,7 +285,7 @@ export function ChatInterface({
 
   return (
     <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
-      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between">
+      <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
         <button
           onClick={() => {
             haptics.light();
@@ -460,7 +460,7 @@ export function ChatInterface({
 
       <form
         onSubmit={handleSubmit}
-        className="flex-none border-t border-border-subtle px-4 pt-3 pb-3"
+        className="flex-none border-t border-border-subtle px-4 pt-3 safe-bottom"
       >
         {error && (
           <div className="mb-2 rounded-radius-md border border-semantic-error/20 bg-semantic-error-muted px-3 py-2 text-xs text-semantic-error">

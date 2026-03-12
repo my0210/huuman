@@ -281,7 +281,7 @@ export default function DataPage() {
           e.preventDefault();
           handleAdd();
         }}
-        className="flex-none border-t border-border-default bg-surface-base px-4 pt-3 pb-3"
+        className="flex-none border-t border-border-default bg-surface-base px-4 pt-3 safe-bottom"
       >
         <div className="flex items-center gap-2">
           <Input
