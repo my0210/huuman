@@ -231,7 +231,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   };
 
   return (
-    <div className="flex flex-1 min-h-0 flex-col bg-surface-base">
+    <div className="flex flex-1 min-h-0 flex-col overflow-hidden bg-surface-base">
       {/* Header */}
       <header className="flex-none border-b border-border-subtle px-4 py-3 flex items-center justify-between safe-top">
         <button onClick={() => setProfileOpen(true)} className="active:opacity-70 transition-opacity">
@@ -251,7 +251,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
 
       {/* Messages */}
       <ChatActionsProvider sendMessage={(msg) => sendMessage(msg)}>
-      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 overscroll-contain">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4 [-webkit-overflow-scrolling:touch]">
         {loadingOlder && (
           <div className="flex justify-center py-2">
             <Loader2 size={16} className="animate-spin text-text-muted" />
