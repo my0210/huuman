@@ -1,0 +1,33 @@
+---
+description: Capacitor iOS + Xcode Cloud build rules. Read before any push or iOS-related change.
+alwaysApply: true
+---
+
+# Capacitor iOS Build Rules
+
+## Before every push, verify:
+
+1. **All `@capacitor/*` packages in `package.json` must match `ios/App/CapApp-SPM/Package.swift`**. SPM resolves Capacitor plugins from `node_modules/` via relative paths. If a package is in Package.swift but not in package.json, the iOS build fails.
+
+2. **Never remove `@capacitor/haptics`, `@capacitor/camera`, or `@capacitor/share` from package.json** -- even if no web code imports them. The iOS native project depends on them via SPM.
+
+3. **Buttons inside `<form>` elements must have `type="button"`** unless they are the submit button. Plain `<button>` defaults to `type="submit"` in HTML and will submit the form instead of running the onClick handler.
+
+## Capacitor `contentInset: "always"` behavior
+
+The WKWebView uses `contentInset: "always"`, which means:
+
+- **Normal-flow elements**: automatically inset by safe area. Do NOT add `safe-top` / `safe-bottom` -- it double-counts.
+- **`position: fixed` elements**: NOT affected by contentInset. DO add `safe-top` / `safe-bottom`.
+- **Never use `h-[100dvh]`** for the app shell -- it extends past the visible area when contentInset is active. Use `fixed inset-0` instead.
+
+## Safe-area classes
+
+`safe-top`, `safe-bottom`, `safe-x` are defined as `@utility` in globals.css (Tailwind 4 layer). Regular CSS classes lose specificity to Tailwind utilities -- always use `@utility` for these.
+
+## Xcode Cloud
+
+- `ios/App/ci_scripts/ci_post_clone.sh` installs Node.js via nvm and runs `npm ci`. This is required because Xcode Cloud has no Node.js pre-installed.
+- Xcode Cloud has no Homebrew link permissions -- never use `brew install node`.
+- The iOS project at `ios/App/` does NOT need to be rebuilt for web-only changes. Capacitor loads the app from `https://app.huuman.life` (remote URL in capacitor.config.ts).
+- Xcode rebuild IS needed for: capacitor.config.ts changes, new/removed Capacitor plugins, Info.plist changes, splash/icon changes.
