@@ -1,0 +1,20 @@
+{
+	"appId": "life.huuman.app",
+	"appName": "huuman",
+	"webDir": "public",
+	"server": {
+		"url": "https://app.huuman.life",
+		"cleartext": false
+	},
+	"ios": {
+		"scheme": "huuman",
+		"contentInset": "always",
+		"preferredContentMode": "mobile",
+		"backgroundColor": "#09090b"
+	},
+	"packageClassList": [
+		"CAPCameraPlugin",
+		"HapticsPlugin",
+		"SharePlugin"
+	]
+}
