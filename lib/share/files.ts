@@ -1,5 +1,8 @@
 "use client";
 
+import { Capacitor } from "@capacitor/core";
+import { Share } from "@capacitor/share";
+
 export type ShareFileOutcome = "shared" | "downloaded" | "cancelled";
 
 interface ShareFileOptions {
@@ -25,6 +28,15 @@ export function blobToFile(blob: Blob, filename: string): File {
   });
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function downloadBlob(blob: Blob, filename: string) {
   const href = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
@@ -47,12 +59,39 @@ export async function fetchImageAsFile(url: string, filename: string) {
   return blobToFile(blob, filename);
 }
 
+async function shareViaCapacitor(file: File, title?: string, text?: string): Promise<ShareFileOutcome> {
+  const dataUrl = await blobToDataUrl(file);
+  const result = await Share.share({
+    title,
+    text,
+    files: [dataUrl],
+    dialogTitle: title,
+  });
+  if (result.activityType === undefined && !result.activityType) {
+    return "shared";
+  }
+  return "shared";
+}
+
 export async function shareFileOrDownload({
   file,
   title,
   text,
   downloadName = file.name,
 }: ShareFileOptions): Promise<ShareFileOutcome> {
+  // Native Capacitor share -- reliable on iOS, uses system share sheet
+  if (Capacitor.isNativePlatform()) {
+    try {
+      return await shareViaCapacitor(file, title, text);
+    } catch (error) {
+      if (error instanceof Error && error.message?.includes("cancel")) {
+        return "cancelled";
+      }
+      throw error;
+    }
+  }
+
+  // Web Share API
   const nav = navigator as Navigator & {
     canShare?: (data?: ShareData) => boolean;
   };

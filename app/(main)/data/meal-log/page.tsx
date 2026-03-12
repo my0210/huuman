@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Trash2, Utensils, Pencil, Flame, Beef } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Drawer } from "@/components/layout/Drawer";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage, uploadChatImage, extractExifDate } from "@/lib/images";
+import { pickPhoto } from "@/lib/camera";
 
 interface MealPhoto {
   id: string;
@@ -350,19 +351,18 @@ function MealTitleWithEdit({
 }
 
 function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [mealType, setMealType] = useState<string>("");
   const [uploading, setUploading] = useState(false);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f || !f.type.startsWith("image/")) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    const exifDate = await extractExifDate(f);
+  const handlePickPhoto = async () => {
+    const result = await pickPhoto("prompt");
+    if (!result) return;
+    setFile(result.file);
+    setPreview(result.previewUrl);
+    const exifDate = await extractExifDate(result.file);
     if (exifDate) setDate(exifDate);
   };
 
@@ -398,14 +398,13 @@ function MealUploadForm({ onUploaded }: { onUploaded: (photo: MealPhoto) => void
         </div>
       ) : (
         <button
-          onClick={() => fileRef.current?.click()}
+          onClick={handlePickPhoto}
           className="w-full rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/50 py-12 flex flex-col items-center gap-2 hover:border-zinc-500 transition-colors"
         >
           <Utensils size={24} className="text-zinc-500" />
           <span className="text-sm text-zinc-500">Choose photo</span>
         </button>
       )}
-      <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
 
       <div className="space-y-1.5">
         <label className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Date</label>

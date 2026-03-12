@@ -45,5 +45,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>huuman uses your camera to capture progress photos and meal photos for your coach.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>huuman accesses your photo library to upload progress photos, meal photos, and your avatar.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>huuman can save shared images to your photo library.</string>
 </dict>
 </plist>

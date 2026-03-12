@@ -15,6 +15,7 @@ import { ChatActionsProvider } from "./ChatActions";
 import { getSavedLanguage, type LanguageCode } from "@/lib/languages";
 import { t } from "@/lib/translations";
 import { compressImage, uploadChatImage } from "@/lib/images";
+import { pickPhoto } from "@/lib/camera";
 import { ProfileSheet } from "@/components/layout/ProfileSheet";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconButton } from "@/components/ui/IconButton";
@@ -47,7 +48,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
   const isLoadingOlderRef = useRef(false);
   const prevScrollHeightRef = useRef(0);
   const autoSentRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const transport = useMemo(
     () =>
@@ -169,17 +170,12 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
       .catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const handleNativeCamera = useCallback(async () => {
     setError(null);
-
-    const newItems: PendingImage[] = Array.from(files)
-      .filter((f) => f.type.startsWith("image/"))
-      .map((file) => ({ file, previewUrl: URL.createObjectURL(file) }));
-
-    setPendingImages((prev) => [...prev, ...newItems]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    const result = await pickPhoto("prompt");
+    if (result) {
+      setPendingImages((prev) => [...prev, result]);
+    }
   }, []);
 
   const removeImage = useCallback((index: number) => {
@@ -377,14 +373,6 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           </div>
         )}
         <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/gif,image/webp"
-            multiple
-            onChange={handleImageSelect}
-            className="hidden"
-          />
           <IconButton
             label={commandMenuOpen ? "Close menu" : "Open menu"}
             onClick={() => setCommandMenuOpen(!commandMenuOpen)}
@@ -405,7 +393,7 @@ export function ChatInterface({ chatId, initialMessages, hasOlderMessages, userE
           />
           <IconButton
             label="Upload image"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handleNativeCamera}
             disabled={isLoading || uploading}
             className=""
           >

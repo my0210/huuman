@@ -19,8 +19,11 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.46",
     "@ai-sdk/react": "^3.0.99",
+    "@capacitor/camera": "^8.0.2",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/haptics": "^8.0.1",
     "@capacitor/ios": "^8.2.0",
+    "@capacitor/share": "^8.0.1",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",

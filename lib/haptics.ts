@@ -1,4 +1,9 @@
+import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
+
 type HapticStyle = "light" | "medium" | "heavy";
+
+const isNative = Capacitor.isNativePlatform();
 
 const WEB_PATTERNS: Record<HapticStyle, number> = {
   light: 10,
@@ -6,27 +11,42 @@ const WEB_PATTERNS: Record<HapticStyle, number> = {
   heavy: 40,
 };
 
+const NATIVE_IMPACT: Record<HapticStyle, ImpactStyle> = {
+  light: ImpactStyle.Light,
+  medium: ImpactStyle.Medium,
+  heavy: ImpactStyle.Heavy,
+};
+
 /**
- * True when the platform supports programmatic vibration.
- * iOS Safari does NOT support the Vibration API, so all haptics calls
- * are silent there. Components should provide visual press feedback
- * (whileTap scale + brightness) to compensate.
+ * True when the platform supports haptic feedback --
+ * either native (Capacitor) or web (Vibration API).
  */
 export const canVibrate =
-  typeof navigator !== "undefined" && "vibrate" in navigator;
+  isNative || (typeof navigator !== "undefined" && "vibrate" in navigator);
 
-function vibrate(pattern: number | number[]) {
-  if (canVibrate) {
-    navigator.vibrate(pattern);
+function impact(style: HapticStyle) {
+  if (isNative) {
+    Haptics.impact({ style: NATIVE_IMPACT[style] });
+    return;
+  }
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(WEB_PATTERNS[style]);
   }
 }
 
-function impact(style: HapticStyle) {
-  vibrate(WEB_PATTERNS[style]);
-}
-
 function notification(type: "success" | "warning" | "error") {
-  vibrate(type === "success" ? [20, 50, 20] : 30);
+  if (isNative) {
+    const map: Record<string, NotificationType> = {
+      success: NotificationType.Success,
+      warning: NotificationType.Warning,
+      error: NotificationType.Error,
+    };
+    Haptics.notification({ type: map[type] });
+    return;
+  }
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(type === "success" ? [20, 50, 20] : 30);
+  }
 }
 
 export const haptics = {
@@ -36,5 +56,13 @@ export const haptics = {
   success: () => notification("success"),
   warning: () => notification("warning"),
   error: () => notification("error"),
-  selection: () => impact("light"),
+  selection: () => {
+    if (isNative) {
+      Haptics.selectionStart();
+      Haptics.selectionChanged();
+      Haptics.selectionEnd();
+      return;
+    }
+    impact("light");
+  },
 };

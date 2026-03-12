@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/images";
+import { pickPhoto } from "@/lib/camera";
 import {
   LANGUAGES,
   getSavedLanguage,
@@ -50,7 +51,6 @@ export function ProfileSheet({
   const [busy, setBusy] = useState(false);
 
   const nameRef = useRef<HTMLInputElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCurrentLanguage(getSavedLanguage());
@@ -81,15 +81,15 @@ export function ProfileSheet({
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleAvatarUpload = async () => {
+    const result = await pickPhoto("prompt");
+    if (!result) return;
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const compressed = await compressImage(file);
+      const compressed = await compressImage(result.file);
       const path = `${user.id}/avatar.jpg`;
 
       const { error } = await supabase.storage
@@ -174,7 +174,7 @@ export function ProfileSheet({
           {/* Avatar + Name card */}
           <div className="rounded-radius-md bg-surface-raised p-4">
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="relative flex-none">
+              <button type="button" onClick={handleAvatarUpload} className="relative flex-none">
                 {avatarSrc ? (
                   <img src={avatarSrc} alt="Avatar" className="h-12 w-12 rounded-full object-cover" />
                 ) : (
@@ -186,7 +186,6 @@ export function ProfileSheet({
                   <Camera size={10} className="text-text-secondary" />
                 </div>
               </button>
-              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple={false} onChange={handleAvatarUpload} className="hidden" />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-medium uppercase tracking-wider text-text-muted mb-1">Name</p>
                 <input
