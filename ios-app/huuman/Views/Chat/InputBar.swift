@@ -39,36 +39,44 @@ struct InputBar: View {
 
     // MARK: - Image Strip
 
-    @ViewBuilder
     private var imageStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, imageData in
-                    ZStack(alignment: .topTrailing) {
-                        if let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 64, height: 64)
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-
-                        Button {
-                            withAnimation(.easeOut(duration: 0.15)) {
-                                selectedImages.remove(at: index)
-                            }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(Color.textPrimary)
-                                .background(Circle().fill(Color.surfaceBase))
-                        }
-                        .offset(x: 6, y: -6)
-                    }
+                ForEach(selectedImages.indices, id: \.self) { index in
+                    imageThumbnail(at: index)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
+        }
+    }
+
+    private func imageThumbnail(at index: Int) -> some View {
+        let imageData = selectedImages[index]
+        return ZStack(alignment: .topTrailing) {
+            Group {
+                if let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Color.surfaceRaised
+                }
+            }
+            .frame(width: 64, height: 64)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            Button {
+                withAnimation(.easeOut(duration: 0.15)) {
+                    selectedImages.remove(at: index)
+                }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(Color.textPrimary)
+                    .background(Circle().fill(Color.surfaceBase))
+            }
+            .offset(x: 6, y: -6)
         }
     }
 
