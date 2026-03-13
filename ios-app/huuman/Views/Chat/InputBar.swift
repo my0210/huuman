@@ -68,7 +68,7 @@ struct InputBar: View {
 
             Button {
                 withAnimation(.easeOut(duration: 0.15)) {
-                    selectedImages.remove(at: index)
+                    _ = selectedImages.remove(at: index)
                 }
             } label: {
                 Image(systemName: "xmark.circle.fill")
