@@ -5,12 +5,19 @@ struct ChatView: View {
     @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
     @State private var showCommandMenu = false
+    @State private var topGlassOpacity: CGFloat = 0
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    LazyVStack(spacing: 12) {
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            GeometryReader { proxy in
+                                Color.clear
+                                    .preference(key: ScrollOffsetKey.self, value: proxy.frame(in: .named("chatScroll")).minY)
+                            }
+                            .frame(height: 0)
                         if viewModel.isThinking {
                             HStack {
                                 ThinkingIndicator()
@@ -36,28 +43,41 @@ struct ChatView: View {
                                     Task { await viewModel.loadOlderMessages() }
                                 }
                         }
+                        }
+                        .padding(.vertical, 16)
                     }
-                    .padding(.vertical, 16)
-                }
-                .scaleEffect(y: -1)
-                .scrollDismissesKeyboard(.interactively)
+                    .scaleEffect(y: -1)
+                    .scrollDismissesKeyboard(.interactively)
+                    .coordinateSpace(name: "chatScroll")
+                    .onPreferenceChange(ScrollOffsetKey.self) { value in
+                        let absValue = abs(value)
+                        let opacity = min(max((absValue - 20) / 60, 0), 1)
+                        if abs(topGlassOpacity - opacity) > 0.02 {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                topGlassOpacity = opacity
+                            }
+                        }
+                    }
 
-                if showCommandMenu {
-                    CommandMenuView(onSelect: { message in
-                        showCommandMenu = false
-                        viewModel.send(text: message)
-                    })
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+                    if showCommandMenu {
+                        CommandMenuView(onSelect: { message in
+                            showCommandMenu = false
+                            viewModel.send(text: message)
+                        })
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
 
-                InputBar(
-                    onSend: { text, images in viewModel.send(text: text, images: images) },
-                    onToggleMenu: { withAnimation(.easeOut(duration: 0.15)) { showCommandMenu.toggle() } },
-                    isMenuOpen: showCommandMenu,
-                    isLoading: viewModel.isStreaming
-                )
+                    InputBar(
+                        onSend: { text, images in viewModel.send(text: text, images: images) },
+                        onToggleMenu: { withAnimation(.easeOut(duration: 0.15)) { showCommandMenu.toggle() } },
+                        isMenuOpen: showCommandMenu,
+                        isLoading: viewModel.isStreaming
+                    )
+                }
+                .background(Color.surfaceBase)
+
+                topGlassOverlay
             }
-            .background(Color.surfaceBase)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -95,6 +115,30 @@ struct ChatView: View {
                 await viewModel.loadChat()
             }
         }
+    }
+}
+
+private struct ScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private extension ChatView {
+    var topGlassOverlay: some View {
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .mask(
+                LinearGradient(
+                    colors: [Color.black.opacity(0.9), Color.black.opacity(0.6), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .frame(height: 48)
+            .opacity(topGlassOpacity)
+            .allowsHitTesting(false)
     }
 }
 
@@ -142,3 +186,92 @@ struct ThinkingIndicator: View {
         .onAppear { animate = true }
     }
 }
+
+#if DEBUG
+
+#Preview("Chat — Full Conversation") {
+    ChatPreview(messages: MockData.fullConversation)
+}
+
+#Preview("Chat — Text Only") {
+    ChatPreview(messages: [
+        ChatMessage(role: .assistant, parts: [.text(id: "a1", content: "Good morning! How did you sleep?")]),
+        ChatMessage(role: .user, parts: [.text(id: "u1", content: "About 6 hours. Feeling okay though.")]),
+        ChatMessage(role: .assistant, parts: [.text(id: "a2", content: "Not bad. We'll keep today's intensity moderate. Your body can handle it, but let's not push into high RPE territory. I've got a solid session lined up that respects your recovery state.")]),
+        ChatMessage(role: .user, parts: [.text(id: "u2", content: "Sounds good, let's do it")]),
+    ])
+}
+
+#Preview("Chat — Cards Only") {
+    ChatPreview(messages: [
+        ChatMessage(role: .assistant, parts: [
+            .text(id: "a1", content: "Here's your plan for today:"),
+            .toolResult(id: "tr1", toolName: "show_today_plan", output: MockData.todayPlan),
+        ]),
+        ChatMessage(role: .assistant, parts: [
+            .text(id: "a2", content: "And your weekly progress:"),
+            .toolResult(id: "tr2", toolName: "show_progress", output: MockData.progressRings),
+        ]),
+        ChatMessage(role: .assistant, parts: [
+            .toolResult(id: "tr3", toolName: "show_session", output: MockData.sessionDetailStrength),
+        ]),
+        ChatMessage(role: .assistant, parts: [
+            .toolResult(id: "tr4", toolName: "complete_session", output: MockData.sessionCompleted),
+        ]),
+        ChatMessage(role: .assistant, parts: [
+            .toolResult(id: "tr5", toolName: "log_daily", output: MockData.sleepLogged),
+        ]),
+        ChatMessage(role: .assistant, parts: [
+            .toolResult(id: "tr6", toolName: "log_weight", output: MockData.weightLogged),
+        ]),
+    ])
+}
+
+private struct ChatPreview: View {
+    let messages: [ChatMessage]
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(messages) { message in
+                            MessageBubble(message: message)
+                        }
+                    }
+                    .padding(.vertical, 16)
+                }
+                .scrollDismissesKeyboard(.interactively)
+
+                InputBar(
+                    onSend: { _, _ in },
+                    onToggleMenu: {},
+                    isMenuOpen: false,
+                    isLoading: false
+                )
+            }
+            .background(Color.surfaceBase)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("huuman")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.textPrimary)
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    InitialAvatar(name: "Mehmet", size: AppLayout.avatarSize)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Image(systemName: "chart.bar")
+                        .font(.body)
+                        .foregroundStyle(Color.textSecondary)
+                }
+            }
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.surfaceBase, for: .navigationBar)
+        }
+    }
+}
+
+#endif

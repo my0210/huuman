@@ -21,8 +21,6 @@ struct InputBar: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Divider().overlay(Color.borderSubtle)
-
             if !selectedImages.isEmpty {
                 imageStrip
             }
@@ -33,9 +31,10 @@ struct InputBar: View {
                 sendButton
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
         }
-        .background(Color.surfaceBase)
+        .background(.ultraThinMaterial)
+        .overlay(Divider().overlay(Color.borderSubtle), alignment: .top)
     }
 
     // MARK: - Image Strip
@@ -50,6 +49,7 @@ struct InputBar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
+        .background(Color.surfaceBase.opacity(0.6))
     }
 
     private func imageThumbnail(at index: Int) -> some View {
@@ -65,7 +65,7 @@ struct InputBar: View {
                 }
             }
             .frame(width: 64, height: 64)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             Button {
                 withAnimation(.easeOut(duration: 0.15)) {
@@ -91,11 +91,12 @@ struct InputBar: View {
             onToggleMenu()
         } label: {
             Image(systemName: isMenuOpen ? "xmark" : "plus")
-                .font(.body.weight(.medium))
+                .font(.body.weight(.semibold))
                 .contentTransition(.symbolEffect(.replace))
-                .foregroundStyle(Color.textSecondary)
+                .foregroundStyle(Color.textPrimary)
                 .frame(width: AppLayout.inputButtonSize, height: AppLayout.inputButtonSize)
-                .background(Color.surfaceElevated, in: Circle())
+                .background(.ultraThinMaterial, in: Circle())
+                .overlay(Circle().stroke(Color.borderSubtle.opacity(0.8)))
         }
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
         .accessibilityLabel("Menu")
@@ -124,7 +125,7 @@ struct InputBar: View {
             ) {
                 Image(systemName: "camera")
                     .font(.body)
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(Color.textSecondary)
                     .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
             .disabled(isLoading)
@@ -134,8 +135,8 @@ struct InputBar: View {
                 Task { await loadImages(newItems) }
             }
         }
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: 22))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.borderDefault))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.borderSubtle.opacity(0.9)))
     }
 
     // MARK: - Send Button
@@ -150,6 +151,7 @@ struct InputBar: View {
                 .foregroundStyle(canSend ? Color.surfaceBase : Color.textMuted)
                 .frame(width: AppLayout.inputButtonSize, height: AppLayout.inputButtonSize)
                 .background(canSend ? Color.textPrimary : Color.surfaceElevated, in: Circle())
+                .shadow(color: Color.black.opacity(canSend ? 0.25 : 0), radius: 6, y: 2)
         }
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
         .disabled(!canSend)

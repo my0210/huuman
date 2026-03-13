@@ -3,18 +3,30 @@ import SwiftUI
 struct MessageBubble: View {
     let message: ChatMessage
 
-    var body: some View {
-        HStack {
-            if message.role == .user { Spacer(minLength: 60) }
+    private var isUser: Bool {
+        message.role == .user
+    }
 
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
+    private var bubbleWidthFactor: CGFloat {
+        isUser ? 0.76 : 0.92
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            if isUser {
+                Spacer(minLength: 24)
+            }
+
+            VStack(alignment: isUser ? .trailing : .leading, spacing: 8) {
                 ForEach(message.parts) { part in
                     partView(part)
                 }
             }
-            .containerRelativeFrame(.horizontal) { width, _ in width * 0.80 }
+            .containerRelativeFrame(.horizontal) { width, _ in width * bubbleWidthFactor }
 
-            if message.role == .assistant { Spacer(minLength: 60) }
+            if !isUser {
+                Spacer(minLength: 24)
+            }
         }
         .padding(.horizontal, 16)
     }
@@ -28,15 +40,10 @@ struct MessageBubble: View {
                     .font(.subheadline)
                     .foregroundStyle(Color.textPrimary)
                     .lineSpacing(4)
-                    .padding(message.role == .user ? EdgeInsets(top: 10, leading: 14, bottom: 10, trailing: 14) : EdgeInsets())
-                    .background(
-                        message.role == .user
-                            ? AnyShapeStyle(Color.surfaceRaised)
-                            : AnyShapeStyle(.clear),
-                        in: message.role == .user
-                            ? UnevenRoundedRectangle(topLeadingRadius: 18, bottomLeadingRadius: 18, bottomTrailingRadius: 6, topTrailingRadius: 18)
-                            : UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 0)
-                    )
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(bubbleFill, in: bubbleShape)
+                    .overlay(bubbleShape.stroke(bubbleStroke))
             }
 
         case .image(_, let url, _):
@@ -65,6 +72,26 @@ struct MessageBubble: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.semanticError.opacity(0.1), in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
         }
+    }
+
+    private var bubbleFill: Color {
+        isUser ? Color.surfaceElevated : Color.surfaceRaised
+    }
+
+    private var bubbleStroke: Color {
+        isUser ? Color.clear : Color.borderSubtle.opacity(0.7)
+    }
+
+    private var bubbleShape: any Shape {
+        if isUser {
+            return UnevenRoundedRectangle(
+                topLeadingRadius: 18,
+                bottomLeadingRadius: 18,
+                bottomTrailingRadius: 6,
+                topTrailingRadius: 18
+            )
+        }
+        return RoundedRectangle(cornerRadius: 16, style: .continuous)
     }
 }
 
