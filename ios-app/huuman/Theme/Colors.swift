@@ -37,7 +37,6 @@ extension Color {
     static let chatTertiaryText: Color = Color.white.opacity(0.38)
     static let chatCardSurface: Color = Color.white.opacity(0.06)
     static let chatCardBorder: Color = Color.white.opacity(0.06)
-    static let chatComposerField: Color = Color.white.opacity(0.08)
     static let chatHairline: Color = Color.white.opacity(0.06)
     static let userBubble: Color = chatAccent
 

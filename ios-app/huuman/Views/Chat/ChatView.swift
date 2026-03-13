@@ -34,7 +34,7 @@ struct ChatScreen: View {
                 scrollTrigger: viewModel.scrollTrigger,
                 onLoadOlderMessages: { await viewModel.loadOlderMessages() }
             )
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .safeAreaBar(edge: .bottom) {
                 VStack(spacing: 4) {
                     if showQuickActions {
                         QuickActionRow(actions: quickActions) { action in
@@ -57,7 +57,6 @@ struct ChatScreen: View {
                         isLoading: viewModel.isStreaming
                     )
                 }
-                .background(.bar)
             }
             .background(Color.chatBackground)
             .navigationTitle("huuman")
@@ -620,7 +619,7 @@ private struct ChatShellPreview: View {
                 scrollTrigger: 0,
                 onLoadOlderMessages: { await Task.yield() }
             )
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .safeAreaBar(edge: .bottom) {
                 VStack(spacing: 4) {
                     if showQuickActions {
                         QuickActionRow(actions: [
@@ -636,7 +635,6 @@ private struct ChatShellPreview: View {
                         isLoading: false
                     )
                 }
-                .background(.bar)
             }
             .background(Color.chatBackground)
             .navigationTitle("huuman")

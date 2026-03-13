@@ -59,9 +59,8 @@ struct ChatComposerBar: View {
         Button(action: onToggleQuickActions) {
             Image(systemName: isQuickActionsVisible ? "xmark" : "plus")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Color.chatSecondaryText)
                 .frame(width: 34, height: 34)
-                .background(Color.white.opacity(0.06), in: Circle())
+                .glassEffect(in: .circle)
         }
         .buttonStyle(.plain)
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
@@ -73,7 +72,6 @@ struct ChatComposerBar: View {
             TextField("Message huuman...", text: $text, axis: .vertical)
                 .lineLimit(1...6)
                 .font(.system(size: 17))
-                .foregroundStyle(Color.chatPrimaryText)
                 .tint(Color.chatAccent)
                 .focused($isFocused)
                 .padding(.leading, 16)
@@ -89,7 +87,6 @@ struct ChatComposerBar: View {
             ) {
                 Image(systemName: "camera")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.chatSecondaryText)
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
@@ -116,10 +113,7 @@ struct ChatComposerBar: View {
             .padding(.trailing, 5)
             .padding(.bottom, 4)
         }
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.chatComposerField)
-        )
+        .glassEffect(in: .capsule)
     }
 
     private func performSend() {
@@ -183,19 +177,14 @@ struct QuickActionRow: View {
                         HStack(spacing: 6) {
                             Image(systemName: action.icon)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.chatSecondaryText)
 
                             Text(action.title)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.chatPrimaryText)
                                 .lineLimit(1)
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(Color.chatComposerField)
-                        )
+                        .glassEffect()
                     }
                     .buttonStyle(.plain)
                 }
