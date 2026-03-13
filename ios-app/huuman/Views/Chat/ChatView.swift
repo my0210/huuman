@@ -27,7 +27,7 @@ struct ChatScreen: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 Color.chatBackground.ignoresSafeArea()
 
                 ChatThreadView(
@@ -37,14 +37,8 @@ struct ChatScreen: View {
                     scrollTrigger: viewModel.scrollTrigger,
                     onLoadOlderMessages: { await viewModel.loadOlderMessages() }
                 )
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    ChatTopBar(
-                        userName: viewModel.userName,
-                        onProfileTap: { showProfile = true }
-                    )
-                }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    VStack(spacing: 0) {
+                    VStack(spacing: 4) {
                         if showQuickActions {
                             QuickActionRow(actions: quickActions) { action in
                                 showQuickActions = false
@@ -67,6 +61,11 @@ struct ChatScreen: View {
                         )
                     }
                 }
+
+                ChatTopBar(
+                    userName: viewModel.userName,
+                    onProfileTap: { showProfile = true }
+                )
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showProfile) {
@@ -163,8 +162,8 @@ struct ChatThreadView: View {
                         .id(bottomAnchorID)
                 }
                 .padding(.horizontal, ChatTokens.horizontalPadding)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
+                .padding(.top, ChatTokens.topContentInset)
+                .padding(.bottom, 4)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
@@ -293,20 +292,20 @@ struct UserMessageBubble: View {
     let viewModel: UserTurnViewModel
 
     var body: some View {
-        HStack {
-            Spacer(minLength: ChatTokens.userBubbleClearance)
+        if let text = viewModel.text {
+            HStack(spacing: 0) {
+                Spacer(minLength: ChatTokens.userBubbleClearance)
 
-            if let text = viewModel.text {
                 Text(text)
                     .font(.system(size: 17))
                     .foregroundStyle(Color.white)
-                    .lineSpacing(4)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                     .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
             }
+            .padding(.trailing, -ChatTokens.horizontalPadding + 6)
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 }
 
@@ -370,7 +369,7 @@ struct AssistantRichTextBlock: View {
         }
         .font(.system(size: 17))
         .foregroundStyle(Color.chatPrimaryText)
-        .lineSpacing(4)
+        .lineSpacing(3)
         .multilineTextAlignment(.leading)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -568,16 +567,16 @@ struct ThinkingIndicator: View {
 
 private enum ChatTokens {
     static let horizontalPadding: CGFloat = 16
-    static let turnSpacing: CGFloat = 18
-    static let userClusterSpacing: CGFloat = 6
-    static let assistantContinuationSpacing: CGFloat = 10
-    static let assistantBlockSpacing: CGFloat = 10
-    static let daySeparatorVerticalPadding: CGFloat = 24
-    static let daySeparatorToTurnSpacing: CGFloat = 8
-    static let userBubbleRadius: CGFloat = 22
-    static let cardRadius: CGFloat = 18
-    static let userBubbleMaxWidth: CGFloat = 300
-    static let userBubbleClearance: CGFloat = 72
+    static let topContentInset: CGFloat = 44
+    static let turnSpacing: CGFloat = 10
+    static let userClusterSpacing: CGFloat = 2
+    static let assistantContinuationSpacing: CGFloat = 8
+    static let assistantBlockSpacing: CGFloat = 8
+    static let daySeparatorVerticalPadding: CGFloat = 18
+    static let daySeparatorToTurnSpacing: CGFloat = 6
+    static let userBubbleRadius: CGFloat = 20
+    static let cardRadius: CGFloat = 16
+    static let userBubbleClearance: CGFloat = 80
 }
 
 #if DEBUG
@@ -643,7 +642,7 @@ private struct ChatShellPreview: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .top) {
                 Color.chatBackground.ignoresSafeArea()
 
                 ChatThreadView(
@@ -653,11 +652,8 @@ private struct ChatShellPreview: View {
                     scrollTrigger: 0,
                     onLoadOlderMessages: { await Task.yield() }
                 )
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    ChatTopBar(userName: "Mehmet", onProfileTap: {})
-                }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    VStack(spacing: 0) {
+                    VStack(spacing: 4) {
                         if showQuickActions {
                             QuickActionRow(actions: [
                                 .init(id: "today", title: "Today's plan", message: "Show me today's plan", icon: "calendar"),
@@ -673,6 +669,8 @@ private struct ChatShellPreview: View {
                         )
                     }
                 }
+
+                ChatTopBar(userName: "Mehmet", onProfileTap: {})
             }
             .toolbar(.hidden, for: .navigationBar)
         }
