@@ -7,12 +7,9 @@ struct ProgressRingsCard: View {
         let domains = (data["progress"] as? [[String: Any]]) ?? (data["domains"] as? [[String: Any]]) ?? []
 
         VStack(alignment: .leading, spacing: 14) {
-            Text("This Week")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.textMuted)
-                .textCase(.uppercase)
-                .tracking(0.5)
+            Text("This week")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.chatPrimaryText)
 
             HStack(spacing: 16) {
                 ForEach(Array(domains.enumerated()), id: \.offset) { _, domain in
@@ -32,7 +29,7 @@ struct ProgressRingsCard: View {
                             Text("\(completed)/\(total)")
                                 .font(.caption2)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(Color.textSecondary)
+                                .foregroundStyle(Color.chatSecondaryText)
                                 .monospacedDigit()
                         }
                         .frame(width: 48, height: 48)
@@ -47,6 +44,6 @@ struct ProgressRingsCard: View {
             .frame(maxWidth: .infinity)
         }
         .padding(AppLayout.cardPadding)
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard()
     }
 }

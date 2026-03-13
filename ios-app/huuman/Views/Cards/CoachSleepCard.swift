@@ -10,23 +10,26 @@ struct CoachSleepCard: View {
         HStack(spacing: 10) {
             Image(systemName: "moon.fill")
                 .foregroundStyle(Color.domainSleep)
-                .font(.subheadline)
+                .font(.system(size: 15, weight: .semibold))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Sleep logged")
-                    .font(.caption)
+                    .font(.system(size: 14, weight: .semibold))
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.domainSleep)
                 Text("\(String(format: "%.1f", hours)) hours")
-                    .font(.subheadline)
+                    .font(.system(size: 15, weight: .medium))
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textPrimary)
+                    .foregroundStyle(Color.chatPrimaryText)
                     .monospacedDigit()
             }
 
             Spacer()
         }
         .padding(AppLayout.cardPadding)
-        .background(Color.domainSleepMuted, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard(
+            background: Color.domainSleepMuted.opacity(0.72),
+            stroke: Color.chatCardBorder
+        )
     }
 }

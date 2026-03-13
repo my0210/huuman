@@ -14,57 +14,57 @@ struct TodayPlanCard: View {
         if !hasPlan || (sessions.isEmpty && trackingBriefs == nil) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("No plan for today")
-                    .font(.subheadline)
+                    .font(.system(size: 15, weight: .medium))
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textSecondary)
+                    .foregroundStyle(Color.chatPrimaryText)
                 Text("Ask me to generate your weekly plan to get started.")
-                    .font(.caption)
-                    .foregroundStyle(Color.textMuted)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.chatSecondaryText)
             }
             .padding(AppLayout.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+            .chatAttachmentCard()
         } else {
             VStack(spacing: 0) {
                 HStack {
                     Text(formatDayName(dateStr))
-                        .font(.subheadline)
+                        .font(.system(size: 15, weight: .semibold))
                         .fontWeight(.semibold)
-                        .foregroundStyle(Color.textPrimary)
+                        .foregroundStyle(Color.chatPrimaryText)
                     Spacer()
                     let completed = sessions.filter { ($0["status"] as? String) == "completed" }.count
                     if !sessions.isEmpty {
                         Text(completed == sessions.count ? "All done" : "\(completed) of \(sessions.count) sessions")
-                            .font(.caption)
+                            .font(.system(size: 14, weight: .medium))
                             .fontWeight(.medium)
-                            .foregroundStyle(completed == sessions.count ? Color.semanticSuccess : Color.textMuted)
+                            .foregroundStyle(completed == sessions.count ? Color.semanticSuccess : Color.chatSecondaryText)
                     }
                 }
                 .padding(.horizontal, AppLayout.cardPadding)
                 .padding(.vertical, 10)
 
-                Divider().overlay(Color.borderSubtle)
+                Divider().overlay(Color.chatHairline)
 
                 ForEach(Array(sessions.enumerated()), id: \.offset) { i, session in
                     TodaySessionRow(session: session)
                     if i < sessions.count - 1 {
-                        Divider().overlay(Color.borderSubtle).padding(.leading, 54)
+                        Divider().overlay(Color.chatHairline).padding(.leading, 54)
                     }
                 }
 
                 if let briefs = trackingBriefs {
-                    Divider().overlay(Color.borderSubtle)
+                    Divider().overlay(Color.chatHairline)
 
                     if let nutrition = briefs["nutrition"] as? [String: Any] {
                         NutritionBriefRow(brief: nutrition, habits: habits)
                     }
-                    Divider().overlay(Color.borderSubtle).padding(.leading, 54)
+                    Divider().overlay(Color.chatHairline).padding(.leading, 54)
                     if let sleep = briefs["sleep"] as? [String: Any] {
                         SleepBriefRow(brief: sleep, habits: habits)
                     }
                 }
             }
-            .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+            .chatAttachmentCard()
         }
     }
 
@@ -94,7 +94,7 @@ private struct TodaySessionRow: View {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(isCompleted ? Color.textMuted : Color.textPrimary)
+                    .foregroundStyle(isCompleted ? Color.chatSecondaryText : Color.chatPrimaryText)
                     .strikethrough(isCompleted)
                 Text(domain.capitalized)
                     .font(.caption2)
@@ -155,11 +155,11 @@ private struct NutritionBriefRow: View {
                 Text("\(cal) kcal · \(protein)g protein")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textPrimary)
+                    .foregroundStyle(Color.chatPrimaryText)
                     .monospacedDigit()
                 Text("Nutrition")
                     .font(.caption2)
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(Color.chatSecondaryText)
             }
 
             Spacer()
@@ -168,10 +168,10 @@ private struct NutritionBriefRow: View {
                 Text("Log")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textTertiary)
+                    .foregroundStyle(Color.chatTertiaryText)
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(Color.chatTertiaryText)
             } else if onPlan == true {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark")
@@ -209,10 +209,10 @@ private struct SleepBriefRow: View {
                 Text("\(String(format: "%.0f", target))h target · Bed \(bedtime)")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textPrimary)
+                    .foregroundStyle(Color.chatPrimaryText)
                 Text("Sleep")
                     .font(.caption2)
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(Color.chatSecondaryText)
             }
 
             Spacer()
@@ -221,15 +221,15 @@ private struct SleepBriefRow: View {
                 Text("Log")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textTertiary)
+                    .foregroundStyle(Color.chatTertiaryText)
                 Image(systemName: "chevron.right")
                     .font(.caption2)
-                    .foregroundStyle(Color.textMuted)
+                    .foregroundStyle(Color.chatTertiaryText)
             } else if let h = hours {
                 Text("\(String(format: "%.1f", h))h / \(String(format: "%.0f", target))h")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(h >= target ? Color.domainSleep : Color.textMuted)
+                    .foregroundStyle(h >= target ? Color.domainSleep : Color.chatSecondaryText)
                     .monospacedDigit()
             }
         }

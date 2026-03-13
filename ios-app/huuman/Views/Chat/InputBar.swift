@@ -1,121 +1,102 @@
+import PhotosUI
 import SwiftUI
 import UIKit
-import PhotosUI
 
-struct InputBar: View {
+struct ChatQuickAction: Identifiable {
+    let id: String
+    let title: String
+    let message: String
+    let icon: String
+}
+
+struct ChatComposerBar: View {
     let onSend: (String, [Data]?) -> Void
-    let onToggleMenu: () -> Void
-    let isMenuOpen: Bool
+    let onToggleQuickActions: () -> Void
+    let isQuickActionsVisible: Bool
     let isLoading: Bool
 
     @State private var text = ""
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedImages: [Data] = []
-    @State private var sendTap = false
-    @State private var menuTap = false
     @FocusState private var isFocused: Bool
 
     private var canSend: Bool {
-        (!text.trimmingCharacters(in: .whitespaces).isEmpty || !selectedImages.isEmpty) && !isLoading
+        (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !selectedImages.isEmpty) && !isLoading
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            Rectangle()
+                .fill(Color.chatHairline)
+                .frame(height: 1 / UIScreen.main.scale)
+
             if !selectedImages.isEmpty {
-                imageStrip
+                attachmentStrip
+                    .frame(maxWidth: 760)
+                    .frame(maxWidth: .infinity)
             }
 
             HStack(alignment: .bottom, spacing: 8) {
-                menuButton
-                textFieldPill
+                toggleButton
+                inputField
                 sendButton
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
         }
-        .background(.ultraThinMaterial)
-        .overlay(Divider().overlay(Color.borderDefault), alignment: .top)
     }
 
-    // MARK: - Image Strip
-
-    private var imageStrip: some View {
+    private var attachmentStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(selectedImages.indices, id: \.self) { index in
-                    imageThumbnail(at: index)
+            HStack(spacing: 10) {
+                ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, imageData in
+                    ComposerAttachmentThumbnail(imageData: imageData) {
+                        withAnimation(.easeOut(duration: 0.18)) {
+                            selectedImages.remove(at: index)
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-        }
-        .background(Color.surfaceBase.opacity(0.6))
-    }
-
-    private func imageThumbnail(at index: Int) -> some View {
-        let imageData = selectedImages[index]
-        return ZStack(alignment: .topTrailing) {
-            Group {
-                if let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Color.surfaceRaised
-                }
-            }
-            .frame(width: 64, height: 64)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            Button {
-                withAnimation(.easeOut(duration: 0.15)) {
-                    _ = selectedImages.remove(at: index)
-                }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(Color.textPrimary)
-                    .background(Circle().fill(Color.surfaceBase))
-                    .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-            }
-            .accessibilityLabel("Remove photo")
-            .offset(x: 6, y: -6)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
         }
     }
 
-    // MARK: - Menu Button
-
-    private var menuButton: some View {
-        Button {
-            menuTap.toggle()
-            onToggleMenu()
-        } label: {
-            Image(systemName: isMenuOpen ? "xmark" : "plus")
-                .font(.body.weight(.semibold))
-                .contentTransition(.symbolEffect(.replace))
-                .foregroundStyle(Color.textPrimary)
+    private var toggleButton: some View {
+        Button(action: onToggleQuickActions) {
+            Image(systemName: isQuickActionsVisible ? "xmark" : "plus")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.chatPrimaryText)
                 .frame(width: AppLayout.inputButtonSize, height: AppLayout.inputButtonSize)
-                .background(.ultraThinMaterial, in: Circle())
-                .overlay(Circle().stroke(Color.borderSubtle.opacity(0.8)))
+                .background(Color.white.opacity(0.06), in: Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.chatCardBorder, lineWidth: 1)
+                )
         }
+        .buttonStyle(.plain)
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-        .accessibilityLabel("Menu")
-        .sensoryFeedback(.impact(weight: .light), trigger: menuTap)
+        .accessibilityLabel(isQuickActionsVisible ? "Hide quick actions" : "Show quick actions")
     }
 
-    // MARK: - Text Field Pill
-
-    private var textFieldPill: some View {
-        HStack(alignment: .bottom, spacing: 0) {
+    private var inputField: some View {
+        HStack(alignment: .bottom, spacing: 4) {
             TextField("Message huuman...", text: $text, axis: .vertical)
-                .lineLimit(1...5)
-                .font(.subheadline)
-                .foregroundStyle(Color.textPrimary)
+                .lineLimit(1...6)
+                .font(.system(size: 17))
+                .foregroundStyle(Color.chatPrimaryText)
+                .tint(Color.chatAccent)
                 .focused($isFocused)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+                .padding(.leading, 14)
+                .padding(.vertical, 11)
                 .onSubmit {
-                    if canSend { performSend() }
+                    if canSend {
+                        performSend()
+                    }
                 }
 
             PhotosPicker(
@@ -124,79 +105,168 @@ struct InputBar: View {
                 matching: .images
             ) {
                 Image(systemName: "camera")
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(Color.textSecondary)
-                    .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color.chatSecondaryText)
+                    .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
             }
+            .buttonStyle(.plain)
             .disabled(isLoading)
             .accessibilityLabel("Attach photo")
             .padding(.trailing, 2)
             .onChange(of: selectedItems) { _, newItems in
-                Task { await loadImages(newItems) }
+                Task { await loadImages(from: newItems) }
             }
         }
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.borderDefault))
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.chatComposerField)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.chatCardBorder, lineWidth: 1)
+        )
     }
 
-    // MARK: - Send Button
-
     private var sendButton: some View {
-        Button {
-            sendTap.toggle()
-            performSend()
-        } label: {
+        Button(action: performSend) {
             Image(systemName: "arrow.up")
-                .font(.body.weight(.bold))
-                .foregroundStyle(canSend ? Color.surfaceBase : Color.textMuted)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
                 .frame(width: AppLayout.inputButtonSize, height: AppLayout.inputButtonSize)
-                .background(canSend ? Color.textPrimary : Color.surfaceElevated, in: Circle())
-                .shadow(color: Color.black.opacity(canSend ? 0.25 : 0), radius: 6, y: 2)
+                .background(
+                    canSend ? Color.chatAccent : Color.white.opacity(0.08),
+                    in: Circle()
+                )
         }
+        .buttonStyle(.plain)
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
         .disabled(!canSend)
         .accessibilityLabel("Send message")
         .animation(.easeOut(duration: 0.15), value: canSend)
-        .sensoryFeedback(.impact(weight: .light), trigger: sendTap)
     }
-
-    // MARK: - Actions
 
     private func performSend() {
         guard canSend else { return }
+
         isFocused = false
-        let message = text.trimmingCharacters(in: .whitespaces)
+
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let images = selectedImages.isEmpty ? nil : selectedImages
+
         text = ""
         selectedImages = []
         selectedItems = []
-        onSend(message, images)
+
+        onSend(trimmedText, images)
     }
 
-    private func loadImages(_ items: [PhotosPickerItem]) async {
-        var loaded: [Data] = []
+    private func loadImages(from items: [PhotosPickerItem]) async {
+        var loadedImages: [Data] = []
+
         for item in items {
-            if let data = try? await item.loadTransferable(type: Data.self) {
-                if let compressed = compressImage(data, maxDimension: 1024, quality: 0.7) {
-                    loaded.append(compressed)
-                } else {
-                    loaded.append(data)
-                }
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+
+            if let compressed = compressImage(data, maxDimension: 1024, quality: 0.72) {
+                loadedImages.append(compressed)
+            } else {
+                loadedImages.append(data)
             }
         }
-        selectedImages = loaded
+
+        selectedImages = loadedImages
     }
 
     private func compressImage(_ data: Data, maxDimension: CGFloat, quality: CGFloat) -> Data? {
-        guard let uiImage = UIImage(data: data) else { return nil }
-        let size = uiImage.size
-        let scale = min(maxDimension / max(size.width, size.height), 1.0)
-        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        guard let image = UIImage(data: data) else { return nil }
 
-        let renderer = UIGraphicsImageRenderer(size: newSize)
-        let resized = renderer.image { _ in
-            uiImage.draw(in: CGRect(origin: .zero, size: newSize))
+        let sourceSize = image.size
+        let scale = min(maxDimension / max(sourceSize.width, sourceSize.height), 1)
+        let targetSize = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
+
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        let resizedImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
         }
-        return resized.jpegData(compressionQuality: quality)
+
+        return resizedImage.jpegData(compressionQuality: quality)
+    }
+}
+
+struct QuickActionRow: View {
+    let actions: [ChatQuickAction]
+    let onSelect: (ChatQuickAction) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(actions) { action in
+                    Button {
+                        onSelect(action)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: action.icon)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.chatSecondaryText)
+
+                            Text(action.title)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.chatPrimaryText)
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.white.opacity(0.06))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.chatCardBorder, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 2)
+        }
+    }
+}
+
+private struct ComposerAttachmentThumbnail: View {
+    let imageData: Data
+    let onRemove: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Group {
+                if let image = UIImage(data: imageData) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Color.white.opacity(0.08)
+                }
+            }
+            .frame(width: 68, height: 68)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.chatCardBorder, lineWidth: 1)
+            )
+
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color.chatPrimaryText)
+                    .frame(width: 20, height: 20)
+                    .background(Color.black.opacity(0.75), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(minWidth: 28, minHeight: 28)
+            .offset(x: 6, y: -6)
+            .accessibilityLabel("Remove photo")
+        }
     }
 }

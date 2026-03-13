@@ -73,17 +73,21 @@ struct StatusCard: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: isSuccess ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .font(.subheadline)
-                .foregroundStyle(isSuccess ? Color.semanticSuccess : Color.textTertiary)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(isSuccess ? Color.semanticSuccess : Color.chatTertiaryText)
             Text(text)
-                .font(.subheadline)
-                .foregroundStyle(isSuccess ? Color.semanticSuccess : Color.textTertiary)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(isSuccess ? Color.semanticSuccess : Color.chatSecondaryText)
         }
         .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            isSuccess ? Color.semanticSuccess.opacity(0.08) : Color.surfaceRaised,
-            in: RoundedRectangle(cornerRadius: AppLayout.cardRadius)
+            isSuccess ? Color.semanticSuccess.opacity(0.08) : Color.chatCardSurface,
+            in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
+                .stroke(Color.chatCardBorder, lineWidth: 1)
         )
     }
 }
@@ -101,16 +105,15 @@ struct AdaptCard: View {
 
         VStack(alignment: .leading, spacing: 4) {
             Text("\(labels[action] ?? action)\(title != nil ? ": \(title!)" : "")")
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundStyle(Color.textSecondary)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.chatPrimaryText)
             Text(reason)
-                .font(.caption)
-                .foregroundStyle(Color.textMuted)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.chatSecondaryText)
         }
         .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard()
     }
 }
 
@@ -122,39 +125,15 @@ struct YouTubeCard: View {
         let videos = data["videos"] as? [[String: Any]] ?? []
 
         VStack(spacing: 8) {
-            ForEach(Array(videos.prefix(3).enumerated()), id: \.offset) { _, video in
-                let title = video["title"] as? String ?? ""
-                let channel = video["channel"] as? String ?? ""
-
-                Button {
-                    if let urlStr = video["url"] as? String, let url = URL(string: urlStr) {
-                        openURL(url)
-                    }
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "play.rectangle.fill")
-                            .foregroundStyle(Color.semanticError)
-                            .font(.title2)
-                            .frame(width: 48)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(title)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundStyle(Color.textPrimary)
-                                .lineLimit(2)
-                            Text(channel)
-                                .font(.caption2)
-                                .foregroundStyle(Color.textMuted)
-                        }
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption)
-                            .foregroundStyle(Color.textMuted)
-                    }
-                    .padding(AppLayout.cardPadding)
-                    .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
-                }
-                .buttonStyle(.plain)
+            ForEach(Array(videos.prefix(3).enumerated()), id: \.offset) { index, video in
+                VideoCardView(
+                    model: VideoCardModel(
+                        id: "youtube-\(index)",
+                        title: video["title"] as? String ?? "Open video",
+                        subtitle: video["channel"] as? String ?? "Video",
+                        urlString: video["url"] as? String ?? ""
+                    )
+                )
             }
         }
     }
@@ -169,20 +148,20 @@ struct WeightCard: View {
 
         HStack {
             Image(systemName: "scalemass")
-                .foregroundStyle(Color.textMuted)
-                .font(.subheadline)
+                .foregroundStyle(Color.chatSecondaryText)
+                .font(.system(size: 15, weight: .medium))
             Text("\(String(format: "%.1f", weight)) kg")
-                .font(.subheadline)
+                .font(.system(size: 15, weight: .semibold))
                 .fontWeight(.semibold)
-                .foregroundStyle(Color.textPrimary)
+                .foregroundStyle(Color.chatPrimaryText)
                 .monospacedDigit()
             Spacer()
             Text(date)
-                .font(.caption)
-                .foregroundStyle(Color.textMuted)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.chatSecondaryText)
         }
         .padding(AppLayout.cardPadding)
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard()
     }
 }
 
@@ -202,8 +181,8 @@ struct DailyLogCard: View {
                         .foregroundStyle(Color.domainSleep)
                         .font(.caption)
                     Text("\(String(format: "%.1f", sleep))h sleep")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.textSecondary)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.chatPrimaryText)
                 }
             }
             if let steps {
@@ -212,8 +191,8 @@ struct DailyLogCard: View {
                         .foregroundStyle(Color.domainCardio)
                         .font(.caption)
                     Text("\(steps) steps")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.textSecondary)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.chatPrimaryText)
                 }
             }
             if let nutrition {
@@ -222,13 +201,13 @@ struct DailyLogCard: View {
                         .foregroundStyle(Color.domainNutrition)
                         .font(.caption)
                     Text(nutrition ? "On plan" : "Off plan")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.textSecondary)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.chatPrimaryText)
                 }
             }
         }
         .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard()
     }
 }

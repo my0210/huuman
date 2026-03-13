@@ -1,148 +1,75 @@
 import SwiftUI
 
 struct ChatView: View {
+    var body: some View {
+        ChatScreen()
+    }
+}
+
+struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
     @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
-    @State private var showCommandMenu = false
-    @State private var topGlassOpacity: CGFloat = 0
-    @State private var isNearBottom = true
+    @State private var showQuickActions = false
+
+    private var threadItems: [ThreadItem] {
+        ChatThreadBuilder.items(from: viewModel.messages)
+    }
+
+    private let quickActions: [ChatQuickAction] = [
+        .init(id: "today", title: "Today's plan", message: "Show me today's plan", icon: "calendar"),
+        .init(id: "week", title: "This week", message: "Show me my week", icon: "calendar.badge.clock"),
+        .init(id: "adjust", title: "Adjust plan", message: "I want to adjust my plan for the rest of the week", icon: "slider.horizontal.3"),
+        .init(id: "progress", title: "Progress", message: "How am I doing this week?", icon: "chart.line.uptrend.xyaxis"),
+        .init(id: "log", title: "Log my day", message: "I want to log my day", icon: "list.clipboard"),
+        .init(id: "feedback", title: "Feedback", message: "I want to give feedback about huuman", icon: "bubble.left")
+    ]
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                VStack(spacing: 0) {
-                    ScrollViewReader { proxy in
-                        ScrollView {
-                            LazyVStack(spacing: 0) {
-                                if viewModel.hasMoreMessages && !viewModel.messages.isEmpty {
-                                    ProgressView()
-                                        .tint(Color.textMuted)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 8)
-                                        .onAppear {
-                                            Task { await viewModel.loadOlderMessages() }
-                                        }
-                                }
+            ZStack {
+                Color.chatBackground.ignoresSafeArea()
 
-                                ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
-                                    VStack(spacing: 0) {
-                                        if shouldShowTimestamp(at: index) {
-                                            timestampLabel(for: message.createdAt)
-                                        }
-
-                                        MessageBubble(message: message)
-                                            .id(message.id)
-                                            .padding(.top, spacingBefore(index: index))
-                                            .transition(.opacity.combined(with: .offset(y: 12)))
-                                    }
-                                }
-
-                                if viewModel.isThinking {
-                                    HStack {
-                                        ThinkingIndicator()
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 4)
-                                }
-
-                                Color.clear.frame(height: 1).id("bottom")
-                            }
-                            .padding(.vertical, 16)
-                        }
-                        .defaultScrollAnchor(.bottom)
-                        .scrollDismissesKeyboard(.interactively)
-                        .onScrollGeometryChange(for: Bool.self) { geo in
-                            let dist = geo.contentSize.height - geo.contentOffset.y - geo.containerSize.height
-                            return dist < 200
-                        } action: { _, isNear in
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                isNearBottom = isNear
-                            }
-                        }
-                        .onScrollGeometryChange(for: CGFloat.self) { geo in
-                            geo.contentOffset.y
-                        } action: { _, offset in
-                            let opacity = min(max((offset - 20) / 60, 0), 1)
-                            if abs(topGlassOpacity - opacity) > 0.02 {
-                                withAnimation(.easeOut(duration: 0.18)) {
-                                    topGlassOpacity = opacity
-                                }
-                            }
-                        }
-                        .onChange(of: viewModel.messages.count) {
-                            withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("bottom") }
-                        }
-                        .onChange(of: viewModel.scrollTrigger) {
-                            if isNearBottom { proxy.scrollTo("bottom") }
-                        }
-                        .overlay(alignment: .bottomTrailing) {
-                            if !isNearBottom {
-                                Button {
-                                    withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo("bottom") }
-                                } label: {
-                                    Image(systemName: "chevron.down")
-                                        .font(.body.weight(.semibold))
-                                        .foregroundStyle(Color.textSecondary)
-                                        .frame(width: 36, height: 36)
-                                        .background(.ultraThinMaterial, in: Circle())
-                                        .shadow(color: .black.opacity(0.2), radius: 8, y: 2)
-                                }
-                                .frame(minWidth: 44, minHeight: 44)
-                                .padding(.trailing, 16)
-                                .padding(.bottom, 8)
-                                .transition(.scale(scale: 0.8).combined(with: .opacity))
-                            }
-                        }
-                    }
-
-                    if showCommandMenu {
-                        CommandMenuView(onSelect: { message in
-                            showCommandMenu = false
-                            viewModel.send(text: message)
-                        })
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    InputBar(
-                        onSend: { text, images in viewModel.send(text: text, images: images) },
-                        onToggleMenu: { withAnimation(.easeOut(duration: 0.15)) { showCommandMenu.toggle() } },
-                        isMenuOpen: showCommandMenu,
-                        isLoading: viewModel.isStreaming
+                ChatThreadView(
+                    items: threadItems,
+                    hasMoreMessages: viewModel.hasMoreMessages && !viewModel.messages.isEmpty,
+                    isThinking: viewModel.isThinking,
+                    scrollTrigger: viewModel.scrollTrigger,
+                    onLoadOlderMessages: { await viewModel.loadOlderMessages() }
+                )
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    ChatTopBar(
+                        userName: viewModel.userName,
+                        onProfileTap: { showProfile = true }
                     )
                 }
-                .background(Color.surfaceBase)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 0) {
+                        if showQuickActions {
+                            QuickActionRow(actions: quickActions) { action in
+                                showQuickActions = false
+                                viewModel.send(text: action.message)
+                            }
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
 
-                topGlassOverlay
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("huuman")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.textPrimary)
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showProfile = true
-                    } label: {
-                        InitialAvatar(name: viewModel.userName, size: AppLayout.avatarSize)
+                        ChatComposerBar(
+                            onSend: { text, images in
+                                viewModel.send(text: text, images: images)
+                            },
+                            onToggleQuickActions: {
+                                withAnimation(.easeOut(duration: 0.18)) {
+                                    showQuickActions.toggle()
+                                }
+                            },
+                            isQuickActionsVisible: showQuickActions,
+                            isLoading: viewModel.isStreaming
+                        )
                     }
-                    .accessibilityLabel("Profile")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: DataView()) {
-                        Image(systemName: "chart.bar")
-                            .font(.body)
-                            .foregroundStyle(Color.textSecondary)
-                    }
-                    .accessibilityLabel("Your data")
+                    .background(ChatChromeBackground(materialOpacity: 0.16, baseOpacity: 0.98))
                 }
             }
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.surfaceBase, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showProfile) {
                 ProfileSheetView()
                     .presentationDetents([.medium, .large])
@@ -154,45 +81,474 @@ struct ChatView: View {
             }
         }
     }
+}
 
-    private func spacingBefore(index: Int) -> CGFloat {
-        guard index > 0 else { return 0 }
-        let prev = viewModel.messages[index - 1]
-        let curr = viewModel.messages[index]
-        if shouldShowTimestamp(at: index) { return 0 }
-        return prev.role == curr.role ? 4 : 16
-    }
+struct ChatTopBar: View {
+    let userName: String
+    let onProfileTap: () -> Void
 
-    private func shouldShowTimestamp(at index: Int) -> Bool {
-        guard index > 0 else { return true }
-        let prev = viewModel.messages[index - 1].createdAt
-        let curr = viewModel.messages[index].createdAt
-        return curr.timeIntervalSince(prev) > 300 || !Calendar.current.isDate(prev, inSameDayAs: curr)
-    }
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                Button(action: onProfileTap) {
+                    InitialAvatar(name: userName, size: AppLayout.avatarSize)
+                        .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Profile")
 
-    private func timestampLabel(for date: Date) -> some View {
-        Text(date, format: .dateTime.hour().minute())
-            .font(.caption2)
-            .foregroundStyle(Color.textMuted)
+                Spacer(minLength: 0)
+
+                Text("huuman")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.chatPrimaryText.opacity(0.88))
+
+                Spacer(minLength: 0)
+
+                NavigationLink(destination: DataView()) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(Color.chatSecondaryText)
+                        .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Your data")
+            }
+            .padding(.horizontal, ChatTokens.horizontalPadding)
+            .frame(height: ChatTokens.topBarHeight)
+            .frame(maxWidth: ChatTokens.threadMaxWidth)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+
+            Rectangle()
+                .fill(Color.chatHairline)
+                .frame(height: 1 / UIScreen.main.scale)
+        }
+        .background(ChatChromeBackground(materialOpacity: 0.4, baseOpacity: 0.94))
     }
 }
 
-private extension ChatView {
-    var topGlassOverlay: some View {
-        Rectangle()
-            .fill(.ultraThinMaterial)
-            .mask(
-                LinearGradient(
-                    colors: [Color.black.opacity(0.9), Color.black.opacity(0.6), .clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+struct ChatThreadView: View {
+    let items: [ThreadItem]
+    let hasMoreMessages: Bool
+    let isThinking: Bool
+    let scrollTrigger: Int
+    let onLoadOlderMessages: () async -> Void
+
+    @State private var isNearBottom = true
+    private let bottomAnchorID = "thread-bottom-anchor"
+
+    var body: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    if hasMoreMessages {
+                        ProgressView()
+                            .tint(Color.chatSecondaryText)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .onAppear {
+                                Task { await onLoadOlderMessages() }
+                            }
+                    }
+
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        threadRow(for: item)
+                            .id(item.id)
+                            .padding(.top, spacing(before: index))
+                            .transition(.opacity.combined(with: .offset(y: 6)))
+                    }
+
+                    if isThinking {
+                        HStack(alignment: .top, spacing: 10) {
+                            AssistantIdentityBadge(isVisible: true)
+                            ThinkingIndicator()
+                            Spacer(minLength: ChatTokens.trailingConversationClearance)
+                        }
+                        .padding(.top, ChatTokens.assistantContinuationSpacing)
+                    }
+
+                    Color.clear
+                        .frame(height: 1)
+                        .id(bottomAnchorID)
+                }
+                .padding(.horizontal, ChatTokens.horizontalPadding)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
+                .frame(maxWidth: ChatTokens.threadMaxWidth)
+                .frame(maxWidth: .infinity)
+            }
+            .defaultScrollAnchor(.bottom)
+            .scrollDismissesKeyboard(.interactively)
+            .onScrollGeometryChange(for: Bool.self) { geometry in
+                let distanceFromBottom = geometry.contentSize.height - geometry.contentOffset.y - geometry.containerSize.height
+                return distanceFromBottom < 160
+            } action: { _, isNearBottom in
+                self.isNearBottom = isNearBottom
+            }
+            .onChange(of: items.last?.id) { _, _ in
+                withAnimation(.easeOut(duration: 0.2)) {
+                    proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                }
+            }
+            .onChange(of: scrollTrigger) { _, _ in
+                guard isNearBottom else { return }
+                withAnimation(.easeOut(duration: 0.18)) {
+                    proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                }
+            }
+            .overlay(alignment: .bottomTrailing) {
+                if !isNearBottom {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                        }
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.chatPrimaryText)
+                            .frame(width: 36, height: 36)
+                            .background(Color.chatCardSurface, in: Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.chatCardBorder, lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 12)
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func threadRow(for item: ThreadItem) -> some View {
+        switch item {
+        case .daySeparator(let dayItem):
+            ChatDaySeparator(date: dayItem.date)
+
+        case .userTurn(let userTurn):
+            UserMessageBubble(viewModel: userTurn)
+
+        case .assistantTurn(let assistantTurn):
+            AssistantTurnView(viewModel: assistantTurn)
+
+        case .systemEvent(let event):
+            SystemEventChip(text: event.text)
+        }
+    }
+
+    private func spacing(before index: Int) -> CGFloat {
+        guard index > 0 else { return 0 }
+
+        let previous = items[index - 1]
+        let current = items[index]
+
+        switch current {
+        case .daySeparator:
+            return ChatTokens.daySeparatorVerticalPadding
+
+        case .userTurn:
+            switch previous {
+            case .userTurn:
+                return ChatTokens.userClusterSpacing
+            case .daySeparator:
+                return ChatTokens.daySeparatorToTurnSpacing
+            default:
+                return ChatTokens.turnSpacing
+            }
+
+        case .assistantTurn:
+            switch previous {
+            case .assistantTurn:
+                return ChatTokens.assistantContinuationSpacing
+            case .daySeparator:
+                return ChatTokens.daySeparatorToTurnSpacing
+            default:
+                return ChatTokens.turnSpacing
+            }
+
+        case .systemEvent:
+            return ChatTokens.turnSpacing
+        }
+    }
+}
+
+struct ChatDaySeparator: View {
+    let date: Date
+
+    private var label: String {
+        if Calendar.current.isDateInToday(date) {
+            return "Today"
+        }
+
+        if Calendar.current.isDateInYesterday(date) {
+            return "Yesterday"
+        }
+
+        return date.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
+    }
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(Color.chatTertiaryText)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 2)
+    }
+}
+
+struct UserMessageBubble: View {
+    let viewModel: UserTurnViewModel
+
+    var body: some View {
+        HStack {
+            Spacer(minLength: ChatTokens.leadingConversationClearance)
+
+            if let text = viewModel.text {
+                Text(text)
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.white)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .frame(maxWidth: ChatTokens.userBubbleMaxWidth, alignment: .trailing)
+                    .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+}
+
+struct AssistantTurnView: View {
+    let viewModel: AssistantTurnViewModel
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            AssistantIdentityBadge(isVisible: viewModel.showsIdentity)
+
+            VStack(alignment: .leading, spacing: ChatTokens.assistantBlockSpacing) {
+                ForEach(viewModel.blocks) { block in
+                    blockView(block)
+                }
+            }
+            .frame(maxWidth: ChatTokens.assistantLaneMaxWidth, alignment: .leading)
+
+            Spacer(minLength: ChatTokens.trailingConversationClearance)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: AssistantBlock) -> some View {
+        switch block {
+        case .paragraph(let paragraph):
+            AssistantRichTextBlock(markdown: paragraph.markdown)
+
+        case .toolAttachment(let attachment):
+            ToolResultView(toolName: attachment.toolName, output: attachment.output)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+        case .toolLoading(let loading):
+            ToolLoadingCard(toolName: loading.toolName)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+        case .videoCard(let card):
+            VideoCardView(model: card)
+
+        case .linkCard(let card):
+            LinkCardView(model: card)
+
+        case .inlineNotice(let notice):
+            InlineNoticeView(text: notice.text, isError: notice.isError)
+        }
+    }
+}
+
+struct AssistantRichTextBlock: View {
+    let markdown: String
+
+    private var attributedMarkdown: AttributedString? {
+        try? AttributedString(
+            markdown: markdown,
+            options: AttributedString.MarkdownParsingOptions(
+                interpretedSyntax: .inlineOnlyPreservingWhitespace
             )
-            .frame(height: 48)
-            .opacity(topGlassOpacity)
-            .allowsHitTesting(false)
+        )
+    }
+
+    var body: some View {
+        Group {
+            if let attributedMarkdown {
+                Text(attributedMarkdown)
+            } else {
+                Text(markdown)
+            }
+        }
+        .font(.system(size: 17))
+        .foregroundStyle(Color.chatPrimaryText)
+        .lineSpacing(4)
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+struct VideoCardView: View {
+    let model: VideoCardModel
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button {
+            guard let url = URL(string: model.urlString) else { return }
+            openURL(url)
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.chatAccent.opacity(0.18))
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.chatAccent)
+                }
+                .frame(width: 48, height: 48)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.title)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.chatPrimaryText)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+
+                    Text(model.subtitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.chatSecondaryText)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 12)
+
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.chatTertiaryText)
+            }
+            .padding(14)
+            .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous)
+                    .stroke(Color.chatCardBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct LinkCardView: View {
+    let model: LinkCardModel
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Button {
+            guard let url = URL(string: model.urlString) else { return }
+            openURL(url)
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.white.opacity(0.08))
+                    Image(systemName: model.iconSystemName)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.chatSecondaryText)
+                }
+                .frame(width: 48, height: 48)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.title)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.chatPrimaryText)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    Text(model.subtitle)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.chatSecondaryText)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 12)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.chatTertiaryText)
+            }
+            .padding(14)
+            .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous)
+                    .stroke(Color.chatCardBorder, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct SystemEventChip: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(Color.chatSecondaryText)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(Color.white.opacity(0.06), in: Capsule(style: .continuous))
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.chatCardBorder, lineWidth: 1)
+            )
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct AssistantIdentityBadge: View {
+    let isVisible: Bool
+
+    var body: some View {
+        Group {
+            if isVisible {
+                Text("h")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.chatSecondaryText)
+                    .frame(width: 22, height: 22)
+                    .background(Color.white.opacity(0.07), in: Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.chatCardBorder, lineWidth: 1)
+                    )
+            } else {
+                Color.clear
+                    .frame(width: 22, height: 22)
+            }
+        }
+        .padding(.top, 2)
+    }
+}
+
+private struct InlineNoticeView: View {
+    let text: String
+    let isError: Bool
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(isError ? Color.semanticError : Color.chatSecondaryText)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                isError ? Color.semanticError.opacity(0.12) : Color.chatCardSurface,
+                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+            )
     }
 }
 
@@ -202,19 +558,25 @@ struct InitialAvatar: View {
 
     private var textStyle: Font {
         switch size {
-        case ...28: return .caption2.weight(.semibold)
-        case 29...40: return .caption.weight(.semibold)
-        default: return .subheadline.weight(.semibold)
+        case ...28:
+            return .caption2.weight(.semibold)
+        case 29...40:
+            return .caption.weight(.semibold)
+        default:
+            return .subheadline.weight(.semibold)
         }
     }
 
     var body: some View {
         Text(String(name.prefix(1)).uppercased())
             .font(textStyle)
-            .foregroundStyle(Color.textSecondary)
+            .foregroundStyle(Color.chatSecondaryText)
             .frame(width: size, height: size)
-            .background(Color.surfaceElevated)
-            .clipShape(Circle())
+            .background(Color.white.opacity(0.08), in: Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color.chatCardBorder, lineWidth: 1)
+            )
     }
 }
 
@@ -223,91 +585,82 @@ struct ThinkingIndicator: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            ForEach(0..<3, id: \.self) { i in
+            ForEach(0..<3, id: \.self) { index in
                 Circle()
-                    .fill(Color.textMuted)
+                    .fill(Color.chatSecondaryText)
                     .frame(width: 6, height: 6)
                     .opacity(animate ? 1 : 0.3)
                     .animation(
-                        .easeInOut(duration: 0.6).repeatForever().delay(Double(i) * 0.15),
+                        .easeInOut(duration: 0.65)
+                            .repeatForever()
+                            .delay(Double(index) * 0.14),
                         value: animate
                     )
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+        .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.chatCardBorder, lineWidth: 1)
+        )
         .onAppear { animate = true }
+    }
+}
+
+private enum ChatTokens {
+    static let horizontalPadding: CGFloat = 16
+    static let topBarHeight: CGFloat = 44
+    static let turnSpacing: CGFloat = 18
+    static let userClusterSpacing: CGFloat = 6
+    static let assistantContinuationSpacing: CGFloat = 10
+    static let assistantBlockSpacing: CGFloat = 10
+    static let daySeparatorVerticalPadding: CGFloat = 24
+    static let daySeparatorToTurnSpacing: CGFloat = 8
+    static let userBubbleRadius: CGFloat = 22
+    static let cardRadius: CGFloat = 18
+    static let userBubbleMaxWidth: CGFloat = 340
+    static let assistantLaneMaxWidth: CGFloat = 500
+    static let threadMaxWidth: CGFloat = 760
+    static let leadingConversationClearance: CGFloat = 68
+    static let trailingConversationClearance: CGFloat = 54
+}
+
+private struct ChatChromeBackground: View {
+    let materialOpacity: Double
+    let baseOpacity: Double
+
+    var body: some View {
+        ZStack {
+            Color.chatBackground.opacity(baseOpacity)
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .opacity(materialOpacity)
+        }
     }
 }
 
 #if DEBUG
 
-#Preview("Chat — Full Conversation") {
-    ChatPreview(messages: fullConversationAllCards)
+#Preview("Chat Shell") {
+    ChatShellPreview(messages: fullConversationAllCards)
 }
 
-#Preview("Chat — Text Only") {
-    ChatPreview(messages: [
-        ChatMessage(role: .assistant, parts: [.text(id: "a1", content: "Good morning! How did you sleep?")]),
-        ChatMessage(role: .user, parts: [.text(id: "u1", content: "About 6 hours. Feeling okay though.")]),
-        ChatMessage(role: .assistant, parts: [.text(id: "a2", content: "Not bad. We'll keep today's intensity moderate. Your body can handle it, but let's not push into high RPE territory. I've got a solid session lined up that respects your recovery state.")]),
-        ChatMessage(role: .user, parts: [.text(id: "u2", content: "Sounds good, let's do it")]),
-    ])
-}
-
-#Preview("Chat — Cards Only") {
-    ChatPreview(messages: [
-        ChatMessage(role: .assistant, parts: [
-            .text(id: "a1", content: "Here's your plan for today:"),
-            .toolResult(id: "tr1", toolName: "show_today_plan", output: MockData.todayPlan),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .text(id: "a2", content: "And your weekly progress:"),
-            .toolResult(id: "tr2", toolName: "show_progress", output: MockData.progressRings),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr3", toolName: "show_session", output: MockData.sessionDetailStrength),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr4", toolName: "complete_session", output: MockData.sessionCompleted),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr5", toolName: "log_daily", output: MockData.sleepLogged),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr6", toolName: "log_weight", output: MockData.weightLogged),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr7", toolName: "show_week_plan", output: MockData.weekPlan),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr8", toolName: "generate_plan", output: MockData.draftPlan),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr9", toolName: "log_session", output: MockData.extraSessionLogged),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr10", toolName: "show_session", output: MockData.sessionDetailCardio),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr11", toolName: "show_session", output: MockData.sessionDetailMindfulness),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr12", toolName: "log_daily", output: MockData.dailyLogFull),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr13", toolName: "adapt_plan", output: MockData.adaptedSession),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr14", toolName: "search_youtube", output: MockData.youtubeResults),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr15", toolName: "save_progress_photo", output: MockData.progressPhotoSaved),
-        ]),
-        ChatMessage(role: .assistant, parts: [
-            .toolResult(id: "tr16", toolName: "save_meal_photo", output: MockData.mealPhotoSaved),
-        ]),
+#Preview("Chat Shell — Text") {
+    ChatShellPreview(messages: [
+        ChatMessage(
+            role: .assistant,
+            parts: [.text(id: "a1", content: "Good morning. Your recovery looks decent, so I'd keep today's plan intact and bias the main set slightly easier if your legs still feel flat.")]
+        ),
+        ChatMessage(
+            role: .user,
+            parts: [.text(id: "u1", content: "Makes sense. Show me the session.")]
+        ),
+        ChatMessage(
+            role: .assistant,
+            parts: [.toolResult(id: "tr1", toolName: "show_session", output: MockData.sessionDetailStrength)]
+        )
     ])
 }
 
@@ -322,130 +675,68 @@ private let fullConversationAllCards: [ChatMessage] = MockData.fullConversation 
     ),
     ChatMessage(
         role: .user,
-        parts: [.text(id: "t15", content: "I did an extra run today")]
+        parts: [.text(id: "t15", content: "Any good videos?")]
     ),
     ChatMessage(
         role: .assistant,
-        parts: [.toolResult(id: "tr8", toolName: "log_session", output: MockData.extraSessionLogged)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t16", content: "Show me cardio details")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr9", toolName: "show_session", output: MockData.sessionDetailCardio)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t17", content: "Show me mindfulness details")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr10", toolName: "show_session", output: MockData.sessionDetailMindfulness)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t18", content: "Log my full day")]
+        parts: [
+            .text(
+                id: "t16",
+                content: """
+                Here are three options that fit your current week.
+
+                - [Perfect Push Day in 25 Minutes](https://youtube.com/watch?v=example1)
+                - [Zone 2 Training Explained](https://youtube.com/watch?v=example2)
+                """
+            ),
+            .toolResult(id: "tr8", toolName: "search_youtube", output: MockData.youtubeResults)
+        ]
     ),
     ChatMessage(
         role: .assistant,
-        parts: [.toolResult(id: "tr11", toolName: "log_daily", output: MockData.dailyLogFull)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t19", content: "Move Thursday's session")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr12", toolName: "adapt_plan", output: MockData.adaptedSession)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t20", content: "Any good videos?")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr13", toolName: "search_youtube", output: MockData.youtubeResults)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t21", content: "Log my weight")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr14", toolName: "log_weight", output: MockData.weightLogged)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t22", content: "Saved a progress photo")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr15", toolName: "save_progress_photo", output: MockData.progressPhotoSaved)]
-    ),
-    ChatMessage(
-        role: .user,
-        parts: [.text(id: "t23", content: "Logged my lunch")]
-    ),
-    ChatMessage(
-        role: .assistant,
-        parts: [.toolResult(id: "tr16", toolName: "save_meal_photo", output: MockData.mealPhotoSaved)]
-    ),
+        parts: [.toolResult(id: "tr9", toolName: "save_feedback", output: [:])]
+    )
 ]
 
-private struct ChatPreview: View {
+private struct ChatShellPreview: View {
     let messages: [ChatMessage]
-
-    private func spacingBefore(index: Int) -> CGFloat {
-        guard index > 0 else { return 0 }
-        let prev = messages[index - 1]
-        let curr = messages[index]
-        return prev.role == curr.role ? 4 : 16
-    }
+    @State private var showQuickActions = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
-                            MessageBubble(message: message)
-                                .padding(.top, spacingBefore(index: index))
-                        }
-                    }
-                    .padding(.vertical, 16)
-                }
-                .defaultScrollAnchor(.bottom)
-                .scrollDismissesKeyboard(.interactively)
+            ZStack {
+                Color.chatBackground.ignoresSafeArea()
 
-                InputBar(
-                    onSend: { _, _ in },
-                    onToggleMenu: {},
-                    isMenuOpen: false,
-                    isLoading: false
+                ChatThreadView(
+                    items: ChatThreadBuilder.items(from: messages),
+                    hasMoreMessages: false,
+                    isThinking: false,
+                    scrollTrigger: 0,
+                    onLoadOlderMessages: { await Task.yield() }
                 )
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    ChatTopBar(userName: "Mehmet", onProfileTap: {})
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 0) {
+                        if showQuickActions {
+                            QuickActionRow(actions: [
+                                .init(id: "today", title: "Today's plan", message: "Show me today's plan", icon: "calendar"),
+                                .init(id: "week", title: "This week", message: "Show me my week", icon: "calendar.badge.clock")
+                            ]) { _ in }
+                        }
+
+                        ChatComposerBar(
+                            onSend: { _, _ in },
+                            onToggleQuickActions: { showQuickActions.toggle() },
+                            isQuickActionsVisible: showQuickActions,
+                            isLoading: false
+                        )
+                    }
+                    .background(.ultraThinMaterial)
+                }
             }
-            .background(Color.surfaceBase)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("huuman")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.textPrimary)
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    InitialAvatar(name: "Mehmet", size: AppLayout.avatarSize)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Image(systemName: "chart.bar")
-                        .font(.body)
-                        .foregroundStyle(Color.textSecondary)
-                }
-            }
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.surfaceBase, for: .navigationBar)
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }

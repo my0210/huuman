@@ -11,47 +11,39 @@ struct DraftPlanCard: View {
         if sessions.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Couldn't build the plan this time")
-                    .font(.subheadline)
+                    .font(.system(size: 15, weight: .medium))
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textSecondary)
+                    .foregroundStyle(Color.chatPrimaryText)
                 Text("Ask me to try again.")
-                    .font(.caption)
-                    .foregroundStyle(Color.textMuted)
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.chatSecondaryText)
             }
             .padding(AppLayout.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AppLayout.cardRadius)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
-                    .foregroundStyle(Color.borderDefault)
-            )
+            .chatAttachmentCard()
         } else {
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("Draft Plan")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.textMuted)
-                        .textCase(.uppercase)
-                        .tracking(0.5)
+                    Text("Draft plan")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.chatPrimaryText)
                     Spacer()
                     Text("\(sessions.count) sessions")
-                        .font(.caption)
-                        .foregroundStyle(Color.textTertiary)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.chatSecondaryText)
                 }
                 .padding(.horizontal, AppLayout.cardPadding)
                 .padding(.vertical, 10)
 
-                Divider().overlay(Color.borderSubtle)
+                Divider().overlay(Color.chatHairline)
 
                 let grouped = groupByDay(sessions)
                 ForEach(Array(grouped.enumerated()), id: \.offset) { _, group in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(group.day)
-                            .font(.caption)
+                            .font(.system(size: 14, weight: .medium))
                             .fontWeight(.medium)
-                            .foregroundStyle(Color.textTertiary)
+                            .foregroundStyle(Color.chatSecondaryText)
                             .padding(.horizontal, AppLayout.cardPadding)
                             .padding(.top, 8)
 
@@ -65,7 +57,7 @@ struct DraftPlanCard: View {
                                     .frame(width: 6, height: 6)
                                 Text(title)
                                     .font(.subheadline)
-                                    .foregroundStyle(Color.textPrimary)
+                                    .foregroundStyle(Color.chatPrimaryText)
                                 Spacer()
                                 Text(domain.capitalized)
                                     .font(.caption2)
@@ -79,19 +71,15 @@ struct DraftPlanCard: View {
                 .padding(.bottom, 8)
 
                 if let intro, !intro.isEmpty {
-                    Divider().overlay(Color.borderSubtle)
+                    Divider().overlay(Color.chatHairline)
                     Text(intro)
-                        .font(.caption)
-                        .foregroundStyle(Color.textSecondary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.chatSecondaryText)
                         .lineSpacing(4)
                         .padding(AppLayout.cardPadding)
                 }
             }
-            .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: AppLayout.cardRadius)
-                    .stroke(Color.semanticInfo.opacity(0.3))
-            )
+            .chatAttachmentCard(background: Color.chatCardSurface, stroke: Color.chatAccent.opacity(0.18))
         }
     }
 

@@ -9,25 +9,21 @@ struct CoachSessionCard: View {
         let isExtra = data["isExtra"] as? Bool ?? false
 
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color.semanticSuccess)
-                .frame(width: 3)
-
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.semanticSuccess)
                     Text(isExtra ? "Extra session logged" : "Session completed")
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .semibold))
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.semanticSuccess)
                 }
 
                 Text(title)
-                    .font(.subheadline)
+                    .font(.system(size: 15, weight: .medium))
                     .fontWeight(.medium)
-                    .foregroundStyle(Color.textPrimary)
+                    .foregroundStyle(Color.chatPrimaryText)
 
                 Text(domain.capitalized)
                     .font(.caption2)
@@ -38,6 +34,9 @@ struct CoachSessionCard: View {
         }
         .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.semanticSuccess.opacity(0.08), in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard(
+            background: Color.semanticSuccess.opacity(0.08),
+            stroke: Color.chatCardBorder
+        )
     }
 }

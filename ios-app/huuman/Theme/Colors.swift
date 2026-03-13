@@ -30,7 +30,16 @@ extension Color {
     static let surfaceElevated = Color(hex: "3A3A3C")
 
     // MARK: - Chat
-    static let userBubble = Color(hex: "2A2A35")
+    static let chatBackground = Color(hex: "111114")
+    static let chatAccent = Color(hex: "3478F6")
+    static let chatPrimaryText = Color.white.opacity(0.96)
+    static let chatSecondaryText = Color.white.opacity(0.52)
+    static let chatTertiaryText = Color.white.opacity(0.38)
+    static let chatCardSurface = Color.white.opacity(0.06)
+    static let chatCardBorder = Color.white.opacity(0.06)
+    static let chatComposerField = Color.white.opacity(0.08)
+    static let chatHairline = Color.white.opacity(0.06)
+    static let userBubble = chatAccent
 
     // MARK: - Borders
     static let borderSubtle = Color(hex: "1F1F23")

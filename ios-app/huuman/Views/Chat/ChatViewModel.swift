@@ -46,6 +46,10 @@ final class ChatViewModel {
 
     func loadChat() async {
         do {
+            messages = []
+            hasMoreMessages = true
+            oldestCreatedAt = nil
+
             let session = try await supabase.auth.session
             let userId = session.user.id.uuidString
 
@@ -197,16 +201,27 @@ final class ChatViewModel {
         return ChatMessage(
             id: dbMsg.id,
             role: dbMsg.role == "user" ? .user : .assistant,
-            parts: messageParts
+            parts: messageParts,
+            createdAt: parseCreatedAt(dbMsg.created_at)
         )
     }
 
     func send(text: String, images: [Data]? = nil) {
-        guard !text.trimmingCharacters(in: .whitespaces).isEmpty || images != nil, !isStreaming else { return }
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || images != nil, !isStreaming else { return }
+
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        var userParts: [MessagePart] = []
+
+        if !trimmedText.isEmpty {
+            userParts.append(.text(id: UUID().uuidString, content: trimmedText))
+        } else if let images, !images.isEmpty {
+            let placeholder = images.count == 1 ? "Sent a photo" : "Sent \(images.count) photos"
+            userParts.append(.text(id: UUID().uuidString, content: placeholder))
+        }
 
         let userMessage = ChatMessage(
             role: .user,
-            parts: [.text(id: UUID().uuidString, content: text)]
+            parts: userParts
         )
         withAnimation(.easeOut(duration: 0.25)) {
             messages.append(userMessage)
@@ -237,7 +252,7 @@ final class ChatViewModel {
 
                 let stream = await ChatService.shared.sendMessage(
                     chatId: chatId ?? "",
-                    text: text,
+                    text: trimmedText,
                     files: fileParts
                 )
 
@@ -318,5 +333,30 @@ final class ChatViewModel {
               let msgIdx = messages.firstIndex(where: { $0.id == messageId }),
               let partIdx = messages[msgIdx].parts.firstIndex(where: { $0.id == id }) else { return }
         messages[msgIdx].parts[partIdx] = newPart
+    }
+
+    private func parseCreatedAt(_ rawValue: String?) -> Date {
+        guard let rawValue else { return Date() }
+
+        let internetFormatter = ISO8601DateFormatter()
+        internetFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = internetFormatter.date(from: rawValue) {
+            return date
+        }
+
+        let fallbackFormatter = ISO8601DateFormatter()
+        fallbackFormatter.formatOptions = [.withInternetDateTime]
+        if let date = fallbackFormatter.date(from: rawValue) {
+            return date
+        }
+
+        let postgresFormatter = DateFormatter()
+        postgresFormatter.locale = Locale(identifier: "en_US_POSIX")
+        postgresFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXXXX"
+        if let date = postgresFormatter.date(from: rawValue) {
+            return date
+        }
+
+        return Date()
     }
 }

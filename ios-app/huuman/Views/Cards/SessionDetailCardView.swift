@@ -14,9 +14,9 @@ struct SessionDetailCardView: View {
                     .fill(Color.domainColor(for: domain))
                     .frame(width: 8, height: 8)
                 Text(title)
-                    .font(.subheadline)
+                    .font(.system(size: 15, weight: .semibold))
                     .fontWeight(.semibold)
-                    .foregroundStyle(Color.textPrimary)
+                    .foregroundStyle(Color.chatPrimaryText)
             }
 
             if domain == "strength" {
@@ -29,7 +29,10 @@ struct SessionDetailCardView: View {
         }
         .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.domainMutedColor(for: domain), in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard(
+            background: Color.domainMutedColor(for: domain).opacity(0.72),
+            stroke: Color.chatCardBorder
+        )
     }
 }
 
@@ -52,11 +55,11 @@ private struct StrengthDetail: View {
             HStack {
                 Text(name)
                     .font(.subheadline)
-                    .foregroundStyle(Color.textSecondary)
+                    .foregroundStyle(Color.chatPrimaryText)
                 Spacer()
                 Text("\(sets)×\(reps)\(weight != nil ? " @ \(weight!)" : "")")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.textMuted)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.chatSecondaryText)
                     .monospacedDigit()
             }
         }

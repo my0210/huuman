@@ -8,19 +8,16 @@ struct WeekPlanCard: View {
         let grouped = groupByDay(sessions)
 
         VStack(alignment: .leading, spacing: 12) {
-            Text("Week Plan")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.textMuted)
-                .textCase(.uppercase)
-                .tracking(0.5)
+            Text("Week plan")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.chatPrimaryText)
 
             ForEach(grouped, id: \.day) { group in
                 VStack(alignment: .leading, spacing: 6) {
                     Text(group.day)
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .medium))
                         .fontWeight(.medium)
-                        .foregroundStyle(Color.textTertiary)
+                        .foregroundStyle(Color.chatSecondaryText)
 
                     ForEach(Array(group.sessions.enumerated()), id: \.offset) { _, session in
                         WeekSessionRow(session: session)
@@ -31,7 +28,7 @@ struct WeekPlanCard: View {
         }
         .padding(AppLayout.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.surfaceRaised, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+        .chatAttachmentCard()
     }
 
     private func groupByDay(_ sessions: [[String: Any]]) -> [(day: String, sessions: [[String: Any]])] {
@@ -79,7 +76,7 @@ private struct WeekSessionRow: View {
             Text(title)
                 .font(.subheadline)
                 .fontWeight(.medium)
-                .foregroundStyle(status == "completed" ? Color.textMuted : Color.textPrimary)
+                .foregroundStyle(status == "completed" ? Color.chatSecondaryText : Color.chatPrimaryText)
                 .strikethrough(status == "completed")
             Spacer()
             Text(domain.capitalized)

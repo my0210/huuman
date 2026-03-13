@@ -14,10 +14,10 @@ struct SavedPhotoCardView: View {
                 HStack {
                     HStack(spacing: 6) {
                         Image(systemName: "camera.fill")
-                            .font(.caption)
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.semanticSuccess)
                         Text("Progress photo saved")
-                            .font(.subheadline)
+                            .font(.system(size: 15, weight: .medium))
                             .fontWeight(.medium)
                             .foregroundStyle(Color.semanticSuccess)
                     }
@@ -35,13 +35,16 @@ struct SavedPhotoCardView: View {
                 if let date {
                     Text(formatDate(date))
                         .font(.caption)
-                        .foregroundStyle(Color.textMuted)
+                        .foregroundStyle(Color.chatSecondaryText)
                         .padding(.leading, 22)
                 }
             }
             .padding(AppLayout.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.semanticSuccess.opacity(0.08), in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+            .chatAttachmentCard(
+                background: Color.semanticSuccess.opacity(0.08),
+                stroke: Color.chatCardBorder
+            )
         }
     }
 
@@ -72,10 +75,10 @@ struct SavedMealCardView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
                     Image(systemName: "fork.knife")
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.domainNutrition)
                     Text("Meal logged")
-                        .font(.subheadline)
+                        .font(.system(size: 15, weight: .medium))
                         .fontWeight(.medium)
                         .foregroundStyle(Color.domainNutrition)
                     Spacer()
@@ -93,7 +96,7 @@ struct SavedMealCardView: View {
                 if let desc = description {
                     Text(desc)
                         .font(.caption)
-                        .foregroundStyle(Color.textTertiary)
+                        .foregroundStyle(Color.chatSecondaryText)
                         .lineLimit(2)
                         .lineSpacing(2)
                 }
@@ -103,27 +106,30 @@ struct SavedMealCardView: View {
                         if let cal {
                             Text("~\(cal) cal")
                                 .font(.caption2)
-                                .foregroundStyle(Color.textMuted)
+                                .foregroundStyle(Color.chatSecondaryText)
                                 .monospacedDigit()
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
-                                .background(Color.surfaceElevated, in: Capsule())
+                                .background(Color.white.opacity(0.08), in: Capsule())
                         }
                         if let protein {
                             Text("~\(protein)g protein")
                                 .font(.caption2)
-                                .foregroundStyle(Color.textMuted)
+                                .foregroundStyle(Color.chatSecondaryText)
                                 .monospacedDigit()
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
-                                .background(Color.surfaceElevated, in: Capsule())
+                                .background(Color.white.opacity(0.08), in: Capsule())
                         }
                     }
                 }
             }
             .padding(AppLayout.cardPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.domainNutrition.opacity(0.08), in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
+            .chatAttachmentCard(
+                background: Color.domainNutrition.opacity(0.08),
+                stroke: Color.chatCardBorder
+            )
         }
     }
 }
