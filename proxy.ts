@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC_ROUTES = [
@@ -11,6 +12,15 @@ const PUBLIC_ROUTES = [
 ];
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
+
+  // Native mobile apps send Bearer tokens -- let API routes handle auth themselves
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader?.startsWith('Bearer ') && pathname.startsWith('/api/')) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -35,9 +45,6 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-  const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
 
   if (!user && !isPublicRoute) {
     const loginUrl = request.nextUrl.clone();
