@@ -1,6 +1,6 @@
 import { createAgentUIStreamResponse, generateId } from 'ai';
 import { createCoachAgent } from '@/lib/ai/agent';
-import { createClientFromRequest } from '@/lib/supabase/from-request';
+import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages, convertToModelUIMessages } from '@/lib/chat/store';
 import { loadUserProfile } from '@/lib/core/user';
 import { getLanguageFromCookies } from '@/lib/languages';
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   try {
     const { id: chatId, message } = await req.json();
 
-    const supabase = await createClientFromRequest(req);
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
