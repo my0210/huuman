@@ -164,6 +164,7 @@ struct InputBar: View {
 
     private func performSend() {
         guard canSend else { return }
+        isFocused = false
         let message = text.trimmingCharacters(in: .whitespaces)
         let images = selectedImages.isEmpty ? nil : selectedImages
         text = ""

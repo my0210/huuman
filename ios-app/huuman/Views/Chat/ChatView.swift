@@ -55,9 +55,11 @@ struct ChatView: View {
                         .scrollDismissesKeyboard(.interactively)
                         .onScrollGeometryChange(for: Bool.self) { geo in
                             let dist = geo.contentSize.height - geo.contentOffset.y - geo.containerSize.height
-                            return dist < 80
+                            return dist < 200
                         } action: { _, isNear in
-                            isNearBottom = isNear
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                isNearBottom = isNear
+                            }
                         }
                         .onScrollGeometryChange(for: CGFloat.self) { geo in
                             geo.contentOffset.y
@@ -70,9 +72,7 @@ struct ChatView: View {
                             }
                         }
                         .onChange(of: viewModel.messages.count) {
-                            if isNearBottom {
-                                withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("bottom") }
-                            }
+                            withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("bottom") }
                         }
                         .onChange(of: viewModel.scrollTrigger) {
                             if isNearBottom { proxy.scrollTo("bottom") }
