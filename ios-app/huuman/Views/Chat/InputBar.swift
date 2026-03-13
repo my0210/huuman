@@ -39,6 +39,7 @@ struct InputBar: View {
 
     // MARK: - Image Strip
 
+    @ViewBuilder
     private var imageStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
