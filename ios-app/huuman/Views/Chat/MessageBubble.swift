@@ -7,28 +7,19 @@ struct MessageBubble: View {
         message.role == .user
     }
 
-    private var bubbleWidthFactor: CGFloat {
-        isUser ? 0.76 : 0.92
-    }
-
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            if isUser {
-                Spacer(minLength: 24)
-            }
+        HStack(alignment: .bottom, spacing: 0) {
+            if isUser { Spacer(minLength: 60) }
 
-            VStack(alignment: isUser ? .trailing : .leading, spacing: 8) {
+            VStack(alignment: isUser ? .trailing : .leading, spacing: 6) {
                 ForEach(message.parts) { part in
                     partView(part)
                 }
             }
-            .containerRelativeFrame(.horizontal) { width, _ in width * bubbleWidthFactor }
 
-            if !isUser {
-                Spacer(minLength: 24)
-            }
+            if !isUser { Spacer(minLength: 44) }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
     }
 
     @ViewBuilder
@@ -36,14 +27,21 @@ struct MessageBubble: View {
         switch part {
         case .text(_, let content):
             if !content.isEmpty {
-                Text(content)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.textPrimary)
-                    .lineSpacing(4)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(bubbleFill, in: bubbleShape)
-                    .overlay(bubbleShape.stroke(bubbleStroke))
+                if isUser {
+                    Text(content)
+                        .font(.body)
+                        .foregroundStyle(Color.textPrimary)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.userBubble, in: UserBubbleShape())
+                } else {
+                    Text(content)
+                        .font(.body)
+                        .foregroundStyle(Color.textPrimary)
+                        .lineSpacing(4)
+                        .padding(.vertical, 2)
+                }
             }
 
         case .image(_, let url, _):
@@ -73,25 +71,16 @@ struct MessageBubble: View {
                 .background(Color.semanticError.opacity(0.1), in: RoundedRectangle(cornerRadius: AppLayout.cardRadius))
         }
     }
+}
 
-    private var bubbleFill: Color {
-        isUser ? Color.surfaceElevated : Color.surfaceRaised
-    }
-
-    private var bubbleStroke: Color {
-        isUser ? Color.clear : Color.borderSubtle.opacity(0.7)
-    }
-
-    private var bubbleShape: any Shape {
-        if isUser {
-            return UnevenRoundedRectangle(
-                topLeadingRadius: 18,
-                bottomLeadingRadius: 18,
-                bottomTrailingRadius: 6,
-                topTrailingRadius: 18
-            )
-        }
-        return RoundedRectangle(cornerRadius: 16, style: .continuous)
+private struct UserBubbleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 18,
+            bottomLeadingRadius: 18,
+            bottomTrailingRadius: 4,
+            topTrailingRadius: 18
+        ).path(in: rect)
     }
 }
 

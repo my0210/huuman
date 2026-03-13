@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Supabase
 
 struct ConversationRow: Decodable {
@@ -38,6 +39,7 @@ final class ChatViewModel {
     var isLoadingOlder = false
     var hasMoreMessages = true
     var userName: String = "?"
+    var scrollTrigger = 0
 
     private let pageSize = 50
     private var oldestCreatedAt: String?
@@ -206,7 +208,9 @@ final class ChatViewModel {
             role: .user,
             parts: [.text(id: UUID().uuidString, content: text)]
         )
-        messages.append(userMessage)
+        withAnimation(.easeOut(duration: 0.25)) {
+            messages.append(userMessage)
+        }
 
         isStreaming = true
         isThinking = true
@@ -241,7 +245,9 @@ final class ChatViewModel {
                     switch event {
                     case .messageStart(let id):
                         currentMessageId = id
-                        messages.append(ChatMessage(id: id, role: .assistant, parts: []))
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            messages.append(ChatMessage(id: id, role: .assistant, parts: []))
+                        }
                         isThinking = false
 
                     case .textStart(let id):
@@ -251,6 +257,7 @@ final class ChatViewModel {
                     case .textDelta(let id, let delta):
                         accumulatedText += delta
                         updateTextPart(id: id, text: accumulatedText, in: currentMessageId)
+                        scrollTrigger += 1
                         isThinking = false
 
                     case .textEnd:
@@ -269,6 +276,7 @@ final class ChatViewModel {
                             replacePart(id: callId, with: .toolResult(id: callId, toolName: toolName, output: output), in: currentMessageId)
                         }
                         currentToolName = nil
+                        scrollTrigger += 1
 
                     case .stepStart:
                         isThinking = true

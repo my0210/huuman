@@ -29,6 +29,9 @@ extension Color {
     static let surfaceOverlay = Color(hex: "2C2C2E")
     static let surfaceElevated = Color(hex: "3A3A3C")
 
+    // MARK: - Chat
+    static let userBubble = Color(hex: "2A2A35")
+
     // MARK: - Borders
     static let borderSubtle = Color(hex: "1F1F23")
     static let borderDefault = Color(hex: "2C2C30")

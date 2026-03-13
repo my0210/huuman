@@ -30,11 +30,11 @@ struct InputBar: View {
                 textFieldPill
                 sendButton
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
         .background(.ultraThinMaterial)
-        .overlay(Divider().overlay(Color.borderSubtle), alignment: .top)
+        .overlay(Divider().overlay(Color.borderDefault), alignment: .top)
     }
 
     // MARK: - Image Strip
@@ -112,8 +112,8 @@ struct InputBar: View {
                 .font(.subheadline)
                 .foregroundStyle(Color.textPrimary)
                 .focused($isFocused)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
                 .onSubmit {
                     if canSend { performSend() }
                 }
@@ -124,7 +124,7 @@ struct InputBar: View {
                 matching: .images
             ) {
                 Image(systemName: "camera")
-                    .font(.body)
+                    .font(.body.weight(.medium))
                     .foregroundStyle(Color.textSecondary)
                     .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
@@ -135,8 +135,8 @@ struct InputBar: View {
                 Task { await loadImages(newItems) }
             }
         }
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).stroke(Color.borderSubtle.opacity(0.9)))
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(Color.borderDefault))
     }
 
     // MARK: - Send Button
