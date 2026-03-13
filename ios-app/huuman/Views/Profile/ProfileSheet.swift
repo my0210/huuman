@@ -8,6 +8,7 @@ struct ProfileSheetView: View {
     @State private var confirmAction: ConfirmAction?
     @State private var busy = false
     @State private var userName: String = ""
+    @State private var userEmail: String = ""
 
     enum ConfirmAction: Identifiable {
         case redoOnboarding, resetEverything
@@ -29,8 +30,8 @@ struct ProfileSheetView: View {
                             Text(userName.isEmpty ? "User" : userName)
                                 .font(.headline)
                                 .foregroundStyle(Color.textPrimary)
-                            if let email = auth.session?.user.email {
-                                Text(email)
+                            if !userEmail.isEmpty {
+                                Text(userEmail)
                                     .font(.caption)
                                     .foregroundStyle(Color.textMuted)
                             }
@@ -135,13 +136,14 @@ struct ProfileSheetView: View {
                     )
                 }
             }
-            .task { await loadUserName() }
+            .task { await loadUserInfo() }
         }
     }
 
-    private func loadUserName() async {
+    private func loadUserInfo() async {
         do {
             let session = try await supabase.auth.session
+            userEmail = session.user.email ?? ""
             let userId = session.user.id.uuidString
 
             struct NameRow: Decodable {
