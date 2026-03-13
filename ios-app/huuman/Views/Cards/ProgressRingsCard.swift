@@ -4,7 +4,7 @@ struct ProgressRingsCard: View {
     let data: [String: Any]
 
     var body: some View {
-        let domains = data["domains"] as? [[String: Any]] ?? []
+        let domains = (data["progress"] as? [[String: Any]]) ?? (data["domains"] as? [[String: Any]]) ?? []
 
         VStack(alignment: .leading, spacing: 14) {
             Text("This Week")
