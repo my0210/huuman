@@ -84,7 +84,7 @@ struct SignupView: View {
     private func handleSignup() {
         loading = true
         error = nil
-        Task {
+        Task { @MainActor in
             do {
                 try await auth.signUp(email: email, password: password)
             } catch {

@@ -48,3 +48,9 @@ ios/App/App/public/
 ios/App/Pods/
 ios/.build/
 ios/DerivedData/
+
+# SwiftUI app - secrets and Xcode user state
+ios-app/huuman/Secrets.swift
+ios-app/huuman.xcodeproj/xcuserdata/
+ios-app/huuman.xcodeproj/project.xcworkspace/xcuserdata/
+ios-app/.DS_Store
