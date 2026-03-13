@@ -87,42 +87,35 @@ struct ChatTopBar: View {
     let onProfileTap: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Button(action: onProfileTap) {
-                    InitialAvatar(name: userName, size: AppLayout.avatarSize)
-                        .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Profile")
-
-                Spacer(minLength: 0)
-
-                Text("huuman")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Color.chatPrimaryText.opacity(0.88))
-
-                Spacer(minLength: 0)
-
-                NavigationLink(destination: DataView()) {
-                    Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Color.chatSecondaryText)
-                        .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Your data")
+        HStack {
+            Button(action: onProfileTap) {
+                Image(systemName: "person.circle")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(Color.chatSecondaryText)
+                    .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
             }
-            .padding(.horizontal, ChatTokens.horizontalPadding)
-            .frame(height: ChatTokens.topBarHeight)
-            .frame(maxWidth: ChatTokens.threadMaxWidth)
-            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Profile")
 
-            Rectangle()
-                .fill(Color.chatHairline)
-                .frame(height: 0.5)
+            Spacer(minLength: 0)
+
+            Text("huuman")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.chatTertiaryText)
+
+            Spacer(minLength: 0)
+
+            NavigationLink(destination: DataView()) {
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(Color.chatSecondaryText)
+                    .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Your data")
         }
-        .background(ChatChromeBackground(materialOpacity: 0.4, baseOpacity: 0.94))
+        .padding(.horizontal, 8)
+        .frame(height: 36)
     }
 }
 
@@ -158,10 +151,9 @@ struct ChatThreadView: View {
                     }
 
                     if isThinking {
-                        HStack(alignment: .top, spacing: 10) {
-                            AssistantIdentityBadge(isVisible: true)
+                        HStack {
                             ThinkingIndicator()
-                            Spacer(minLength: ChatTokens.trailingConversationClearance)
+                            Spacer()
                         }
                         .padding(.top, ChatTokens.assistantContinuationSpacing)
                     }
@@ -171,10 +163,8 @@ struct ChatThreadView: View {
                         .id(bottomAnchorID)
                 }
                 .padding(.horizontal, ChatTokens.horizontalPadding)
-                .padding(.top, 10)
+                .padding(.top, 8)
                 .padding(.bottom, 8)
-                .frame(maxWidth: ChatTokens.threadMaxWidth)
-                .frame(maxWidth: .infinity)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
@@ -304,7 +294,7 @@ struct UserMessageBubble: View {
 
     var body: some View {
         HStack {
-            Spacer(minLength: ChatTokens.leadingConversationClearance)
+            Spacer(minLength: ChatTokens.userBubbleClearance)
 
             if let text = viewModel.text {
                 Text(text)
@@ -312,8 +302,7 @@ struct UserMessageBubble: View {
                     .foregroundStyle(Color.white)
                     .lineSpacing(4)
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 11)
-                    .frame(maxWidth: ChatTokens.userBubbleMaxWidth, alignment: .trailing)
+                    .padding(.vertical, 10)
                     .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
             }
         }
@@ -325,17 +314,10 @@ struct AssistantTurnView: View {
     let viewModel: AssistantTurnViewModel
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            AssistantIdentityBadge(isVisible: viewModel.showsIdentity)
-
-            VStack(alignment: .leading, spacing: ChatTokens.assistantBlockSpacing) {
-                ForEach(viewModel.blocks) { block in
-                    blockView(block)
-                }
+        VStack(alignment: .leading, spacing: ChatTokens.assistantBlockSpacing) {
+            ForEach(viewModel.blocks) { block in
+                blockView(block)
             }
-            .frame(maxWidth: ChatTokens.assistantLaneMaxWidth, alignment: .leading)
-
-            Spacer(minLength: ChatTokens.trailingConversationClearance)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -510,30 +492,6 @@ struct SystemEventChip: View {
     }
 }
 
-private struct AssistantIdentityBadge: View {
-    let isVisible: Bool
-
-    var body: some View {
-        Group {
-            if isVisible {
-                Text("h")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color.chatSecondaryText)
-                    .frame(width: 22, height: 22)
-                    .background(Color.white.opacity(0.07), in: Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(Color.chatCardBorder, lineWidth: 1)
-                    )
-            } else {
-                Color.clear
-                    .frame(width: 22, height: 22)
-            }
-        }
-        .padding(.top, 2)
-    }
-}
-
 private struct InlineNoticeView: View {
     let text: String
     let isError: Bool
@@ -610,7 +568,6 @@ struct ThinkingIndicator: View {
 
 private enum ChatTokens {
     static let horizontalPadding: CGFloat = 16
-    static let topBarHeight: CGFloat = 44
     static let turnSpacing: CGFloat = 18
     static let userClusterSpacing: CGFloat = 6
     static let assistantContinuationSpacing: CGFloat = 10
@@ -619,27 +576,8 @@ private enum ChatTokens {
     static let daySeparatorToTurnSpacing: CGFloat = 8
     static let userBubbleRadius: CGFloat = 22
     static let cardRadius: CGFloat = 18
-    static let userBubbleMaxWidth: CGFloat = 340
-    static let assistantLaneMaxWidth: CGFloat = 500
-    static let threadMaxWidth: CGFloat = 760
-    static let leadingConversationClearance: CGFloat = 68
-    static let trailingConversationClearance: CGFloat = 54
-}
-
-private struct ChatChromeBackground: View {
-    let materialOpacity: Double
-    let baseOpacity: Double
-
-    var body: some View {
-        let baseColor: Color = .chatBackground
-
-        ZStack {
-            baseColor.opacity(baseOpacity)
-            Rectangle()
-                .fill(Material.ultraThinMaterial)
-                .opacity(materialOpacity)
-        }
-    }
+    static let userBubbleMaxWidth: CGFloat = 300
+    static let userBubbleClearance: CGFloat = 72
 }
 
 #if DEBUG
