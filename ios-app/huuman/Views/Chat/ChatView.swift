@@ -27,47 +27,56 @@ struct ChatScreen: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                Color.chatBackground.ignoresSafeArea()
-
-                ChatThreadView(
-                    items: threadItems,
-                    hasMoreMessages: viewModel.hasMoreMessages && !viewModel.messages.isEmpty,
-                    isThinking: viewModel.isThinking,
-                    scrollTrigger: viewModel.scrollTrigger,
-                    onLoadOlderMessages: { await viewModel.loadOlderMessages() }
-                )
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    VStack(spacing: 4) {
-                        if showQuickActions {
-                            QuickActionRow(actions: quickActions) { action in
-                                showQuickActions = false
-                                viewModel.send(text: action.message)
-                            }
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+            ChatThreadView(
+                items: threadItems,
+                hasMoreMessages: viewModel.hasMoreMessages && !viewModel.messages.isEmpty,
+                isThinking: viewModel.isThinking,
+                scrollTrigger: viewModel.scrollTrigger,
+                onLoadOlderMessages: { await viewModel.loadOlderMessages() }
+            )
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 4) {
+                    if showQuickActions {
+                        QuickActionRow(actions: quickActions) { action in
+                            showQuickActions = false
+                            viewModel.send(text: action.message)
                         }
-
-                        ChatComposerBar(
-                            onSend: { text, images in
-                                viewModel.send(text: text, images: images)
-                            },
-                            onToggleQuickActions: {
-                                withAnimation(.easeOut(duration: 0.18)) {
-                                    showQuickActions.toggle()
-                                }
-                            },
-                            isQuickActionsVisible: showQuickActions,
-                            isLoading: viewModel.isStreaming
-                        )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                }
 
-                ChatTopBar(
-                    userName: viewModel.userName,
-                    onProfileTap: { showProfile = true }
-                )
+                    ChatComposerBar(
+                        onSend: { text, images in
+                            viewModel.send(text: text, images: images)
+                        },
+                        onToggleQuickActions: {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showQuickActions.toggle()
+                            }
+                        },
+                        isQuickActionsVisible: showQuickActions,
+                        isLoading: viewModel.isStreaming
+                    )
+                }
             }
-            .toolbar(.hidden, for: .navigationBar)
+            .background(Color.chatBackground)
+            .navigationTitle("huuman")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showProfile = true
+                    } label: {
+                        Image(systemName: "person.circle")
+                    }
+                    .accessibilityLabel("Profile")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink(destination: DataView()) {
+                        Image(systemName: "chart.bar.xaxis")
+                    }
+                    .accessibilityLabel("Your data")
+                }
+            }
             .sheet(isPresented: $showProfile) {
                 ProfileSheetView()
                     .presentationDetents([.medium, .large])
@@ -78,43 +87,6 @@ struct ChatScreen: View {
                 await viewModel.loadChat()
             }
         }
-    }
-}
-
-struct ChatTopBar: View {
-    let userName: String
-    let onProfileTap: () -> Void
-
-    var body: some View {
-        HStack {
-            Button(action: onProfileTap) {
-                Image(systemName: "person.circle")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(Color.chatSecondaryText)
-                    .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Profile")
-
-            Spacer(minLength: 0)
-
-            Text("huuman")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.chatTertiaryText)
-
-            Spacer(minLength: 0)
-
-            NavigationLink(destination: DataView()) {
-                Image(systemName: "chart.bar.xaxis")
-                    .font(.system(size: 18, weight: .regular))
-                    .foregroundStyle(Color.chatSecondaryText)
-                    .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Your data")
-        }
-        .padding(.horizontal, 8)
-        .frame(height: 36)
     }
 }
 
@@ -162,7 +134,7 @@ struct ChatThreadView: View {
                         .id(bottomAnchorID)
                 }
                 .padding(.horizontal, ChatTokens.horizontalPadding)
-                .padding(.top, ChatTokens.topContentInset)
+                .padding(.top, 4)
                 .padding(.bottom, 4)
             }
             .defaultScrollAnchor(.bottom)
@@ -304,7 +276,6 @@ struct UserMessageBubble: View {
                     .padding(.vertical, 8)
                     .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
             }
-            .padding(.trailing, -ChatTokens.horizontalPadding + 6)
         }
     }
 }
@@ -566,13 +537,12 @@ struct ThinkingIndicator: View {
 }
 
 private enum ChatTokens {
-    static let horizontalPadding: CGFloat = 16
-    static let topContentInset: CGFloat = 44
+    static let horizontalPadding: CGFloat = 14
     static let turnSpacing: CGFloat = 10
     static let userClusterSpacing: CGFloat = 2
     static let assistantContinuationSpacing: CGFloat = 8
     static let assistantBlockSpacing: CGFloat = 8
-    static let daySeparatorVerticalPadding: CGFloat = 18
+    static let daySeparatorVerticalPadding: CGFloat = 16
     static let daySeparatorToTurnSpacing: CGFloat = 6
     static let userBubbleRadius: CGFloat = 20
     static let cardRadius: CGFloat = 16
@@ -642,37 +612,43 @@ private struct ChatShellPreview: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                Color.chatBackground.ignoresSafeArea()
+            ChatThreadView(
+                items: ChatThreadBuilder.items(from: messages),
+                hasMoreMessages: false,
+                isThinking: false,
+                scrollTrigger: 0,
+                onLoadOlderMessages: { await Task.yield() }
+            )
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 4) {
+                    if showQuickActions {
+                        QuickActionRow(actions: [
+                            .init(id: "today", title: "Today's plan", message: "Show me today's plan", icon: "calendar"),
+                            .init(id: "week", title: "This week", message: "Show me my week", icon: "calendar.badge.clock")
+                        ]) { _ in }
+                    }
 
-                ChatThreadView(
-                    items: ChatThreadBuilder.items(from: messages),
-                    hasMoreMessages: false,
-                    isThinking: false,
-                    scrollTrigger: 0,
-                    onLoadOlderMessages: { await Task.yield() }
-                )
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    VStack(spacing: 4) {
-                        if showQuickActions {
-                            QuickActionRow(actions: [
-                                .init(id: "today", title: "Today's plan", message: "Show me today's plan", icon: "calendar"),
-                                .init(id: "week", title: "This week", message: "Show me my week", icon: "calendar.badge.clock")
-                            ]) { _ in }
-                        }
-
-                        ChatComposerBar(
-                            onSend: { _, _ in },
-                            onToggleQuickActions: { showQuickActions.toggle() },
-                            isQuickActionsVisible: showQuickActions,
-                            isLoading: false
-                        )
+                    ChatComposerBar(
+                        onSend: { _, _ in },
+                        onToggleQuickActions: { showQuickActions.toggle() },
+                        isQuickActionsVisible: showQuickActions,
+                        isLoading: false
+                    )
+                }
+            }
+            .background(Color.chatBackground)
+            .navigationTitle("huuman")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {} label: {
+                        Image(systemName: "person.circle")
                     }
                 }
-
-                ChatTopBar(userName: "Mehmet", onProfileTap: {})
+                ToolbarItem(placement: .topBarTrailing) {
+                    Image(systemName: "chart.bar.xaxis")
+                }
             }
-            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
