@@ -256,7 +256,7 @@ private struct MealDetail: View {
                                 .foregroundStyle(Color.textSecondary)
                         }
 
-                        Label(meal.capturedAt, systemImage: "calendar")
+                        Label(formatMealDate(meal.capturedAt), systemImage: "calendar")
                             .font(.subheadline)
                             .foregroundStyle(Color.textSecondary)
                     }
@@ -278,6 +278,7 @@ private struct MealDetail: View {
                         Image(systemName: "trash")
                             .foregroundStyle(Color.semanticError)
                     }
+                    .accessibilityLabel("Delete meal")
                 }
             }
             .alert("Delete meal photo?", isPresented: $showDeleteConfirm) {
@@ -287,5 +288,14 @@ private struct MealDetail: View {
                 Text("This cannot be undone.")
             }
         }
+    }
+
+    private func formatMealDate(_ iso: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        guard let date = formatter.date(from: iso) else { return iso }
+        let display = DateFormatter()
+        display.dateStyle = .medium
+        return display.string(from: date)
     }
 }

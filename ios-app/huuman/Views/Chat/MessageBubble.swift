@@ -26,7 +26,7 @@ struct MessageBubble: View {
             if !content.isEmpty {
                 Text(content)
                     .font(.subheadline)
-                    .foregroundStyle(message.role == .user ? Color.textPrimary : Color.textSecondary)
+                    .foregroundStyle(Color.textPrimary)
                     .lineSpacing(4)
                     .padding(message.role == .user ? EdgeInsets(top: 10, leading: 14, bottom: 10, trailing: 14) : EdgeInsets())
                     .background(

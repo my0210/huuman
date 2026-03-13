@@ -147,18 +147,18 @@ struct ProfileSheetView: View {
             let userId = session.user.id.uuidString
 
             struct NameRow: Decodable {
-                let name: String?
+                let display_name: String?
             }
 
             let profiles: [NameRow] = try await supabase
                 .from("user_profiles")
-                .select("name")
+                .select("display_name")
                 .eq("id", value: userId)
                 .limit(1)
                 .execute()
                 .value
 
-            if let name = profiles.first?.name, !name.isEmpty {
+            if let name = profiles.first?.display_name, !name.isEmpty {
                 userName = name
             }
         } catch {

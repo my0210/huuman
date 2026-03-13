@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import PhotosUI
 
 struct InputBar: View {
@@ -75,7 +76,9 @@ struct InputBar: View {
                     .font(.title3)
                     .foregroundStyle(Color.textPrimary)
                     .background(Circle().fill(Color.surfaceBase))
+                    .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
+            .accessibilityLabel("Remove photo")
             .offset(x: 6, y: -6)
         }
     }
@@ -95,6 +98,7 @@ struct InputBar: View {
                 .background(Color.surfaceElevated, in: Circle())
         }
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
+        .accessibilityLabel("Menu")
         .sensoryFeedback(.impact(weight: .light), trigger: menuTap)
     }
 
@@ -124,6 +128,7 @@ struct InputBar: View {
                     .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
             .disabled(isLoading)
+            .accessibilityLabel("Attach photo")
             .padding(.trailing, 2)
             .onChange(of: selectedItems) { _, newItems in
                 Task { await loadImages(newItems) }
@@ -148,6 +153,7 @@ struct InputBar: View {
         }
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
         .disabled(!canSend)
+        .accessibilityLabel("Send message")
         .animation(.easeOut(duration: 0.15), value: canSend)
         .sensoryFeedback(.impact(weight: .light), trigger: sendTap)
     }

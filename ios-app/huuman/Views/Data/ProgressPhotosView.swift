@@ -193,6 +193,7 @@ private struct ProgressPhotoDetail: View {
                         Image(systemName: "trash")
                             .foregroundStyle(Color.semanticError)
                     }
+                    .accessibilityLabel("Delete photo")
                 }
             }
             .alert("Delete photo?", isPresented: $showDeleteConfirm) {

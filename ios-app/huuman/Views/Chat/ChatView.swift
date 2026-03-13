@@ -9,58 +9,38 @@ struct ChatView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            if viewModel.hasMoreMessages && !viewModel.messages.isEmpty {
-                                ProgressView()
-                                    .tint(Color.textMuted)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                    .id("load-more")
-                                    .onAppear {
-                                        Task { await viewModel.loadOlderMessages() }
-                                    }
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        if viewModel.isThinking {
+                            HStack {
+                                ThinkingIndicator()
+                                Spacer()
                             }
+                            .padding(.horizontal, 16)
+                            .scaleEffect(y: -1)
+                        }
 
-                            ForEach(viewModel.messages) { message in
-                                MessageBubble(message: message)
-                                    .id(message.id)
-                                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                            }
+                        ForEach(viewModel.messages.reversed()) { message in
+                            MessageBubble(message: message)
+                                .id(message.id)
+                                .scaleEffect(y: -1)
+                        }
 
-                            if viewModel.isThinking {
-                                HStack {
-                                    ThinkingIndicator()
-                                    Spacer()
+                        if viewModel.hasMoreMessages && !viewModel.messages.isEmpty {
+                            ProgressView()
+                                .tint(Color.textMuted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .scaleEffect(y: -1)
+                                .onAppear {
+                                    Task { await viewModel.loadOlderMessages() }
                                 }
-                                .padding(.horizontal, 16)
-                                .id("thinking")
-                            }
-                        }
-                        .padding(.vertical, 16)
-                    }
-                    .scrollDismissesKeyboard(.interactively)
-                    .defaultScrollAnchor(.bottom)
-                    .onChange(of: viewModel.messages.count) {
-                        if viewModel.isStreaming || viewModel.isThinking {
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                if viewModel.isThinking {
-                                    proxy.scrollTo("thinking", anchor: .bottom)
-                                } else if let last = viewModel.messages.last {
-                                    proxy.scrollTo(last.id, anchor: .bottom)
-                                }
-                            }
                         }
                     }
-                    .onChange(of: viewModel.lastTextUpdate) {
-                        withAnimation(.easeOut(duration: 0.1)) {
-                            if let last = viewModel.messages.last {
-                                proxy.scrollTo(last.id, anchor: .bottom)
-                            }
-                        }
-                    }
+                    .padding(.vertical, 16)
                 }
+                .scaleEffect(y: -1)
+                .scrollDismissesKeyboard(.interactively)
 
                 if showCommandMenu {
                     CommandMenuView(onSelect: { message in
@@ -90,8 +70,9 @@ struct ChatView: View {
                     Button {
                         showProfile = true
                     } label: {
-                        InitialAvatar(name: "M", size: AppLayout.avatarSize)
+                        InitialAvatar(name: viewModel.userName, size: AppLayout.avatarSize)
                     }
+                    .accessibilityLabel("Profile")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(destination: DataView()) {
@@ -99,6 +80,7 @@ struct ChatView: View {
                             .font(.body)
                             .foregroundStyle(Color.textSecondary)
                     }
+                    .accessibilityLabel("Your data")
                 }
             }
             .toolbarBackground(.visible, for: .navigationBar)

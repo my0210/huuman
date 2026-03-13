@@ -33,11 +33,11 @@ final class ChatViewModel {
     var messages: [ChatMessage] = []
     var isStreaming = false
     var isThinking = false
-    var lastTextUpdate = 0
     var chatId: String?
     var error: String?
     var isLoadingOlder = false
     var hasMoreMessages = true
+    var userName: String = "?"
 
     private let pageSize = 50
     private var oldestCreatedAt: String?
@@ -46,6 +46,8 @@ final class ChatViewModel {
         do {
             let session = try await supabase.auth.session
             let userId = session.user.id.uuidString
+
+            await loadUserName(userId: userId)
 
             let conversations: [ConversationRow] = try await supabase
                 .from("conversations")
@@ -96,6 +98,22 @@ final class ChatViewModel {
         }
     }
 
+    private func loadUserName(userId: String) async {
+        struct NameRow: Decodable { let display_name: String? }
+        do {
+            let profiles: [NameRow] = try await supabase
+                .from("user_profiles")
+                .select("display_name")
+                .eq("id", value: userId)
+                .limit(1)
+                .execute()
+                .value
+            if let name = profiles.first?.display_name, !name.isEmpty {
+                userName = name
+            }
+        } catch {}
+    }
+
     func loadOlderMessages() async {
         guard !isLoadingOlder, hasMoreMessages, let cId = chatId, let oldest = oldestCreatedAt else { return }
         isLoadingOlder = true
@@ -126,9 +144,7 @@ final class ChatViewModel {
             }
 
             messages.insert(contentsOf: olderParsed, at: 0)
-        } catch {
-            // Silent
-        }
+        } catch {}
 
         isLoadingOlder = false
     }
@@ -154,9 +170,7 @@ final class ChatViewModel {
                     parts: [.text(id: UUID().uuidString, content: intro)]
                 ))
             }
-        } catch {
-            // Silent
-        }
+        } catch {}
     }
 
     private func parseMessageRow(_ dbMsg: MessageRow) -> ChatMessage? {
@@ -227,8 +241,7 @@ final class ChatViewModel {
                     switch event {
                     case .messageStart(let id):
                         currentMessageId = id
-                        let msg = ChatMessage(id: id, role: .assistant, parts: [])
-                        messages.append(msg)
+                        messages.append(ChatMessage(id: id, role: .assistant, parts: []))
                         isThinking = false
 
                     case .textStart(let id):
@@ -238,7 +251,6 @@ final class ChatViewModel {
                     case .textDelta(let id, let delta):
                         accumulatedText += delta
                         updateTextPart(id: id, text: accumulatedText, in: currentMessageId)
-                        lastTextUpdate += 1
                         isThinking = false
 
                     case .textEnd:
@@ -283,26 +295,20 @@ final class ChatViewModel {
     private func appendPart(_ part: MessagePart, to messageId: String?) {
         guard let messageId,
               let idx = messages.firstIndex(where: { $0.id == messageId }) else { return }
-        var updated = messages
-        updated[idx].parts.append(part)
-        messages = updated
+        messages[idx].parts.append(part)
     }
 
     private func updateTextPart(id: String, text: String, in messageId: String?) {
         guard let messageId,
               let msgIdx = messages.firstIndex(where: { $0.id == messageId }),
               let partIdx = messages[msgIdx].parts.firstIndex(where: { $0.id == id }) else { return }
-        var updated = messages
-        updated[msgIdx].parts[partIdx] = .text(id: id, content: text)
-        messages = updated
+        messages[msgIdx].parts[partIdx] = .text(id: id, content: text)
     }
 
     private func replacePart(id: String, with newPart: MessagePart, in messageId: String?) {
         guard let messageId,
               let msgIdx = messages.firstIndex(where: { $0.id == messageId }),
               let partIdx = messages[msgIdx].parts.firstIndex(where: { $0.id == id }) else { return }
-        var updated = messages
-        updated[msgIdx].parts[partIdx] = newPart
-        messages = updated
+        messages[msgIdx].parts[partIdx] = newPart
     }
 }

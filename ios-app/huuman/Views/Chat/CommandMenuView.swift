@@ -31,7 +31,7 @@ struct CommandMenuView: View {
                             Text(cmd.label)
                                 .font(.caption2)
                                 .fontWeight(.medium)
-                                .foregroundStyle(Color.textTertiary)
+                                .foregroundStyle(Color.textSecondary)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                         }

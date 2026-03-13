@@ -107,6 +107,8 @@ struct OnboardingView: View {
         case .methodology(let domain):
             if let content = domainContent[domain] {
                 MethodologyStep(content: content)
+            } else {
+                EmptyView()
             }
         case .questions(_, let title, let questions):
             QuestionsStep(title: title, questions: questions, answers: $vm.answers)
@@ -350,6 +352,7 @@ private struct SingleSelectGroup: View {
                         }
                     }
                     .padding(14)
+                    .frame(minHeight: AppLayout.buttonMinHeight)
                     .background(isSelected ? Color.surfaceElevated : Color.surfaceRaised)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
@@ -394,6 +397,7 @@ private struct MultiSelectGroup: View {
                             .foregroundStyle(isSelected ? Color.textPrimary : Color.textMuted)
                     }
                     .padding(14)
+                    .frame(minHeight: AppLayout.buttonMinHeight)
                     .background(isSelected ? Color.surfaceElevated : Color.surfaceRaised)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
@@ -420,6 +424,7 @@ private struct MultiSelectGroup: View {
                         }
                     }
                     .padding(14)
+                    .frame(minHeight: AppLayout.buttonMinHeight)
                     .background(selected.isEmpty ? Color.surfaceElevated : Color.surfaceRaised)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
@@ -439,6 +444,7 @@ private struct BasicsStep: View {
     let subtitle: String
     let fields: [FieldDef]
     @Binding var answers: OnboardingAnswers
+    @FocusState private var focusedField: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -466,8 +472,15 @@ private struct BasicsStep: View {
                         .background(Color.surfaceRaised)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.borderDefault))
+                        .focused($focusedField, equals: field.id)
                 }
                 .padding(.top, 8)
+            }
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
             }
         }
     }
@@ -532,17 +545,13 @@ private struct BuildStep: View {
                 }
             } else {
                 VStack(spacing: 16) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.largeTitle)
-                        .foregroundStyle(Color.semanticSuccess)
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(Color.textSecondary)
 
-                    Text("Building your plan...")
+                    Text("Preparing...")
                         .font(.headline)
                         .foregroundStyle(Color.textPrimary)
-
-                    Text("This takes about 30 seconds")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.textTertiary)
                 }
             }
 
