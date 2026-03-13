@@ -207,15 +207,17 @@ final class ChatViewModel {
     }
 
     func send(text: String, images: [Data]? = nil) {
-        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || images != nil, !isStreaming else { return }
-
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let attachedImages = (images?.isEmpty == false) ? images : nil
+
+        guard !trimmedText.isEmpty || attachedImages != nil, !isStreaming else { return }
+
         var userParts: [MessagePart] = []
 
         if !trimmedText.isEmpty {
             userParts.append(.text(id: UUID().uuidString, content: trimmedText))
-        } else if let images, !images.isEmpty {
-            let placeholder = images.count == 1 ? "Sent a photo" : "Sent \(images.count) photos"
+        } else if let attachedImages {
+            let placeholder = attachedImages.count == 1 ? "Sent a photo" : "Sent \(attachedImages.count) photos"
             userParts.append(.text(id: UUID().uuidString, content: placeholder))
         }
 
@@ -232,11 +234,13 @@ final class ChatViewModel {
         error = nil
 
         Task {
+            var currentMessageId: String?
+
             do {
                 var fileParts: [[String: Any]]?
-                if let images {
+                if let attachedImages {
                     fileParts = []
-                    for imageData in images {
+                    for imageData in attachedImages {
                         let base64 = imageData.base64EncodedString()
                         fileParts?.append([
                             "type": "file",
@@ -246,9 +250,8 @@ final class ChatViewModel {
                     }
                 }
 
-                var currentMessageId: String?
                 var accumulatedText = ""
-                var currentToolName: String?
+                var toolNamesByCallId: [String: String] = [:]
 
                 let stream = await ChatService.shared.sendMessage(
                     chatId: chatId ?? "",
@@ -279,18 +282,17 @@ final class ChatViewModel {
                         break
 
                     case .toolInputStart(let callId, let toolName):
-                        currentToolName = toolName
+                        toolNamesByCallId[callId] = toolName
                         appendPart(.toolLoading(id: callId, toolName: toolName), to: currentMessageId)
                         isThinking = false
 
-                    case .toolInputAvailable:
-                        break
+                    case .toolInputAvailable(let callId, let toolName, _):
+                        toolNamesByCallId[callId] = toolName
 
                     case .toolOutputAvailable(let callId, let output):
-                        if let toolName = currentToolName {
+                        if let toolName = toolNamesByCallId.removeValue(forKey: callId) {
                             replacePart(id: callId, with: .toolResult(id: callId, toolName: toolName, output: output), in: currentMessageId)
                         }
-                        currentToolName = nil
                         scrollTrigger += 1
 
                     case .stepStart:
@@ -300,14 +302,17 @@ final class ChatViewModel {
                         isThinking = false
 
                     case .messageFinish, .done:
+                        removeMessageIfContentless(id: currentMessageId)
                         break
 
                     case .error(let msg):
                         self.error = msg
+                        removeMessageIfContentless(id: currentMessageId)
                     }
                 }
             } catch {
                 self.error = error.localizedDescription
+                removeMessageIfContentless(id: currentMessageId)
             }
 
             isStreaming = false
@@ -333,6 +338,26 @@ final class ChatViewModel {
               let msgIdx = messages.firstIndex(where: { $0.id == messageId }),
               let partIdx = messages[msgIdx].parts.firstIndex(where: { $0.id == id }) else { return }
         messages[msgIdx].parts[partIdx] = newPart
+    }
+
+    private func removeMessageIfContentless(id messageId: String?) {
+        guard let messageId,
+              let msgIdx = messages.firstIndex(where: { $0.id == messageId }) else { return }
+
+        let hasVisibleContent = messages[msgIdx].parts.contains { part in
+            switch part {
+            case .text(_, let content):
+                return !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            case .image, .toolResult, .toolError:
+                return true
+            case .toolLoading:
+                return false
+            }
+        }
+
+        if !hasVisibleContent {
+            messages.remove(at: msgIdx)
+        }
     }
 
     private func parseCreatedAt(_ rawValue: String?) -> Date {

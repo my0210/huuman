@@ -66,7 +66,6 @@ struct ChatScreen: View {
                             isLoading: viewModel.isStreaming
                         )
                     }
-                    .background(ChatChromeBackground(materialOpacity: 0.16, baseOpacity: 0.98))
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -121,7 +120,7 @@ struct ChatTopBar: View {
 
             Rectangle()
                 .fill(Color.chatHairline)
-                .frame(height: 1 / UIScreen.main.scale)
+                .frame(height: 0.5)
         }
         .background(ChatChromeBackground(materialOpacity: 0.4, baseOpacity: 0.94))
     }
@@ -632,10 +631,12 @@ private struct ChatChromeBackground: View {
     let baseOpacity: Double
 
     var body: some View {
+        let baseColor: Color = .chatBackground
+
         ZStack {
-            Color.chatBackground.opacity(baseOpacity)
+            baseColor.opacity(baseOpacity)
             Rectangle()
-                .fill(.ultraThinMaterial)
+                .fill(Material.ultraThinMaterial)
                 .opacity(materialOpacity)
         }
     }
@@ -733,7 +734,6 @@ private struct ChatShellPreview: View {
                             isLoading: false
                         )
                     }
-                    .background(.ultraThinMaterial)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)

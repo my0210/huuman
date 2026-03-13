@@ -195,12 +195,8 @@ struct ProfileSheetView: View {
 
     private func performResetEverything() async {
         busy = true
-        do {
-            await auth.signOut()
-            dismiss()
-        } catch {
-            // Silent
-        }
+        await auth.signOut()
+        dismiss()
         busy = false
     }
 }

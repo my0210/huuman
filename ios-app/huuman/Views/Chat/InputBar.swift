@@ -25,78 +25,61 @@ struct ChatComposerBar: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(Color.chatHairline)
-                .frame(height: 1 / UIScreen.main.scale)
-
+        VStack(spacing: 6) {
             if !selectedImages.isEmpty {
                 attachmentStrip
-                    .frame(maxWidth: 760)
-                    .frame(maxWidth: .infinity)
             }
 
-            HStack(alignment: .bottom, spacing: 8) {
+            HStack(alignment: .bottom, spacing: 6) {
                 toggleButton
-                inputField
-                sendButton
+                composerCapsule
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
         }
+        .padding(.top, 6)
     }
 
     private var attachmentStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(Array(selectedImages.enumerated()), id: \.offset) { index, imageData in
-                    ComposerAttachmentThumbnail(imageData: imageData) {
+                ForEach(selectedImages.indices, id: \.self) { i in
+                    ComposerAttachmentThumbnail(imageData: selectedImages[i]) {
                         withAnimation(.easeOut(duration: 0.18)) {
-                            selectedImages.remove(at: index)
+                            _ = selectedImages.remove(at: i)
                         }
                     }
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 4)
         }
     }
 
     private var toggleButton: some View {
         Button(action: onToggleQuickActions) {
             Image(systemName: isQuickActionsVisible ? "xmark" : "plus")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.chatPrimaryText)
-                .frame(width: AppLayout.inputButtonSize, height: AppLayout.inputButtonSize)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.chatSecondaryText)
+                .frame(width: 34, height: 34)
                 .background(Color.white.opacity(0.06), in: Circle())
-                .overlay(
-                    Circle()
-                        .stroke(Color.chatCardBorder, lineWidth: 1)
-                )
         }
         .buttonStyle(.plain)
         .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
         .accessibilityLabel(isQuickActionsVisible ? "Hide quick actions" : "Show quick actions")
     }
 
-    private var inputField: some View {
-        HStack(alignment: .bottom, spacing: 4) {
+    private var composerCapsule: some View {
+        HStack(alignment: .bottom, spacing: 0) {
             TextField("Message huuman...", text: $text, axis: .vertical)
                 .lineLimit(1...6)
                 .font(.system(size: 17))
                 .foregroundStyle(Color.chatPrimaryText)
                 .tint(Color.chatAccent)
                 .focused($isFocused)
-                .padding(.leading, 14)
-                .padding(.vertical, 11)
+                .padding(.leading, 16)
+                .padding(.vertical, 10)
                 .onSubmit {
-                    if canSend {
-                        performSend()
-                    }
+                    if canSend { performSend() }
                 }
 
             PhotosPicker(
@@ -105,44 +88,42 @@ struct ChatComposerBar: View {
                 matching: .images
             ) {
                 Image(systemName: "camera")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Color.chatSecondaryText)
-                    .frame(width: AppLayout.buttonMinHeight, height: AppLayout.buttonMinHeight)
+                    .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
             .disabled(isLoading)
             .accessibilityLabel("Attach photo")
-            .padding(.trailing, 2)
             .onChange(of: selectedItems) { _, newItems in
                 Task { await loadImages(from: newItems) }
             }
+
+            Button(action: performSend) {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        canSend ? Color.chatAccent : Color.white.opacity(0.06),
+                        in: Circle()
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSend)
+            .accessibilityLabel("Send message")
+            .animation(.easeOut(duration: 0.15), value: canSend)
+            .padding(.trailing, 5)
+            .padding(.bottom, 4)
         }
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.chatComposerField)
+            Capsule(style: .continuous)
+                .fill(.ultraThinMaterial)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.chatCardBorder, lineWidth: 1)
+            Capsule(style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
         )
-    }
-
-    private var sendButton: some View {
-        Button(action: performSend) {
-            Image(systemName: "arrow.up")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
-                .frame(width: AppLayout.inputButtonSize, height: AppLayout.inputButtonSize)
-                .background(
-                    canSend ? Color.chatAccent : Color.white.opacity(0.08),
-                    in: Circle()
-                )
-        }
-        .buttonStyle(.plain)
-        .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-        .disabled(!canSend)
-        .accessibilityLabel("Send message")
-        .animation(.easeOut(duration: 0.15), value: canSend)
     }
 
     private func performSend() {
@@ -198,38 +179,36 @@ struct QuickActionRow: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 ForEach(actions) { action in
                     Button {
                         onSelect(action)
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             Image(systemName: action.icon)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(Color.chatSecondaryText)
 
                             Text(action.title)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(Color.chatPrimaryText)
                                 .lineLimit(1)
                         }
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 8)
                         .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(Color.white.opacity(0.06))
+                            Capsule(style: .continuous)
+                                .fill(.ultraThinMaterial)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.chatCardBorder, lineWidth: 1)
+                            Capsule(style: .continuous)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
                         )
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 2)
         }
     }
 }
@@ -249,23 +228,19 @@ private struct ComposerAttachmentThumbnail: View {
                     Color.white.opacity(0.08)
                 }
             }
-            .frame(width: 68, height: 68)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.chatCardBorder, lineWidth: 1)
-            )
+            .frame(width: 60, height: 60)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             Button(action: onRemove) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(Color.chatPrimaryText)
-                    .frame(width: 20, height: 20)
-                    .background(Color.black.opacity(0.75), in: Circle())
+                    .frame(width: 18, height: 18)
+                    .background(Color.black.opacity(0.7), in: Circle())
             }
             .buttonStyle(.plain)
             .frame(minWidth: 28, minHeight: 28)
-            .offset(x: 6, y: -6)
+            .offset(x: 5, y: -5)
             .accessibilityLabel("Remove photo")
         }
     }

@@ -24,60 +24,60 @@ extension Color {
     }
 
     // MARK: - Surfaces
-    static let surfaceBase = Color(hex: "111114")
-    static let surfaceRaised = Color(hex: "1C1C1E")
-    static let surfaceOverlay = Color(hex: "2C2C2E")
-    static let surfaceElevated = Color(hex: "3A3A3C")
+    static let surfaceBase: Color = Color(hex: "111114")
+    static let surfaceRaised: Color = Color(hex: "1C1C1E")
+    static let surfaceOverlay: Color = Color(hex: "2C2C2E")
+    static let surfaceElevated: Color = Color(hex: "3A3A3C")
 
     // MARK: - Chat
-    static let chatBackground = Color(hex: "111114")
-    static let chatAccent = Color(hex: "3478F6")
-    static let chatPrimaryText = Color.white.opacity(0.96)
-    static let chatSecondaryText = Color.white.opacity(0.52)
-    static let chatTertiaryText = Color.white.opacity(0.38)
-    static let chatCardSurface = Color.white.opacity(0.06)
-    static let chatCardBorder = Color.white.opacity(0.06)
-    static let chatComposerField = Color.white.opacity(0.08)
-    static let chatHairline = Color.white.opacity(0.06)
-    static let userBubble = chatAccent
+    static let chatBackground: Color = Color(hex: "111114")
+    static let chatAccent: Color = Color(hex: "3478F6")
+    static let chatPrimaryText: Color = Color.white.opacity(0.96)
+    static let chatSecondaryText: Color = Color.white.opacity(0.52)
+    static let chatTertiaryText: Color = Color.white.opacity(0.38)
+    static let chatCardSurface: Color = Color.white.opacity(0.06)
+    static let chatCardBorder: Color = Color.white.opacity(0.06)
+    static let chatComposerField: Color = Color.white.opacity(0.08)
+    static let chatHairline: Color = Color.white.opacity(0.06)
+    static let userBubble: Color = chatAccent
 
     // MARK: - Borders
-    static let borderSubtle = Color(hex: "1F1F23")
-    static let borderDefault = Color(hex: "2C2C30")
-    static let borderStrong = Color(hex: "3A3A3E")
+    static let borderSubtle: Color = Color(hex: "1F1F23")
+    static let borderDefault: Color = Color(hex: "2C2C30")
+    static let borderStrong: Color = Color(hex: "3A3A3E")
 
     // MARK: - Text
-    static let textPrimary = Color(hex: "fafafa")
-    static let textSecondary = Color(hex: "a1a1aa")
-    static let textTertiary = Color(hex: "71717a")
-    static let textMuted = Color(hex: "52525b")
+    static let textPrimary: Color = Color(hex: "fafafa")
+    static let textSecondary: Color = Color(hex: "a1a1aa")
+    static let textTertiary: Color = Color(hex: "71717a")
+    static let textMuted: Color = Color(hex: "52525b")
 
     // MARK: - Domain Accents
-    static let domainCardio = Color(hex: "f87171")
-    static let domainCardioMuted = Color(hex: "3D1F1F")
-    static let domainCardioBright = Color(hex: "fca5a5")
+    static let domainCardio: Color = Color(hex: "f87171")
+    static let domainCardioMuted: Color = Color(hex: "3D1F1F")
+    static let domainCardioBright: Color = Color(hex: "fca5a5")
 
-    static let domainStrength = Color(hex: "fb923c")
-    static let domainStrengthMuted = Color(hex: "3D2A1A")
-    static let domainStrengthBright = Color(hex: "fdba74")
+    static let domainStrength: Color = Color(hex: "fb923c")
+    static let domainStrengthMuted: Color = Color(hex: "3D2A1A")
+    static let domainStrengthBright: Color = Color(hex: "fdba74")
 
-    static let domainMindfulness = Color(hex: "22d3ee")
-    static let domainMindfulnessMuted = Color(hex: "1A2E33")
-    static let domainMindfulnessBright = Color(hex: "67e8f9")
+    static let domainMindfulness: Color = Color(hex: "22d3ee")
+    static let domainMindfulnessMuted: Color = Color(hex: "1A2E33")
+    static let domainMindfulnessBright: Color = Color(hex: "67e8f9")
 
-    static let domainNutrition = Color(hex: "4ade80")
-    static let domainNutritionMuted = Color(hex: "1A331F")
-    static let domainNutritionBright = Color(hex: "86efac")
+    static let domainNutrition: Color = Color(hex: "4ade80")
+    static let domainNutritionMuted: Color = Color(hex: "1A331F")
+    static let domainNutritionBright: Color = Color(hex: "86efac")
 
-    static let domainSleep = Color(hex: "a78bfa")
-    static let domainSleepMuted = Color(hex: "2A1F3D")
-    static let domainSleepBright = Color(hex: "c4b5fd")
+    static let domainSleep: Color = Color(hex: "a78bfa")
+    static let domainSleepMuted: Color = Color(hex: "2A1F3D")
+    static let domainSleepBright: Color = Color(hex: "c4b5fd")
 
     // MARK: - Semantic
-    static let semanticSuccess = Color(hex: "34d399")
-    static let semanticWarning = Color(hex: "fbbf24")
-    static let semanticError = Color(hex: "f87171")
-    static let semanticInfo = Color(hex: "60a5fa")
+    static let semanticSuccess: Color = Color(hex: "34d399")
+    static let semanticWarning: Color = Color(hex: "fbbf24")
+    static let semanticError: Color = Color(hex: "f87171")
+    static let semanticInfo: Color = Color(hex: "60a5fa")
 
     // MARK: - Domain Color Helper
     static func domainColor(for domain: String) -> Color {
