@@ -57,6 +57,7 @@ struct ChatScreen: View {
                         isLoading: viewModel.isStreaming
                     )
                 }
+                .background(.bar)
             }
             .background(Color.chatBackground)
             .navigationTitle("huuman")
@@ -635,6 +636,7 @@ private struct ChatShellPreview: View {
                         isLoading: false
                     )
                 }
+                .background(.bar)
             }
             .background(Color.chatBackground)
             .navigationTitle("huuman")

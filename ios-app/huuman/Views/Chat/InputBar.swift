@@ -118,11 +118,7 @@ struct ChatComposerBar: View {
         }
         .background(
             Capsule(style: .continuous)
-                .fill(.ultraThinMaterial)
-        )
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                .fill(Color.chatComposerField)
         )
     }
 
@@ -198,11 +194,7 @@ struct QuickActionRow: View {
                         .padding(.vertical, 8)
                         .background(
                             Capsule(style: .continuous)
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
+                                .fill(Color.chatComposerField)
                         )
                     }
                     .buttonStyle(.plain)
