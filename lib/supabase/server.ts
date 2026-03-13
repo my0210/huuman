@@ -8,15 +8,22 @@ export async function createClient() {
   const authHeader = headerStore.get('Authorization');
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
-    return createSupabaseClient(
+    const client = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         global: {
           headers: { Authorization: `Bearer ${token}` },
         },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
       },
     );
+    // Hydrate auth state so subsequent getUser() calls find a session
+    await client.auth.setSession({ access_token: token, refresh_token: token });
+    return client;
   }
 
   // Default: cookie-based auth for web
