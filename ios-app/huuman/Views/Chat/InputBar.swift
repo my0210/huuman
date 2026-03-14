@@ -263,10 +263,13 @@ struct ComposerActionsSheet: View {
                             ProgressView()
                                 .controlSize(.small)
                         } else {
-                            Button("Add (\(newSelectionCount))") {
+                            Button {
                                 performAdd()
+                            } label: {
+                                Text("Add (\(newSelectionCount))")
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.white)
                             }
-                            .fontWeight(.semibold)
                             .buttonStyle(.borderedProminent)
                             .tint(Color.chatAccent)
                         }
