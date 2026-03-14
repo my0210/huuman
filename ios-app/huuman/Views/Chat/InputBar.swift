@@ -37,8 +37,10 @@ struct ChatComposerBar: View {
         HStack(alignment: .center, spacing: 8) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
+                    .imageScale(.large)
             }
             .buttonStyle(.glass)
+            .controlSize(.large)
             .accessibilityLabel("Attachments and actions")
 
             HStack(alignment: .bottom, spacing: 0) {
