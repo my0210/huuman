@@ -35,7 +35,7 @@ struct ChatScreen: View {
                 userScrolledAway: $viewModel.userScrolledAway,
                 onLoadOlderMessages: { await viewModel.loadOlderMessages() }
             )
-            .safeAreaBar(edge: .bottom) {
+            .safeAreaBar(edge: .bottom, spacing: 8) {
                 ChatComposerBar(
                     onSend: { text, images in
                         viewModel.send(text: text, images: images)
