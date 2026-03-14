@@ -301,26 +301,20 @@ struct UserMessageBubble: View {
         if hasImages || hasText {
             VStack(alignment: .trailing, spacing: 4) {
                 if hasImages {
-                    HStack(spacing: 0) {
-                        Spacer(minLength: 60)
-                        UserImageStrip(images: viewModel.images)
-                    }
+                    UserImageStrip(images: viewModel.images)
                 }
 
                 if let text = viewModel.text {
-                    HStack(spacing: 0) {
-                        Spacer(minLength: 60)
-
-                        Text(text)
-                            .font(.body)
-                            .foregroundStyle(Color.white)
-                            .lineSpacing(3)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
-                    }
+                    Text(text)
+                        .font(.body)
+                        .foregroundStyle(Color.white)
+                        .lineSpacing(3)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 }
@@ -336,16 +330,13 @@ private struct UserImageStrip: View {
             singleImageView(images[0])
                 .frame(maxWidth: 260, maxHeight: 260)
         } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(images) { img in
-                        imageView(img)
-                            .frame(width: multiImageWidth, height: imageHeight)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
+            HStack(spacing: 6) {
+                ForEach(images) { img in
+                    imageView(img)
+                        .frame(width: multiImageWidth, height: imageHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
             }
-            .frame(height: imageHeight)
         }
     }
 
