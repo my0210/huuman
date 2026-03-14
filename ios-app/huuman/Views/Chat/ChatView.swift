@@ -181,13 +181,8 @@ struct ChatThreadView: View {
                     } label: {
                         Image(systemName: "chevron.down")
                             .font(.footnote.weight(.semibold))
-                            .foregroundStyle(Color.chatPrimaryText)
-                            .frame(width: 36, height: 36)
                     }
-                    .buttonStyle(.plain)
-                    .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-                    .contentShape(.circle)
-                    .glassEffect(.regular, in: .circle)
+                    .buttonStyle(.glass)
                     .scenePadding(.horizontal)
                     .padding(.bottom, 12)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
