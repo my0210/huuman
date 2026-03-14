@@ -129,10 +129,8 @@ struct ChatThreadView: View {
                         .frame(height: 1)
                         .id(bottomAnchorID)
                 }
-                .padding(.horizontal, ChatTokens.horizontalPadding)
-                .padding(.top, 4)
-                .padding(.bottom, 8)
             }
+            .contentMargins(.horizontal, 16, for: .scrollContent)
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
             .onScrollGeometryChange(for: Bool.self) { geometry in
@@ -262,7 +260,7 @@ struct UserMessageBubble: View {
     var body: some View {
         if let text = viewModel.text {
             HStack(spacing: 0) {
-                Spacer(minLength: ChatTokens.userBubbleClearance)
+                Spacer(minLength: 60)
 
                 Text(text)
                     .font(.system(size: 17))
@@ -533,7 +531,6 @@ struct ThinkingIndicator: View {
 }
 
 private enum ChatTokens {
-    static let horizontalPadding: CGFloat = 10
     static let turnSpacing: CGFloat = 10
     static let userClusterSpacing: CGFloat = 2
     static let assistantContinuationSpacing: CGFloat = 8
@@ -542,7 +539,6 @@ private enum ChatTokens {
     static let daySeparatorToTurnSpacing: CGFloat = 6
     static let userBubbleRadius: CGFloat = 20
     static let cardRadius: CGFloat = 16
-    static let userBubbleClearance: CGFloat = 80
 }
 
 #if DEBUG

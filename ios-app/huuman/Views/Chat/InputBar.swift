@@ -24,7 +24,7 @@ struct ChatComposerBar: View {
     }
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 6) {
+        HStack(alignment: .center, spacing: 6) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
             }
@@ -62,8 +62,6 @@ struct ChatComposerBar: View {
             }
             .glassEffect(in: .capsule)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
     }
 
     private func performSend() {
@@ -86,42 +84,70 @@ struct ComposerActionsSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    PhotosPicker(
-                        selection: $selectedItems,
-                        maxSelectionCount: 3,
-                        matching: .images
-                    ) {
-                        Label("Photos", systemImage: "photo.on.rectangle")
+        VStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(Color.white.opacity(0.3))
+                .frame(width: 36, height: 5)
+                .padding(.top, 8)
+                .padding(.bottom, 14)
+
+            Text("Add to chat")
+                .font(.headline)
+                .padding(.bottom, 16)
+
+            HStack(spacing: 12) {
+                PhotosPicker(
+                    selection: $selectedItems,
+                    maxSelectionCount: 3,
+                    matching: .images
+                ) {
+                    VStack(spacing: 6) {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.system(size: 22))
+                        Text("Photos")
+                            .font(.caption)
                     }
-                    .onChange(of: selectedItems) { _, newItems in
-                        Task { await loadAndReturn(items: newItems) }
-                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 72)
+                    .background(Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .onChange(of: selectedItems) { _, newItems in
+                    Task { await loadAndReturn(items: newItems) }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+
+            ForEach(Array(quickActions.enumerated()), id: \.element.id) { index, action in
+                if index > 0 {
+                    Divider().padding(.leading, 52)
                 }
 
-                Section("Quick actions") {
-                    ForEach(quickActions) { action in
-                        Button {
-                            dismiss()
-                            onQuickAction(action)
-                        } label: {
-                            Label(action.title, systemImage: action.icon)
-                        }
+                Button {
+                    dismiss()
+                    onQuickAction(action)
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: action.icon)
+                            .font(.system(size: 17))
+                            .frame(width: 28)
+                        Text(action.title)
+                            .font(.body)
+                        Spacer()
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 13)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
-            .navigationTitle("Attachments")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
+
+            Spacer()
         }
         .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(.ultraThinMaterial)
     }
 
     private func loadAndReturn(items: [PhotosPickerItem]) async {
