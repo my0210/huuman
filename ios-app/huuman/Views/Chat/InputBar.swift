@@ -72,7 +72,7 @@ struct ChatComposerBar: View {
                 .animation(.easeOut(duration: 0.15), value: canSend)
                 .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: AppLayout.composerRadius, style: .continuous))
+            .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: AppLayout.composerRadius, style: .continuous))
         }
         .scenePadding(.horizontal)
         .padding(.vertical)
