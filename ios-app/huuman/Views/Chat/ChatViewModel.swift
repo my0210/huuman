@@ -259,20 +259,25 @@ final class ChatViewModel {
                     let session = try await supabase.auth.session
                     let userId = session.user.id.uuidString.lowercased()
 
-                    fileParts = []
-                    for imageData in attachedImages {
-                        let path = "\(userId)/\(Int(Date().timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8).lowercased()).jpg"
-                        try await supabase.storage
-                            .from("chat-images")
-                            .upload(path, data: imageData, options: .init(contentType: "image/jpeg"))
-                        let publicURL = try supabase.storage
-                            .from("chat-images")
-                            .getPublicURL(path: path)
-                        fileParts?.append([
-                            "type": "file",
-                            "mediaType": "image/jpeg",
-                            "url": publicURL.absoluteString,
-                        ])
+                    let storage = supabase.storage.from("chat-images")
+                    fileParts = try await withThrowingTaskGroup(of: [String: Any].self) { group in
+                        for imageData in attachedImages {
+                            group.addTask {
+                                let path = "\(userId)/\(Int(Date().timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8).lowercased()).jpg"
+                                try await storage.upload(path, data: imageData, options: .init(contentType: "image/jpeg"))
+                                let publicURL = try storage.getPublicURL(path: path)
+                                return [
+                                    "type": "file",
+                                    "mediaType": "image/jpeg",
+                                    "url": publicURL.absoluteString,
+                                ] as [String: Any]
+                            }
+                        }
+                        var results: [[String: Any]] = []
+                        for try await result in group {
+                            results.append(result)
+                        }
+                        return results
                     }
                     isUploading = false
                 }

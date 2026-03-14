@@ -89,6 +89,25 @@ struct ChatScreen: View {
                 await viewModel.loadChat()
                 photoProvider.loadIfAuthorized()
             }
+            .overlay(alignment: .top) {
+                if let errorText = viewModel.error {
+                    Text(errorText)
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(Color.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .onTapGesture { viewModel.error = nil }
+                }
+            }
+            .animation(.easeOut(duration: 0.2), value: viewModel.error != nil)
+            .task(id: viewModel.error) {
+                guard viewModel.error != nil else { return }
+                try? await Task.sleep(for: .seconds(3))
+                viewModel.error = nil
+            }
         }
     }
 }
@@ -329,13 +348,23 @@ private struct UserImageStrip: View {
         if images.count == 1 {
             singleImageView(images[0])
                 .frame(maxWidth: 260, maxHeight: 260)
+        } else if images.count <= 3 {
+            multiImageRow
         } else {
-            HStack(spacing: 6) {
-                ForEach(images) { img in
-                    imageView(img)
-                        .frame(width: multiImageWidth, height: imageHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
+            ScrollView(.horizontal, showsIndicators: false) {
+                multiImageRow
+            }
+            .defaultScrollAnchor(.trailing)
+            .frame(height: imageHeight)
+        }
+    }
+
+    private var multiImageRow: some View {
+        HStack(spacing: 6) {
+            ForEach(images) { img in
+                imageView(img)
+                    .frame(width: multiImageWidth, height: imageHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
     }
@@ -357,9 +386,9 @@ private struct UserImageStrip: View {
                         .aspectRatio(contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 case .failure:
-                    imagePlaceholder(failed: true)
+                    imagePlaceholder(failed: true, width: 200, height: 150)
                 default:
-                    imagePlaceholder(failed: false)
+                    imagePlaceholder(failed: false, width: 200, height: 150)
                 }
             }
         }
@@ -380,18 +409,18 @@ private struct UserImageStrip: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 case .failure:
-                    imagePlaceholder(failed: true)
+                    imagePlaceholder(failed: true, width: multiImageWidth, height: imageHeight)
                 default:
-                    imagePlaceholder(failed: false)
+                    imagePlaceholder(failed: false, width: multiImageWidth, height: imageHeight)
                 }
             }
         }
     }
 
-    private func imagePlaceholder(failed: Bool) -> some View {
+    private func imagePlaceholder(failed: Bool, width: CGFloat, height: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(Color.white.opacity(0.06))
-            .frame(width: multiImageWidth, height: imageHeight)
+            .frame(width: width, height: height)
             .overlay {
                 if failed {
                     Image(systemName: "photo")

@@ -35,7 +35,8 @@ export async function POST(req: Request) {
                 return { type: 'file', mediaType: part.mediaType || 'image/jpeg', url, filename: 'photo.jpg' };
               } catch (e) {
                 console.error('[Chat API] Failed to upload base64 image:', e);
-                return part;
+                const { data: _stripped, ...rest } = part;
+                return { ...rest, stripped: true };
               }
             }
             if (part.type === 'text' && !(part.text as string)?.trim()) return null;
