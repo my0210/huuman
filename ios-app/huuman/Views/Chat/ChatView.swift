@@ -170,9 +170,7 @@ struct ChatThreadView: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         userScrolledAway = false
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            proxy.scrollTo(bottomAnchorID, anchor: .bottom)
-                        }
+                        proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                     } label: {
                         Image(systemName: "chevron.down")
                     }
