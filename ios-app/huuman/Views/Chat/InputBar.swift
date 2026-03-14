@@ -62,6 +62,7 @@ struct ChatComposerBar: View {
             .glassEffect(in: .capsule)
         }
         .scenePadding(.horizontal)
+        .padding(.vertical, 8)
         .onAppear {
             isFocused = false
         }
