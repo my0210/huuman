@@ -174,14 +174,10 @@ struct ChatThreadView: View {
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(Color.chatPrimaryText)
                             .frame(width: 36, height: 36)
-                            .background(Color.chatCardSurface, in: Circle())
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.chatCardBorder, lineWidth: 1)
-                            )
                     }
                     .buttonStyle(.plain)
                     .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
+                    .glassEffect(.regular.interactive(), in: .circle)
                     .scenePadding(.horizontal)
                     .padding(.bottom, 12)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))

@@ -14,7 +14,7 @@ Your training data is likely outdated. **Verify API usage against current docs**
 
 | Framework | Version | Docs |
 |---|---|---|
-| SwiftUI | iOS 18+ / Xcode 16+ | https://developer.apple.com/documentation/swiftui |
+| SwiftUI | iOS 26 / Xcode 26 | https://developer.apple.com/documentation/swiftui |
 | Supabase JS | 2.97.x | https://supabase.com/docs |
 | Next.js | 16.1.x | https://nextjs.org/docs |
 | React | 19.2.x | https://react.dev |
@@ -33,6 +33,16 @@ Your training data is likely outdated. **Verify API usage against current docs**
 3. Never import framer-motion for press feedback -- use CSS `active:` + `transition`.
 4. Never name custom AI tools `web_search`, `code_execution`, `web_fetch`, or `text_editor` -- these collide with Anthropic built-ins.
 5. Never strip tool parts from message history -- the model needs cross-turn tool memory.
+
+### iOS 26 interactive standards
+
+The iOS app targets iOS 26 and uses Liquid Glass APIs. Follow these principles:
+
+1. **Every tappable glass element must use `.interactive()`** -- Apply `.glassEffect(.regular.interactive(), in: shape)` to buttons, input bars, and FABs. This gives system touch feedback (shimmer, scale, illumination) matching iMessage and system controls. Never build custom press animations for glass elements.
+2. **Prefer `.glassEffect()` over custom backgrounds for interactive surfaces** -- Instead of manual `.background(color, in: shape).overlay(shape.stroke(...))`, use `.glassEffect(in: shape)`. One modifier replaces background + border + material + adaptive shadows.
+3. **Use system-adaptive spacing everywhere** -- `.padding(.vertical)` (no value), `.scenePadding(.horizontal)`, `safeAreaBar(edge:)` with default spacing. The system adapts per device, Dynamic Type, and context. Only use explicit values from the 8pt grid when the system default is proven insufficient.
+4. **Use `.contentShape()` + `.onTapGesture` for expanded hit areas** -- TextField padding doesn't forward taps by default. Add `.contentShape(.capsule)` and `.onTapGesture { isFocused = true }` to make the entire glass surface tappable.
+5. **Height matching via shared APIs, not hardcoded values** -- When two glass elements must match height, use the same glass API (`.glassEffect(in: .capsule)`) on both, with height from `AppLayout.buttonMinHeight` (44pt HIG constant). Don't hardcode pixel heights.
 
 ### Design quality (non-negotiable)
 
@@ -79,6 +89,7 @@ Persistent memory of mistakes, patterns, and hard-won knowledge from past agent 
 ### UI & Components
 
 - **Prefer platform-standard components over custom implementations** -- Use built-in / well-established components (e.g. SwiftUI `NavigationStack`, standard UIKit bars, shadcn primitives) instead of building custom replacements. Custom components accumulate maintenance debt and subtle bugs that eat hours to fix or reverse. Only customize when the standard component genuinely cannot achieve the design. The SwiftUI top bar is a cautionary example: a custom nav bar required repeated fixes and was eventually reverted to the standard one. (2026-03-14)
+- **Use system interactive features, never hardcode micro-interactions** -- iOS 26 provides `.glassEffect(.regular.interactive(), in: shape)` for touch-responsive glass on any tappable element (buttons, input bars, FABs). Use it on every interactive glass surface. For spacing and padding, prefer system defaults (`.padding(.vertical)`, `scenePadding(.horizontal)`, `safeAreaBar(edge:)` with nil spacing) over hardcoded pt values. For scroll behavior, prefer instant `scrollTo` for streaming content and short animations (0.12s) for discrete events. The system adapts per device, Dynamic Type, and context -- hardcoded values don't. (2026-03-14)
 
 ### iOS & Xcode
 
