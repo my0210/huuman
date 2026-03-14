@@ -131,7 +131,7 @@ struct ChatThreadView: View {
                         .frame(height: 1)
                         .id(bottomAnchorID)
                 }
-                .scenePadding(.horizontal)
+                .scenePadding([.horizontal, .bottom])
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
