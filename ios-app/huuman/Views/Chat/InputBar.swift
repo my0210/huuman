@@ -14,6 +14,14 @@ struct PendingImage: Identifiable {
     let id: UUID
     let thumbnail: UIImage
     let data: Data
+    let assetIdentifier: String?
+
+    init(id: UUID = UUID(), thumbnail: UIImage, data: Data, assetIdentifier: String? = nil) {
+        self.id = id
+        self.thumbnail = thumbnail
+        self.data = data
+        self.assetIdentifier = assetIdentifier
+    }
 }
 
 // MARK: - Press Feedback
@@ -150,12 +158,13 @@ private struct PendingImageThumbnail: View {
 // MARK: - Composer Actions Sheet
 
 struct ComposerActionsSheet: View {
+    let provider: RecentPhotosProvider
+    let pendingAssetIdentifiers: Set<String>
     let quickActions: [ChatQuickAction]
     let onQuickAction: (ChatQuickAction) -> Void
     let onPhotosSelected: ([PendingImage]) -> Void
 
-    @State private var provider = RecentPhotosProvider()
-    @State private var selectedOrder: [String] = []
+    @State private var selectedIdentifiers: Set<String>
     @State private var showCamera = false
     @State private var isLoadingFullRes = false
     @State private var pickerItems: [PhotosPickerItem] = []
@@ -165,12 +174,31 @@ struct ComposerActionsSheet: View {
 
     private static let maxSelection = 10
 
+    init(
+        provider: RecentPhotosProvider,
+        pendingAssetIdentifiers: Set<String>,
+        quickActions: [ChatQuickAction],
+        onQuickAction: @escaping (ChatQuickAction) -> Void,
+        onPhotosSelected: @escaping ([PendingImage]) -> Void
+    ) {
+        self.provider = provider
+        self.pendingAssetIdentifiers = pendingAssetIdentifiers
+        self.quickActions = quickActions
+        self.onQuickAction = onQuickAction
+        self.onPhotosSelected = onPhotosSelected
+        _selectedIdentifiers = State(initialValue: pendingAssetIdentifiers)
+    }
+
     private var hasCameraHardware: Bool {
         UIImagePickerController.isSourceTypeAvailable(.camera)
     }
 
     private var showPhotoStrip: Bool {
         provider.authorizationStatus == .authorized || provider.authorizationStatus == .limited || !provider.photos.isEmpty
+    }
+
+    private var newSelectionCount: Int {
+        selectedIdentifiers.subtracting(pendingAssetIdentifiers).count
     }
 
     private static func makeThumbnail(from data: Data) -> UIImage {
@@ -230,15 +258,17 @@ struct ComposerActionsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    if !selectedOrder.isEmpty {
+                    if newSelectionCount > 0 {
                         if isLoadingFullRes {
                             ProgressView()
                                 .controlSize(.small)
                         } else {
-                            Button("Add (\(selectedOrder.count))") {
+                            Button("Add (\(newSelectionCount))") {
                                 performAdd()
                             }
                             .fontWeight(.semibold)
+                            .buttonStyle(.borderedProminent)
+                            .tint(Color.chatAccent)
                         }
                     }
                 }
@@ -248,7 +278,9 @@ struct ComposerActionsSheet: View {
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
         .task {
-            await provider.requestAccessAndLoad()
+            if provider.photos.isEmpty {
+                await provider.requestAccessAndLoad()
+            }
         }
         .fullScreenCover(isPresented: $showCamera, onDismiss: {
             guard !capturedFromCamera.isEmpty else { return }
@@ -266,7 +298,7 @@ struct ComposerActionsSheet: View {
         .background {
             if showLimitedPicker {
                 LimitedLibraryPickerPresenter(isPresented: $showLimitedPicker) {
-                    Task { await provider.requestAccessAndLoad() }
+                    provider.reloadPhotos()
                 }
             }
         }
@@ -356,13 +388,15 @@ struct ComposerActionsSheet: View {
     }
 
     private func recentPhotoTile(_ photo: RecentPhoto) -> some View {
-        let badgeNumber = selectedOrder.firstIndex(of: photo.id).map { $0 + 1 }
+        let isSelected = selectedIdentifiers.contains(photo.id)
+        let isPending = pendingAssetIdentifiers.contains(photo.id)
         return Button {
+            guard !isPending else { return }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            if selectedOrder.contains(photo.id) {
-                selectedOrder.removeAll { $0 == photo.id }
-            } else if selectedOrder.count < Self.maxSelection {
-                selectedOrder.append(photo.id)
+            if isSelected {
+                selectedIdentifiers.remove(photo.id)
+            } else if selectedIdentifiers.count < Self.maxSelection {
+                selectedIdentifiers.insert(photo.id)
             }
         } label: {
             ZStack(alignment: .topTrailing) {
@@ -372,12 +406,18 @@ struct ComposerActionsSheet: View {
                     .frame(width: 100, height: 100)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                if let badgeNumber {
-                    Text("\(badgeNumber)")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white)
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, Color.chatAccent)
+                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                        .padding(4)
+                } else {
+                    Circle()
+                        .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
                         .frame(width: 24, height: 24)
-                        .background(Color.chatAccent, in: Circle())
+                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
                         .padding(4)
                 }
             }
@@ -389,12 +429,19 @@ struct ComposerActionsSheet: View {
 
     private func performAdd() {
         guard !isLoadingFullRes else { return }
+        let newIdentifiers = selectedIdentifiers.subtracting(pendingAssetIdentifiers)
+        guard !newIdentifiers.isEmpty else { return }
+
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isLoadingFullRes = true
         Task {
-            let imageDataArray = await provider.loadFullResolution(for: Set(selectedOrder))
-            let pending = imageDataArray.map { data in
-                PendingImage(id: UUID(), thumbnail: Self.makeThumbnail(from: data), data: data)
+            let results = await provider.loadFullResolution(for: newIdentifiers)
+            let pending = results.map { result in
+                PendingImage(
+                    thumbnail: Self.makeThumbnail(from: result.data),
+                    data: result.data,
+                    assetIdentifier: result.identifier
+                )
             }
             isLoadingFullRes = false
             guard !pending.isEmpty else { return }
@@ -410,7 +457,7 @@ struct ComposerActionsSheet: View {
         for item in items {
             guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
             let compressed = compressImage(data, maxDimension: 1024, quality: 0.72) ?? data
-            pending.append(PendingImage(id: UUID(), thumbnail: Self.makeThumbnail(from: compressed), data: compressed))
+            pending.append(PendingImage(thumbnail: Self.makeThumbnail(from: compressed), data: compressed))
         }
         guard !pending.isEmpty else { return }
         dismiss()

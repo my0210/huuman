@@ -17,16 +17,24 @@ final class RecentPhotosProvider {
     private let thumbnailSize = CGSize(width: 200, height: 200)
 
     func requestAccessAndLoad() async {
-        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        var status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if status == .notDetermined {
+            status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        }
         authorizationStatus = status
 
         guard status == .authorized || status == .limited else { return }
         loadRecentPhotos()
     }
 
-    func loadFullResolution(for identifiers: Set<String>) async -> [Data] {
+    func reloadPhotos() {
+        guard authorizationStatus == .authorized || authorizationStatus == .limited else { return }
+        loadRecentPhotos()
+    }
+
+    func loadFullResolution(for identifiers: Set<String>) async -> [(identifier: String, data: Data)] {
         let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: Array(identifiers), options: nil)
-        var results: [Data] = []
+        var results: [(identifier: String, data: Data)] = []
 
         let options = PHImageRequestOptions()
         options.deliveryMode = .highQualityFormat
@@ -36,7 +44,7 @@ final class RecentPhotosProvider {
         for i in 0..<fetchResult.count {
             let asset = fetchResult.object(at: i)
             if let data = await loadImageData(for: asset, options: options) {
-                results.append(data)
+                results.append((identifier: asset.localIdentifier, data: data))
             }
         }
         return results

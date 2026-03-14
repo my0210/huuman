@@ -12,6 +12,7 @@ struct ChatScreen: View {
     @State private var showProfile = false
     @State private var showComposerSheet = false
     @State private var pendingImages: [PendingImage] = []
+    @State private var photoProvider = RecentPhotosProvider()
 
     private var threadItems: [ThreadItem] {
         ChatThreadBuilder.items(from: viewModel.messages)
@@ -73,6 +74,8 @@ struct ChatScreen: View {
             }
             .sheet(isPresented: $showComposerSheet) {
                 ComposerActionsSheet(
+                    provider: photoProvider,
+                    pendingAssetIdentifiers: Set(pendingImages.compactMap(\.assetIdentifier)),
                     quickActions: quickActions,
                     onQuickAction: { action in
                         viewModel.send(text: action.message)
