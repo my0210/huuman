@@ -153,12 +153,13 @@ struct ChatThreadView: View {
             .overlay(alignment: .bottomTrailing) {
                 if !isNearBottom {
                     Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         withAnimation(.easeOut(duration: 0.2)) {
                             proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                         }
                     } label: {
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.footnote.weight(.semibold))
                             .foregroundStyle(Color.chatPrimaryText)
                             .frame(width: 36, height: 36)
                             .background(Color.chatCardSurface, in: Circle())
@@ -247,7 +248,7 @@ struct ChatDaySeparator: View {
 
     var body: some View {
         Text(label)
-            .font(.system(size: 14, weight: .medium))
+            .font(.footnote.weight(.medium))
             .foregroundStyle(Color.chatTertiaryText)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 2)
@@ -263,11 +264,11 @@ struct UserMessageBubble: View {
                 Spacer(minLength: 60)
 
                 Text(text)
-                    .font(.system(size: 17))
+                    .font(.body)
                     .foregroundStyle(Color.white)
                     .lineSpacing(3)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                     .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
             }
         }
@@ -332,7 +333,7 @@ struct AssistantRichTextBlock: View {
                 Text(markdown)
             }
         }
-        .font(.system(size: 17))
+        .font(.body)
         .foregroundStyle(Color.chatPrimaryText)
         .lineSpacing(3)
         .multilineTextAlignment(.leading)
@@ -354,20 +355,20 @@ struct VideoCardView: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.chatAccent.opacity(0.18))
                     Image(systemName: "play.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(Color.chatAccent)
                 }
                 .frame(width: 48, height: 48)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.title)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.chatPrimaryText)
                         .multilineTextAlignment(.leading)
                         .lineLimit(2)
 
                     Text(model.subtitle)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundStyle(Color.chatSecondaryText)
                         .lineLimit(1)
                 }
@@ -375,13 +376,13 @@ struct VideoCardView: View {
                 Spacer(minLength: 12)
 
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.chatTertiaryText)
             }
             .padding(14)
-            .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous))
+            .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
                     .stroke(Color.chatCardBorder, lineWidth: 1)
             )
         }
@@ -403,20 +404,20 @@ struct LinkCardView: View {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(Color.white.opacity(0.08))
                     Image(systemName: model.iconSystemName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Color.chatSecondaryText)
                 }
                 .frame(width: 48, height: 48)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.title)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.chatPrimaryText)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
 
                     Text(model.subtitle)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundStyle(Color.chatSecondaryText)
                         .lineLimit(1)
                 }
@@ -424,13 +425,13 @@ struct LinkCardView: View {
                 Spacer(minLength: 12)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color.chatTertiaryText)
             }
             .padding(14)
-            .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous))
+            .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: ChatTokens.cardRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
                     .stroke(Color.chatCardBorder, lineWidth: 1)
             )
         }
@@ -443,7 +444,7 @@ struct SystemEventChip: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 14, weight: .medium))
+            .font(.footnote.weight(.medium))
             .foregroundStyle(Color.chatSecondaryText)
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
@@ -462,13 +463,13 @@ private struct InlineNoticeView: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 14, weight: .medium))
+            .font(.footnote.weight(.medium))
             .foregroundStyle(isError ? Color.semanticError : Color.chatSecondaryText)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 isError ? Color.semanticError.opacity(0.12) : Color.chatCardSurface,
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
             )
     }
 }
@@ -521,9 +522,9 @@ struct ThinkingIndicator: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
                 .stroke(Color.chatCardBorder, lineWidth: 1)
         )
         .onAppear { animate = true }
@@ -531,14 +532,13 @@ struct ThinkingIndicator: View {
 }
 
 private enum ChatTokens {
-    static let turnSpacing: CGFloat = 10
+    static let turnSpacing: CGFloat = 16
     static let userClusterSpacing: CGFloat = 2
-    static let assistantContinuationSpacing: CGFloat = 8
-    static let assistantBlockSpacing: CGFloat = 8
-    static let daySeparatorVerticalPadding: CGFloat = 16
+    static let assistantContinuationSpacing: CGFloat = 12
+    static let assistantBlockSpacing: CGFloat = 10
+    static let daySeparatorVerticalPadding: CGFloat = 24
     static let daySeparatorToTurnSpacing: CGFloat = 6
     static let userBubbleRadius: CGFloat = 20
-    static let cardRadius: CGFloat = 16
 }
 
 #if DEBUG

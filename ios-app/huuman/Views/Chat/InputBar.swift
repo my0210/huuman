@@ -34,7 +34,7 @@ struct ChatComposerBar: View {
             HStack(alignment: .bottom, spacing: 0) {
                 TextField("Message huuman...", text: $text, axis: .vertical)
                     .lineLimit(1...6)
-                    .font(.system(size: 17))
+                    .font(.body)
                     .tint(Color.chatAccent)
                     .focused($isFocused)
                     .padding(.leading, 14)
@@ -45,7 +45,7 @@ struct ChatComposerBar: View {
 
                 Button(action: performSend) {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.footnote.weight(.bold))
                         .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
                         .frame(width: 28, height: 28)
                         .background(
@@ -57,8 +57,9 @@ struct ChatComposerBar: View {
                 .disabled(!canSend)
                 .accessibilityLabel("Send message")
                 .animation(.easeOut(duration: 0.15), value: canSend)
-                .padding(.trailing, 4)
-                .padding(.bottom, 4)
+                .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
+                .padding(.trailing, 0)
+                .padding(.bottom, 0)
             }
             .glassEffect(in: .capsule)
         }
@@ -66,6 +67,7 @@ struct ChatComposerBar: View {
 
     private func performSend() {
         guard canSend else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isFocused = false
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         text = ""
@@ -103,7 +105,7 @@ struct ComposerActionsSheet: View {
                 ) {
                     VStack(spacing: 6) {
                         Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 22))
+                            .font(.title3)
                         Text("Photos")
                             .font(.caption)
                     }
@@ -125,12 +127,13 @@ struct ComposerActionsSheet: View {
                 }
 
                 Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     dismiss()
                     onQuickAction(action)
                 } label: {
                     HStack(spacing: 14) {
                         Image(systemName: action.icon)
-                            .font(.system(size: 17))
+                            .font(.body)
                             .frame(width: 28)
                         Text(action.title)
                             .font(.body)
