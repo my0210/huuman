@@ -242,8 +242,8 @@ struct ComposerActionsSheet: View {
                     if isLoadingFullRes {
                         ProgressView()
                             .controlSize(.small)
-                    } else {
-                        Button("Done") {
+                    } else if !selectedIdentifiers.isEmpty {
+                        Button("Add") {
                             performDone()
                         }
                         .fontWeight(.semibold)
@@ -258,11 +258,6 @@ struct ComposerActionsSheet: View {
             selectedIdentifiers = Set(existingPendingImages.compactMap(\.assetIdentifier))
             if provider.authorizationStatus == .authorized || provider.authorizationStatus == .limited {
                 provider.reloadPhotos()
-            }
-        }
-        .task {
-            if provider.photos.isEmpty, provider.authorizationStatus == .notDetermined {
-                await provider.requestAccessAndLoad()
             }
         }
         .fullScreenCover(isPresented: $showCamera, onDismiss: {
