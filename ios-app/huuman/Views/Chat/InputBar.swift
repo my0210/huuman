@@ -31,7 +31,7 @@ struct ChatComposerBar: View {
             }
             .buttonStyle(.plain)
             .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-            .glassEffect(in: .capsule)
+            .glassEffect(.regular.interactive(), in: .capsule)
             .accessibilityLabel("Attachments and actions")
 
             HStack(alignment: .bottom, spacing: 0) {
@@ -64,7 +64,7 @@ struct ChatComposerBar: View {
             }
             .contentShape(.capsule)
             .onTapGesture { isFocused = true }
-            .glassEffect(in: .capsule)
+            .glassEffect(.regular.interactive(), in: .capsule)
         }
         .scenePadding(.horizontal)
         .padding(.vertical)
