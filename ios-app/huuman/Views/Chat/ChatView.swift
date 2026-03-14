@@ -328,24 +328,26 @@ struct UserMessageBubble: View {
 private struct UserImageStrip: View {
     let images: [DisplayImage]
 
+    private let imageHeight: CGFloat = 200
+
     var body: some View {
         if images.count == 1 {
             singleImageView(images[0])
-                .frame(maxWidth: 260)
+                .frame(maxWidth: 260, maxHeight: 300)
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 8) {
                     ForEach(images) { img in
                         imageView(img)
                             .containerRelativeFrame(.horizontal, count: 5, span: 2, spacing: 8)
-                            .frame(height: 150)
+                            .frame(height: imageHeight)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                 }
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned)
-            .frame(height: 150)
+            .frame(height: imageHeight)
         }
     }
 
@@ -364,13 +366,13 @@ private struct UserImageStrip: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 case .failure:
                     imagePlaceholder(failed: true)
                 default:
                     imagePlaceholder(failed: false)
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 
@@ -400,6 +402,7 @@ private struct UserImageStrip: View {
     private func imagePlaceholder(failed: Bool) -> some View {
         RoundedRectangle(cornerRadius: 16, style: .continuous)
             .fill(Color.white.opacity(0.06))
+            .frame(width: 120, height: imageHeight)
             .overlay {
                 if failed {
                     Image(systemName: "photo")

@@ -257,11 +257,11 @@ final class ChatViewModel {
 
                 if let attachedImages {
                     let session = try await supabase.auth.session
-                    let userId = session.user.id.uuidString
+                    let userId = session.user.id.uuidString.lowercased()
 
                     fileParts = []
                     for imageData in attachedImages {
-                        let path = "\(userId)/\(Int(Date().timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8)).jpg"
+                        let path = "\(userId)/\(Int(Date().timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8).lowercased()).jpg"
                         try await supabase.storage
                             .from("chat-images")
                             .upload(path, data: imageData, options: .init(contentType: "image/jpeg"))
