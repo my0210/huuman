@@ -27,8 +27,11 @@ struct ChatComposerBar: View {
         HStack(alignment: .center, spacing: 8) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
+                    .font(.body.weight(.medium))
             }
-            .buttonStyle(.glass)
+            .buttonStyle(.plain)
+            .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
+            .glassEffect(in: .capsule)
             .accessibilityLabel("Attachments and actions")
 
             HStack(alignment: .bottom, spacing: 0) {
@@ -59,6 +62,8 @@ struct ChatComposerBar: View {
                 .animation(.easeOut(duration: 0.15), value: canSend)
                 .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
+            .contentShape(.capsule)
+            .onTapGesture { isFocused = true }
             .glassEffect(in: .capsule)
         }
         .scenePadding(.horizontal)

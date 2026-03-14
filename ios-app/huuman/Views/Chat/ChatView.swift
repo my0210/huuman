@@ -153,15 +153,13 @@ struct ChatThreadView: View {
                     }
             )
             .onChange(of: items.last?.id) { _, _ in
-                withAnimation(.easeOut(duration: 0.2)) {
+                withAnimation(.easeOut(duration: 0.12)) {
                     proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                 }
             }
             .onChange(of: scrollTrigger) { _, _ in
                 guard !userScrolledAway else { return }
-                withAnimation(.easeOut(duration: 0.18)) {
-                    proxy.scrollTo(bottomAnchorID, anchor: .bottom)
-                }
+                proxy.scrollTo(bottomAnchorID, anchor: .bottom)
             }
             .overlay(alignment: .bottomTrailing) {
                 if !isNearBottom {
