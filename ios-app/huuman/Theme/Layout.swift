@@ -9,4 +9,5 @@ enum AppLayout {
     static let profileAvatarSize: CGFloat = 56
     static let domainIconSize: CGFloat = 30
     static let inputButtonSize: CGFloat = 36
+    static let composerRadius: CGFloat = 22
 }

@@ -87,6 +87,11 @@ struct ChatScreen: View {
     }
 }
 
+private struct ScrollBottomState: Equatable {
+    let isNearBottom: Bool
+    let containerHeight: CGFloat
+}
+
 struct ChatThreadView: View {
     let items: [ThreadItem]
     let hasMoreMessages: Bool
@@ -138,16 +143,28 @@ struct ChatThreadView: View {
             .defaultScrollAnchor(.bottom)
             .scrollDisabled(isScrollingDisabled)
             .scrollDismissesKeyboard(.interactively)
-            .onScrollGeometryChange(for: Bool.self) { geometry in
+            .onScrollGeometryChange(for: ScrollBottomState.self) { geometry in
                 let distanceFromBottom = geometry.contentSize.height - geometry.contentOffset.y - geometry.containerSize.height
-                return distanceFromBottom < 160
-            } action: { _, newIsNearBottom in
-                if !newIsNearBottom && isNearBottom {
+                return ScrollBottomState(
+                    isNearBottom: distanceFromBottom < 160,
+                    containerHeight: geometry.containerSize.height
+                )
+            } action: { oldState, newState in
+                let containerResized = oldState.containerHeight != newState.containerHeight
+
+                if !newState.isNearBottom && isNearBottom && !containerResized {
                     userScrolledAway = true
                 }
-                isNearBottom = newIsNearBottom
-                if newIsNearBottom {
+                isNearBottom = newState.isNearBottom
+                if newState.isNearBottom {
                     userScrolledAway = false
+                }
+            }
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                geometry.containerSize.height
+            } action: { oldHeight, newHeight in
+                if oldHeight > newHeight {
+                    proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                 }
             }
             .onChange(of: items.last?.id) { oldValue, _ in

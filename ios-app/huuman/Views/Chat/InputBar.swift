@@ -34,11 +34,14 @@ struct ChatComposerBar: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .bottom, spacing: 8) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
+                    .imageScale(.large)
+                    .frame(width: 28, height: 28)
             }
             .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             .accessibilityLabel("Attachments and actions")
 
             HStack(alignment: .bottom, spacing: 0) {
@@ -48,20 +51,20 @@ struct ChatComposerBar: View {
                     .tint(Color.chatAccent)
                     .focused($isFocused)
                     .padding(.leading)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 12)
                     .onSubmit {
                         if canSend { performSend() }
                     }
 
                 Button(action: performSend) {
-                    Image(systemName: "arrow.up")
-                        .font(.footnote.weight(.bold))
-                        .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
-                        .frame(width: 28, height: 28)
-                        .background(
-                            canSend ? Color.chatAccent : Color.white.opacity(0.06),
-                            in: Circle()
-                        )
+                    ZStack {
+                        Capsule()
+                            .fill(canSend ? Color.chatAccent : Color.white.opacity(0.06))
+                            .frame(width: 36, height: 34)
+                        Image(systemName: "arrow.up")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
+                    }
                 }
                 .buttonStyle(PressableButtonStyle())
                 .disabled(!canSend)
@@ -69,7 +72,7 @@ struct ChatComposerBar: View {
                 .animation(.easeOut(duration: 0.15), value: canSend)
                 .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
             }
-            .glassEffect(.regular, in: .capsule)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: AppLayout.composerRadius, style: .continuous))
         }
         .scenePadding(.horizontal)
         .padding(.vertical)
