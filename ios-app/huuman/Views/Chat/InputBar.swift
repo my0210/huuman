@@ -256,6 +256,9 @@ struct ComposerActionsSheet: View {
         .presentationBackground(.ultraThinMaterial)
         .onAppear {
             selectedIdentifiers = Set(existingPendingImages.compactMap(\.assetIdentifier))
+            if provider.authorizationStatus == .authorized || provider.authorizationStatus == .limited {
+                provider.reloadPhotos()
+            }
         }
         .task {
             if provider.photos.isEmpty, provider.authorizationStatus == .notDetermined {
