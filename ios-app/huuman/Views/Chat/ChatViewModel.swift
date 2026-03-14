@@ -40,6 +40,7 @@ final class ChatViewModel {
     var hasMoreMessages = true
     var userName: String = "?"
     var scrollTrigger = 0
+    var userScrolledAway = false
 
     private let pageSize = 50
     private var oldestCreatedAt: String?
@@ -225,9 +226,11 @@ final class ChatViewModel {
             role: .user,
             parts: userParts
         )
+        userScrolledAway = false
         withAnimation(.easeOut(duration: 0.25)) {
             messages.append(userMessage)
         }
+        scrollTrigger += 1
 
         isStreaming = true
         isThinking = true

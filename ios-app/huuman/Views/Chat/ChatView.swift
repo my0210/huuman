@@ -32,6 +32,7 @@ struct ChatScreen: View {
                 hasMoreMessages: viewModel.hasMoreMessages && !viewModel.messages.isEmpty,
                 isThinking: viewModel.isThinking,
                 scrollTrigger: viewModel.scrollTrigger,
+                userScrolledAway: $viewModel.userScrolledAway,
                 onLoadOlderMessages: { await viewModel.loadOlderMessages() }
             )
             .safeAreaBar(edge: .bottom) {
@@ -91,6 +92,7 @@ struct ChatThreadView: View {
     let hasMoreMessages: Bool
     let isThinking: Bool
     let scrollTrigger: Int
+    @Binding var userScrolledAway: Bool
     let onLoadOlderMessages: () async -> Void
 
     @State private var isNearBottom = true
@@ -129,23 +131,34 @@ struct ChatThreadView: View {
                         .frame(height: 1)
                         .id(bottomAnchorID)
                 }
+                .scenePadding(.horizontal)
             }
-            .contentMargins(.horizontal, 16, for: .scrollContent)
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
             .onScrollGeometryChange(for: Bool.self) { geometry in
                 let distanceFromBottom = geometry.contentSize.height - geometry.contentOffset.y - geometry.containerSize.height
                 return distanceFromBottom < 160
-            } action: { _, isNearBottom in
-                self.isNearBottom = isNearBottom
+            } action: { _, newIsNearBottom in
+                isNearBottom = newIsNearBottom
+                if newIsNearBottom {
+                    userScrolledAway = false
+                }
             }
+            .simultaneousGesture(
+                DragGesture()
+                    .onChanged { _ in
+                        if !isNearBottom {
+                            userScrolledAway = true
+                        }
+                    }
+            )
             .onChange(of: items.last?.id) { _, _ in
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                 }
             }
             .onChange(of: scrollTrigger) { _, _ in
-                guard isNearBottom else { return }
+                guard !userScrolledAway else { return }
                 withAnimation(.easeOut(duration: 0.18)) {
                     proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                 }
@@ -154,6 +167,7 @@ struct ChatThreadView: View {
                 if !isNearBottom {
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        userScrolledAway = false
                         withAnimation(.easeOut(duration: 0.2)) {
                             proxy.scrollTo(bottomAnchorID, anchor: .bottom)
                         }
@@ -170,7 +184,7 @@ struct ChatThreadView: View {
                     }
                     .buttonStyle(.plain)
                     .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-                    .padding(.trailing, 16)
+                    .scenePadding(.horizontal)
                     .padding(.bottom, 12)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
@@ -600,6 +614,7 @@ private let fullConversationAllCards: [ChatMessage] = MockData.fullConversation 
 
 private struct ChatShellPreview: View {
     let messages: [ChatMessage]
+    @State private var userScrolledAway = false
 
     var body: some View {
         NavigationStack {
@@ -608,6 +623,7 @@ private struct ChatShellPreview: View {
                 hasMoreMessages: false,
                 isThinking: false,
                 scrollTrigger: 0,
+                userScrolledAway: $userScrolledAway,
                 onLoadOlderMessages: { await Task.yield() }
             )
             .safeAreaBar(edge: .bottom) {

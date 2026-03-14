@@ -24,7 +24,7 @@ struct ChatComposerBar: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 6) {
+        HStack(alignment: .center, spacing: 8) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
             }
@@ -37,8 +37,8 @@ struct ChatComposerBar: View {
                     .font(.body)
                     .tint(Color.chatAccent)
                     .focused($isFocused)
-                    .padding(.leading, 14)
-                    .padding(.vertical, 9)
+                    .padding(.leading)
+                    .padding(.vertical, 12)
                     .onSubmit {
                         if canSend { performSend() }
                     }
@@ -58,10 +58,12 @@ struct ChatComposerBar: View {
                 .accessibilityLabel("Send message")
                 .animation(.easeOut(duration: 0.15), value: canSend)
                 .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-                .padding(.trailing, 0)
-                .padding(.bottom, 0)
             }
             .glassEffect(in: .capsule)
+        }
+        .scenePadding(.horizontal)
+        .onAppear {
+            isFocused = false
         }
     }
 
