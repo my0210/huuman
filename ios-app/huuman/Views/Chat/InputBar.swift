@@ -257,6 +257,11 @@ struct ComposerActionsSheet: View {
         .onAppear {
             selectedIdentifiers = Set(existingPendingImages.compactMap(\.assetIdentifier))
         }
+        .task {
+            if provider.photos.isEmpty, provider.authorizationStatus == .notDetermined {
+                await provider.requestAccessAndLoad()
+            }
+        }
         .fullScreenCover(isPresented: $showCamera, onDismiss: {
             guard !capturedFromCamera.isEmpty else { return }
             let pending = capturedFromCamera

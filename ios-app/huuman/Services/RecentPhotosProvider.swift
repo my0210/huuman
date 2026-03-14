@@ -16,13 +16,16 @@ final class RecentPhotosProvider {
     private let imageManager = PHCachingImageManager()
     private let thumbnailSize = CGSize(width: 200, height: 200)
 
-    func requestAccessAndLoad() async {
-        var status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        if status == .notDetermined {
-            status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
-        }
+    func loadIfAuthorized() {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
         authorizationStatus = status
+        guard status == .authorized || status == .limited else { return }
+        loadRecentPhotos()
+    }
 
+    func requestAccessAndLoad() async {
+        let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        authorizationStatus = status
         guard status == .authorized || status == .limited else { return }
         loadRecentPhotos()
     }

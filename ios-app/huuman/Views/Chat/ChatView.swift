@@ -87,7 +87,7 @@ struct ChatScreen: View {
             }
             .task {
                 await viewModel.loadChat()
-                await photoProvider.requestAccessAndLoad()
+                photoProvider.loadIfAuthorized()
             }
         }
     }
