@@ -93,6 +93,7 @@ Persistent memory of mistakes, patterns, and hard-won knowledge from past agent 
 
 ### iOS & Xcode
 
+- **Scroll to bottom before screenshotting chat** -- When verifying the composer bar or bottom of the chat via XcodeBuildMCP, always tap the scroll-to-bottom FAB (or swipe repeatedly) and then verify via `snapshot_ui` that the last message's AX frame is on-screen (positive y, within screen height) before taking the screenshot. A single swipe rarely reaches the bottom of a long conversation. Never assume you're at the bottom without checking. (2026-03-14)
 - **Simulator sign-in via clipboard paste** -- The `type_text` MCP tool sends HID keycodes that get remapped by the host keyboard layout (e.g. QWERTZ), garbling special characters like `+` and `@`. Instead: (1) use `printf "text" | xcrun simctl pbcopy <SIMULATOR_ID>` to copy to the simulator clipboard (use `printf`, not `<<<`, to avoid trailing newline), (2) tap the text field, (3) long-press to trigger the Paste menu, (4) tap "Paste" by label. Repeat for each field. Credentials are in `.env.local` as `TEST_EMAIL` and `TEST_PASSWORD`. The bundleId is `life.huuman.native`. Set it via `session_set_defaults` before using `stop_app_sim`/`launch_app_sim`. (2026-03-14)
 
 ### Testing

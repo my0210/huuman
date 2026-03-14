@@ -127,11 +127,12 @@ struct ChatThreadView: View {
                         .padding(.top, ChatTokens.assistantContinuationSpacing)
                     }
 
-                    Color.clear
-                        .frame(height: 1)
-                        .id(bottomAnchorID)
                 }
                 .scenePadding([.horizontal, .bottom])
+
+                Color.clear
+                    .frame(height: 1)
+                    .id(bottomAnchorID)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
@@ -152,9 +153,17 @@ struct ChatThreadView: View {
                         }
                     }
             )
-            .onChange(of: items.last?.id) { _, _ in
-                withAnimation(.easeOut(duration: 0.12)) {
+            .onChange(of: items.last?.id) { oldValue, _ in
+                if oldValue == nil {
                     proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(300))
+                        proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                    }
+                } else {
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                    }
                 }
             }
             .onChange(of: scrollTrigger) { _, _ in
@@ -177,7 +186,8 @@ struct ChatThreadView: View {
                     }
                     .buttonStyle(.plain)
                     .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-                    .glassEffect(.regular.interactive(), in: .circle)
+                    .contentShape(.circle)
+                    .glassEffect(.regular, in: .circle)
                     .scenePadding(.horizontal)
                     .padding(.bottom, 12)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
