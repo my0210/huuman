@@ -96,6 +96,7 @@ struct ChatThreadView: View {
     let onLoadOlderMessages: () async -> Void
 
     @State private var isNearBottom = true
+    @State private var isScrollingDisabled = false
     private let bottomAnchorID = "thread-bottom-anchor"
 
     var body: some View {
@@ -135,6 +136,7 @@ struct ChatThreadView: View {
                     .id(bottomAnchorID)
             }
             .defaultScrollAnchor(.bottom)
+            .scrollDisabled(isScrollingDisabled)
             .scrollDismissesKeyboard(.interactively)
             .onScrollGeometryChange(for: Bool.self) { geometry in
                 let distanceFromBottom = geometry.contentSize.height - geometry.contentOffset.y - geometry.containerSize.height
@@ -170,7 +172,11 @@ struct ChatThreadView: View {
                     Button {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         userScrolledAway = false
-                        proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                        isScrollingDisabled = true
+                        Task { @MainActor in
+                            isScrollingDisabled = false
+                            proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                        }
                     } label: {
                         Image(systemName: "chevron.down")
                     }
