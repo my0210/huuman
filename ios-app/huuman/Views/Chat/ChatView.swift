@@ -11,6 +11,7 @@ struct ChatScreen: View {
     @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
     @State private var showComposerSheet = false
+    @State private var pendingImages: [PendingImage] = []
 
     private var threadItems: [ThreadItem] {
         ChatThreadBuilder.items(from: viewModel.messages)
@@ -41,7 +42,8 @@ struct ChatScreen: View {
                         viewModel.send(text: text, images: images)
                     },
                     onPlusTap: { showComposerSheet = true },
-                    isLoading: viewModel.isStreaming
+                    isLoading: viewModel.isStreaming,
+                    pendingImages: $pendingImages
                 )
             }
             .background(Color.chatBackground)
@@ -75,8 +77,8 @@ struct ChatScreen: View {
                     onQuickAction: { action in
                         viewModel.send(text: action.message)
                     },
-                    onPhotosSelected: { images in
-                        viewModel.send(text: "", images: images)
+                    onPhotosSelected: { newImages in
+                        pendingImages.append(contentsOf: newImages)
                     }
                 )
             }
@@ -631,6 +633,7 @@ private let fullConversationAllCards: [ChatMessage] = MockData.fullConversation 
 private struct ChatShellPreview: View {
     let messages: [ChatMessage]
     @State private var userScrolledAway = false
+    @State private var pendingImages: [PendingImage] = []
 
     var body: some View {
         NavigationStack {
@@ -646,7 +649,8 @@ private struct ChatShellPreview: View {
                 ChatComposerBar(
                     onSend: { _, _ in },
                     onPlusTap: {},
-                    isLoading: false
+                    isLoading: false,
+                    pendingImages: $pendingImages
                 )
             }
             .background(Color.chatBackground)
