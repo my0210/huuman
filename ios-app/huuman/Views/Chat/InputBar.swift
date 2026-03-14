@@ -160,7 +160,6 @@ struct ComposerActionsSheet: View {
     @State private var isLoadingFullRes = false
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var capturedFromCamera: [PendingImage] = []
-    @State private var showManageAccessDialog = false
     @State private var showLimitedPicker = false
     @Environment(\.dismiss) private var dismiss
 
@@ -184,57 +183,64 @@ struct ComposerActionsSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if showPhotoStrip {
-                    recentPhotosStrip
-                        .padding(.top, 8)
-                        .padding(.bottom, 8)
-                }
-
-                if provider.authorizationStatus == .limited {
-                    limitedAccessRow
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
-                }
-
-                Divider()
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 4)
-
-                ForEach(Array(quickActions.enumerated()), id: \.element.id) { index, action in
-                    if index > 0 {
-                        Divider().padding(.leading, 52)
+            ScrollView {
+                VStack(spacing: 0) {
+                    if showPhotoStrip {
+                        recentPhotosStrip
                     }
 
-                    Button {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        dismiss()
-                        onQuickAction(action)
-                    } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: action.icon)
-                                .font(.body)
-                                .frame(width: 28)
-                            Text(action.title)
-                                .font(.body)
-                            Spacer()
+                    if provider.authorizationStatus == .limited {
+                        limitedAccessRow
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
+                    }
+
+                    Divider()
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 4)
+
+                    ForEach(Array(quickActions.enumerated()), id: \.element.id) { index, action in
+                        if index > 0 {
+                            Divider().padding(.leading, 52)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 13)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
 
-                Spacer()
+                        Button {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            dismiss()
+                            onQuickAction(action)
+                        } label: {
+                            HStack(spacing: 14) {
+                                Image(systemName: action.icon)
+                                    .font(.body)
+                                    .frame(width: 28)
+                                Text(action.title)
+                                    .font(.body)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 13)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
+            .scrollBounceBehavior(.basedOnSize)
             .navigationTitle("Add to chat")
             .navigationBarTitleDisplayMode(.inline)
-            .safeAreaInset(edge: .bottom) {
-                if !selectedOrder.isEmpty {
-                    addPhotosButton
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !selectedOrder.isEmpty {
+                        if isLoadingFullRes {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else {
+                            Button("Add (\(selectedOrder.count))") {
+                                performAdd()
+                            }
+                            .fontWeight(.semibold)
+                        }
+                    }
                 }
             }
         }
@@ -257,17 +263,6 @@ struct ComposerActionsSheet: View {
             }
             .ignoresSafeArea()
         }
-        .confirmationDialog("Photo Access", isPresented: $showManageAccessDialog) {
-            Button("Select More Photos") {
-                showLimitedPicker = true
-            }
-            Button("Allow Full Access") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
         .background {
             if showLimitedPicker {
                 LimitedLibraryPickerPresenter(isPresented: $showLimitedPicker) {
@@ -289,7 +284,7 @@ struct ComposerActionsSheet: View {
                 .foregroundStyle(Color.chatTertiaryText)
             Spacer()
             Button {
-                showManageAccessDialog = true
+                showLimitedPicker = true
             } label: {
                 Text("Manage")
                     .font(.caption.weight(.medium))
@@ -390,40 +385,22 @@ struct ComposerActionsSheet: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Add Photos Button (bottom-pinned)
+    // MARK: - Add Photos Action
 
-    private var addPhotosButton: some View {
-        Button {
-            guard !isLoadingFullRes else { return }
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            isLoadingFullRes = true
-            Task {
-                let imageDataArray = await provider.loadFullResolution(for: Set(selectedOrder))
-                let pending = imageDataArray.map { data in
-                    PendingImage(id: UUID(), thumbnail: Self.makeThumbnail(from: data), data: data)
-                }
-                isLoadingFullRes = false
-                guard !pending.isEmpty else { return }
-                dismiss()
-                onPhotosSelected(pending)
+    private func performAdd() {
+        guard !isLoadingFullRes else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        isLoadingFullRes = true
+        Task {
+            let imageDataArray = await provider.loadFullResolution(for: Set(selectedOrder))
+            let pending = imageDataArray.map { data in
+                PendingImage(id: UUID(), thumbnail: Self.makeThumbnail(from: data), data: data)
             }
-        } label: {
-            HStack(spacing: 8) {
-                if isLoadingFullRes {
-                    ProgressView()
-                        .tint(.white)
-                        .controlSize(.small)
-                }
-                Text("Add \(selectedOrder.count) photo\(selectedOrder.count == 1 ? "" : "s")")
-                    .font(.subheadline.weight(.semibold))
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color.chatAccent, in: Capsule(style: .continuous))
+            isLoadingFullRes = false
+            guard !pending.isEmpty else { return }
+            dismiss()
+            onPhotosSelected(pending)
         }
-        .buttonStyle(.plain)
-        .disabled(isLoadingFullRes)
     }
 
     // MARK: - PhotosPicker Loading
