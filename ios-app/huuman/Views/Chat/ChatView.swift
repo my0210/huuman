@@ -175,7 +175,9 @@ struct ChatThreadView: View {
                         isScrollingDisabled = true
                         Task { @MainActor in
                             isScrollingDisabled = false
-                            proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                proxy.scrollTo(bottomAnchorID, anchor: .bottom)
+                            }
                         }
                     } label: {
                         Image(systemName: "chevron.down")
