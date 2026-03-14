@@ -37,10 +37,8 @@ struct ChatComposerBar: View {
         HStack(alignment: .center, spacing: 8) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
-                    .imageScale(.large)
             }
             .buttonStyle(.glass)
-            .controlSize(.large)
             .accessibilityLabel("Attachments and actions")
 
             HStack(alignment: .bottom, spacing: 0) {
@@ -50,16 +48,16 @@ struct ChatComposerBar: View {
                     .tint(Color.chatAccent)
                     .focused($isFocused)
                     .padding(.leading)
-                    .padding(.vertical)
+                    .padding(.vertical, 12)
                     .onSubmit {
                         if canSend { performSend() }
                     }
 
                 Button(action: performSend) {
                     Image(systemName: "arrow.up")
-                        .font(.footnote.weight(.bold))
+                        .font(.caption.weight(.bold))
                         .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 24, height: 24)
                         .background(
                             canSend ? Color.chatAccent : Color.white.opacity(0.06),
                             in: Circle()

@@ -180,10 +180,8 @@ struct ChatThreadView: View {
                         }
                     } label: {
                         Image(systemName: "chevron.down")
-                            .imageScale(.large)
                     }
                     .buttonStyle(.glass)
-                    .controlSize(.large)
                     .scenePadding(.horizontal)
                     .padding(.bottom, 12)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
