@@ -346,7 +346,12 @@ struct ComposerActionsSheet: View {
         }
         .buttonStyle(.plain)
         .onChange(of: pickerItems) { _, newItems in
-            Task { await loadPickerItems(newItems) }
+            Task {
+                if provider.authorizationStatus == .notDetermined {
+                    await provider.requestAccessAndLoad()
+                }
+                await loadPickerItems(newItems)
+            }
         }
     }
 
