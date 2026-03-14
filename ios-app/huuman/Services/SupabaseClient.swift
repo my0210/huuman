@@ -2,6 +2,6 @@ import Foundation
 import Supabase
 
 let supabase = SupabaseClient(
-    supabaseURL: URL(string: AppSecrets.supabaseURL)!,
-    supabaseKey: AppSecrets.supabaseAnonKey
+    supabaseURL: URL(string: "https://andkccjjlczdpklfekhn.supabase.co")!,
+    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuZGtjY2pqbGN6ZHBrbGZla2huIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2NzQ1MTgsImV4cCI6MjA4NzI1MDUxOH0.NasVQEr6ewMvcS_2_NYai1P2sMAHbTFHdEwAXNVTcpk"
 )

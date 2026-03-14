@@ -4,6 +4,10 @@ AI longevity coach that generates weekly health plans and helps users execute th
 
 > **Note:** Telegram bot integration has been archived to `_telegram_archive/`. Social features (friends, group chat) have been archived to `_social_archive/`. The codebase is currently web-only, focused on the AI coach experience.
 
+## Agent Instructions
+
+See `AGENTS.md` at the repo root. It contains rules, persistent learnings from past agent sessions, and role definitions. Read it before making changes.
+
 ## Stack
 
 - Next.js 16 (App Router) + React 19 + Tailwind 4

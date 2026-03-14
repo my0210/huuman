@@ -1,6 +1,6 @@
 ---
-description: Points to the architecture doc -- read ARCHITECTURE.md at the repo root for full system context
+description: Points to the architecture and agent docs -- read ARCHITECTURE.md and AGENTS.md at the repo root for full context
 alwaysApply: true
 ---
 
-Read `ARCHITECTURE.md` at the repo root before making changes. It covers the web app architecture, Supabase client types, auth flows, AI harnessing philosophy, database schema, and file map.
+Read `ARCHITECTURE.md` and `AGENTS.md` at the repo root before making changes. ARCHITECTURE.md covers system architecture, database schema, and file map. AGENTS.md covers rules, learnings, and role definitions.

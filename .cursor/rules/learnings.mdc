@@ -1,0 +1,8 @@
+---
+description: Persistent agent memory -- read the Learnings section in AGENTS.md to avoid repeating past mistakes
+alwaysApply: true
+---
+
+Read `AGENTS.md` at the repo root before making changes. It contains rules, learnings, and role definitions for all agents.
+
+When the user says "store this in learnings", "add this to memory", or similar, append the lesson to the appropriate category under the **Learnings** section in `AGENTS.md` using the format: `- **Short title** -- Explanation. (date)`

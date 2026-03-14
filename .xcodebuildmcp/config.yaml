@@ -1,0 +1,10 @@
+schemaVersion: 1
+enabledWorkflows:
+  - simulator
+  - ui-automation
+  - debugging
+sessionDefaults:
+  projectPath: ./ios-app/huuman.xcodeproj
+  scheme: huuman
+  simulatorName: iPhone 16
+  simulatorPlatform: iOS Simulator

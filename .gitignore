@@ -54,3 +54,19 @@ ios-app/huuman/Secrets.swift
 ios-app/huuman.xcodeproj/xcuserdata/
 ios-app/huuman.xcodeproj/project.xcworkspace/xcuserdata/
 ios-app/.DS_Store
+
+# Audit artifacts (one-off reports and screenshots)
+AUDIT_REPORT.md
+SHELL_PATCH_VERIFICATION_REPORT.md
+audit-*.png
+audit-chat-page.png
+
+# Test result artifacts
+test-results/
+
+# One-off audit/inspection test specs
+tests/e2e/app-audit.spec.ts
+tests/e2e/detailed-audit.spec.ts
+tests/e2e/quick-screenshots.spec.ts
+tests/e2e/simple-audit.spec.ts
+tests/e2e/visual-inspection.spec.ts

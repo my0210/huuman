@@ -1,0 +1,32 @@
+---
+description: Pinned framework versions and documentation sources -- verify APIs against current docs before writing framework code
+alwaysApply: true
+---
+
+# Current Stack Versions
+
+Your training data is likely outdated for these frameworks. **When writing code that uses framework APIs, verify against current documentation** using web search or @docs before assuming an API exists or works as you remember.
+
+## Pinned versions (from package.json / project config)
+
+| Framework | Version | Docs |
+|---|---|---|
+| Next.js | 16.1.x | @NextJS or https://nextjs.org/docs |
+| React | 19.2.x | https://react.dev |
+| Tailwind CSS | 4.x | @TailwindCSS or https://tailwindcss.com/docs |
+| Vercel AI SDK | 6.x (`ai` package) | @VercelAISDK or https://sdk.vercel.ai/docs |
+| @ai-sdk/anthropic | 3.x | https://sdk.vercel.ai/providers/ai-sdk-providers/anthropic |
+| Supabase JS | 2.97.x | @Supabase or https://supabase.com/docs |
+| @supabase/ssr | 0.8.x | https://supabase.com/docs/guides/auth/server-side |
+| Capacitor | 8.2.x | https://capacitorjs.com/docs |
+| SwiftUI | iOS 18+ / Xcode 16+ | @AppleHIG or https://developer.apple.com/documentation/swiftui |
+| Zod | 4.x | https://zod.dev |
+| Playwright | 1.58.x | https://playwright.dev/docs |
+| Vaul (sheets) | 1.1.x | https://vaul.dev |
+
+## Rules
+
+1. **Search before you write.** If you are about to use a framework API you are not 100% certain is current, do a web search for `[framework] [API name] [year]` first.
+2. **Check for breaking changes.** Next.js 16, React 19, Tailwind 4, AI SDK 6, and Zod 4 all had major breaking changes from their previous versions. Do not assume patterns from v15/v18/v3/v5/v3 still apply.
+3. **Use @docs when available.** If the user has indexed docs in Cursor (e.g. @NextJS, @TailwindCSS), reference them instead of relying on memory.
+4. **Apple platforms move fast.** SwiftUI APIs change every WWDC. Always verify modifier names, view types, and availability annotations against current Apple docs.

@@ -4,15 +4,27 @@ Done
 - all previous activity as context, not just last week
 - Coach feels transactional, not like a caring elite coach
 - web search
+- progress photos
+- meal history
+- Telegram archived
 
 To build
+- youtube env var - seems like env var was deleted
+- Search chat history <500 (vector chat history search)
+- sharing cards redesign
+- 10 step agent loop: unlimited?
+- gather-act-verify: verify more than just plan? 
+- gather-act-verify: more acts in the real world? 
+- layered context
+- user reflections (not just facts) as context
+- auth: consider sms, google, apple etc. or stick to email in v1
+- auth via chat vs. signup page?
 - "know more about me"
 - show all sessions (where is stuff logged?)
 - Daily rhythm
 - Reflections (aka milestones and recaps)
-- Social interaction
+o Social interaction
 - other in onboarding as a free text input at the end
-- Telegram as notification channel?
 - Coach behavior when activities are not achieved
 - acnhor in user's reality -> create reads and writes in users reality
 - deeper and more context about the user

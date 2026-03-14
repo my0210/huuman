@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-const TEST_EMAIL = process.env.TEST_EMAIL || 'test@huuman.app';
-const TEST_PASSWORD = process.env.TEST_PASSWORD || 'testpassword123';
+const TEST_EMAIL = process.env.TEST_EMAIL!;
+const TEST_PASSWORD = process.env.TEST_PASSWORD!;
 
 test.describe('Onboarding flow', () => {
   test.beforeEach(async ({ page, baseURL }) => {
