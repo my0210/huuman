@@ -1,4 +1,17 @@
 import Foundation
+import UIKit
+
+enum DisplayImage: Identifiable {
+    case local(id: String, image: UIImage)
+    case remote(id: String, url: String)
+
+    var id: String {
+        switch self {
+        case .local(let id, _): return id
+        case .remote(let id, _): return id
+        }
+    }
+}
 
 enum ThreadItem: Identifiable {
     case daySeparator(DaySeparatorItem)
@@ -28,6 +41,7 @@ struct DaySeparatorItem: Identifiable {
 struct UserTurnViewModel: Identifiable {
     let id: String
     let text: String?
+    let images: [DisplayImage]
 }
 
 struct AssistantTurnViewModel: Identifiable {
@@ -155,9 +169,21 @@ enum ChatThreadBuilder {
             return trimmed.isEmpty ? nil : trimmed
         }
 
+        let images: [DisplayImage] = message.parts.compactMap { part in
+            switch part {
+            case .localImage(let id, let image):
+                return .local(id: id, image: image)
+            case .image(let id, let url, _):
+                return .remote(id: id, url: url)
+            default:
+                return nil
+            }
+        }
+
         return UserTurnViewModel(
             id: message.id,
-            text: textParts.isEmpty ? nil : textParts.joined(separator: "\n\n")
+            text: textParts.isEmpty ? nil : textParts.joined(separator: "\n\n"),
+            images: images
         )
     }
 
@@ -207,6 +233,9 @@ enum ChatThreadBuilder {
                     urlString: url,
                     iconSystemName: "photo"
                 )))
+
+            case .localImage:
+                break
 
             case .toolError(let id):
                 blocks.append(.inlineNotice(InlineNoticeBlock(

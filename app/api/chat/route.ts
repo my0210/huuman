@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { loadMessages, saveMessages, convertToModelUIMessages } from '@/lib/chat/store';
 import { loadUserProfile } from '@/lib/core/user';
 import { getLanguageFromCookies } from '@/lib/languages';
+import { uploadBase64ChatImage } from '@/lib/images';
 
 export const maxDuration = 300;
 
@@ -21,6 +22,29 @@ export async function POST(req: Request) {
     const userId = user.id;
 
     if (message?.role === 'user') {
+      if (Array.isArray(message.parts)) {
+        const processed = await Promise.all(
+          message.parts.map(async (part: Record<string, unknown>) => {
+            if (part.type === 'file' && typeof part.data === 'string' && !part.url) {
+              try {
+                const url = await uploadBase64ChatImage(
+                  supabase, userId,
+                  part.data as string,
+                  (part.mediaType as string) || 'image/jpeg',
+                );
+                return { type: 'file', mediaType: part.mediaType || 'image/jpeg', url, filename: 'photo.jpg' };
+              } catch (e) {
+                console.error('[Chat API] Failed to upload base64 image:', e);
+                return part;
+              }
+            }
+            if (part.type === 'text' && !(part.text as string)?.trim()) return null;
+            return part;
+          }),
+        );
+        message.parts = processed.filter(Boolean);
+      }
+
       await saveMessages(chatId, [
         {
           id: message.id,

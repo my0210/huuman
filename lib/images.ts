@@ -123,3 +123,18 @@ export async function uploadChatImage(
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
+
+/**
+ * Server-side fallback: convert a base64-encoded image to a Supabase Storage URL.
+ * Used when legacy iOS clients send base64 data instead of uploading first.
+ */
+export async function uploadBase64ChatImage(
+  supabase: SupabaseClient,
+  userId: string,
+  base64Data: string,
+  mediaType: string = 'image/jpeg',
+): Promise<string> {
+  const buffer = Buffer.from(base64Data, 'base64');
+  const blob = new Blob([buffer], { type: mediaType });
+  return uploadChatImage(supabase, userId, blob);
+}

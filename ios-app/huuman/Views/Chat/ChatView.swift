@@ -295,19 +295,120 @@ struct UserMessageBubble: View {
     let viewModel: UserTurnViewModel
 
     var body: some View {
-        if let text = viewModel.text {
-            HStack(spacing: 0) {
-                Spacer(minLength: 60)
+        let hasImages = !viewModel.images.isEmpty
+        let hasText = viewModel.text != nil
 
-                Text(text)
-                    .font(.body)
-                    .foregroundStyle(Color.white)
-                    .lineSpacing(3)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
+        if hasImages || hasText {
+            VStack(alignment: .trailing, spacing: 4) {
+                if hasImages {
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 60)
+                        UserImageStrip(images: viewModel.images)
+                    }
+                }
+
+                if let text = viewModel.text {
+                    HStack(spacing: 0) {
+                        Spacer(minLength: 60)
+
+                        Text(text)
+                            .font(.body)
+                            .foregroundStyle(Color.white)
+                            .lineSpacing(3)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color.userBubble, in: RoundedRectangle(cornerRadius: ChatTokens.userBubbleRadius, style: .continuous))
+                    }
+                }
             }
         }
+    }
+}
+
+private struct UserImageStrip: View {
+    let images: [DisplayImage]
+
+    var body: some View {
+        if images.count == 1 {
+            singleImageView(images[0])
+                .frame(maxWidth: 260)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 8) {
+                    ForEach(images) { img in
+                        imageView(img)
+                            .containerRelativeFrame(.horizontal, count: 5, span: 2, spacing: 8)
+                            .frame(height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.viewAligned)
+            .frame(height: 150)
+        }
+    }
+
+    @ViewBuilder
+    private func singleImageView(_ img: DisplayImage) -> some View {
+        switch img {
+        case .local(_, let uiImage):
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        case .remote(_, let url):
+            AsyncImage(url: URL(string: url)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                case .failure:
+                    imagePlaceholder(failed: true)
+                default:
+                    imagePlaceholder(failed: false)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    @ViewBuilder
+    private func imageView(_ img: DisplayImage) -> some View {
+        switch img {
+        case .local(_, let uiImage):
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+        case .remote(_, let url):
+            AsyncImage(url: URL(string: url)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    imagePlaceholder(failed: true)
+                default:
+                    imagePlaceholder(failed: false)
+                }
+            }
+        }
+    }
+
+    private func imagePlaceholder(failed: Bool) -> some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(Color.white.opacity(0.06))
+            .overlay {
+                if failed {
+                    Image(systemName: "photo")
+                        .foregroundStyle(Color.chatTertiaryText)
+                } else {
+                    ProgressView()
+                        .tint(Color.chatSecondaryText)
+                }
+            }
     }
 }
 

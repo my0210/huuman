@@ -13,7 +13,10 @@ actor ChatService {
 
                     let messageId = UUID().uuidString
 
-                    var messageParts: [[String: Any]] = [["type": "text", "text": text]]
+                    var messageParts: [[String: Any]] = []
+                    if !text.isEmpty {
+                        messageParts.append(["type": "text", "text": text])
+                    }
                     if let files {
                         messageParts.append(contentsOf: files)
                     }

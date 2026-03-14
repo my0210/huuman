@@ -156,6 +156,9 @@ export function convertToModelUIMessages(dbMessages: DBMessage[], registeredTool
           if (url && !url.startsWith('data:')) {
             return [p, { type: 'text', text: `[image_url: ${url}]` } as unknown as typeof p];
           }
+          if (!url && typeof raw.data === 'string') {
+            return [{ type: 'text', text: '[image: photo]' } as unknown as typeof p];
+          }
           return [p];
         }
 

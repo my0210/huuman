@@ -281,7 +281,7 @@ export function ChatInterface({
       setUploading(false);
     }
 
-    const text = hasText ? input : "Sent a photo";
+    const text = hasText ? input : "";
     sendMessage(
       fileParts.length > 0 ? { text, files: fileParts } : { text },
     );

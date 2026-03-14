@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 enum MessageRole: String, Codable {
     case user
@@ -8,6 +9,7 @@ enum MessageRole: String, Codable {
 enum MessagePart: Identifiable {
     case text(id: String, content: String)
     case image(id: String, url: String, filename: String?)
+    case localImage(id: String, image: UIImage)
     case toolLoading(id: String, toolName: String)
     case toolResult(id: String, toolName: String, output: [String: Any])
     case toolError(id: String)
@@ -16,6 +18,7 @@ enum MessagePart: Identifiable {
         switch self {
         case .text(let id, _): return id
         case .image(let id, _, _): return id
+        case .localImage(let id, _): return id
         case .toolLoading(let id, _): return id
         case .toolResult(let id, _, _): return id
         case .toolError(let id): return id

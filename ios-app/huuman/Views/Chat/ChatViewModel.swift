@@ -188,6 +188,11 @@ final class ChatViewModel {
             if type == "text", let text = dict["text"] as? String, !text.isEmpty {
                 return .text(id: UUID().uuidString, content: text)
             }
+            if type == "file",
+               let url = dict["url"] as? String, !url.isEmpty,
+               let mediaType = dict["mediaType"] as? String, mediaType.hasPrefix("image/") {
+                return .image(id: UUID().uuidString, url: url, filename: dict["filename"] as? String)
+            }
             if (type.hasPrefix("tool-") || type == "tool-invocation"),
                let state = dict["state"] as? String,
                state == "output-available",
@@ -207,19 +212,26 @@ final class ChatViewModel {
         )
     }
 
+    var isUploading = false
+
     func send(text: String, images: [Data]? = nil) {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachedImages = (images?.isEmpty == false) ? images : nil
 
-        guard !trimmedText.isEmpty || attachedImages != nil, !isStreaming else { return }
+        guard !trimmedText.isEmpty || attachedImages != nil, !isStreaming, !isUploading else { return }
 
         var userParts: [MessagePart] = []
 
         if !trimmedText.isEmpty {
             userParts.append(.text(id: UUID().uuidString, content: trimmedText))
-        } else if let attachedImages {
-            let placeholder = attachedImages.count == 1 ? "Sent a photo" : "Sent \(attachedImages.count) photos"
-            userParts.append(.text(id: UUID().uuidString, content: placeholder))
+        }
+
+        if let attachedImages {
+            for imageData in attachedImages {
+                if let uiImage = UIImage(data: imageData) {
+                    userParts.append(.localImage(id: UUID().uuidString, image: uiImage))
+                }
+            }
         }
 
         let userMessage = ChatMessage(
@@ -234,6 +246,7 @@ final class ChatViewModel {
 
         isStreaming = true
         isThinking = true
+        isUploading = attachedImages != nil
         error = nil
 
         Task {
@@ -241,16 +254,27 @@ final class ChatViewModel {
 
             do {
                 var fileParts: [[String: Any]]?
+
                 if let attachedImages {
+                    let session = try await supabase.auth.session
+                    let userId = session.user.id.uuidString
+
                     fileParts = []
                     for imageData in attachedImages {
-                        let base64 = imageData.base64EncodedString()
+                        let path = "\(userId)/\(Int(Date().timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8)).jpg"
+                        try await supabase.storage
+                            .from("chat-images")
+                            .upload(path, data: imageData, options: .init(contentType: "image/jpeg"))
+                        let publicURL = try supabase.storage
+                            .from("chat-images")
+                            .getPublicURL(path: path)
                         fileParts?.append([
                             "type": "file",
                             "mediaType": "image/jpeg",
-                            "data": base64,
+                            "url": publicURL.absoluteString,
                         ])
                     }
+                    isUploading = false
                 }
 
                 var accumulatedText = ""
@@ -314,8 +338,17 @@ final class ChatViewModel {
                     }
                 }
             } catch {
-                self.error = error.localizedDescription
-                removeMessageIfContentless(id: currentMessageId)
+                if isUploading {
+                    isUploading = false
+                    if let lastIdx = messages.indices.last,
+                       messages[lastIdx].role == .user {
+                        messages.remove(at: lastIdx)
+                    }
+                    self.error = "Failed to upload image. Please try again."
+                } else {
+                    self.error = error.localizedDescription
+                    removeMessageIfContentless(id: currentMessageId)
+                }
             }
 
             isStreaming = false
@@ -351,7 +384,7 @@ final class ChatViewModel {
             switch part {
             case .text(_, let content):
                 return !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            case .image, .toolResult, .toolError:
+            case .image, .localImage, .toolResult, .toolError:
                 return true
             case .toolLoading:
                 return false
