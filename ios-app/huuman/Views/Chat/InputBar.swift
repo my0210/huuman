@@ -37,10 +37,8 @@ struct ChatComposerBar: View {
         HStack(alignment: .center, spacing: 16) {
             Button(action: onPlusTap) {
                 Image(systemName: "plus")
-                    .imageScale(.large)
             }
             .buttonStyle(.glass)
-            .controlSize(.large)
             .accessibilityLabel("Attachments and actions")
 
             HStack(alignment: .bottom, spacing: 0) {
@@ -50,7 +48,7 @@ struct ChatComposerBar: View {
                     .tint(Color.chatAccent)
                     .focused($isFocused)
                     .padding(.leading)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 8)
                     .onSubmit {
                         if canSend { performSend() }
                     }
