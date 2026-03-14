@@ -140,19 +140,14 @@ struct ChatThreadView: View {
                 let distanceFromBottom = geometry.contentSize.height - geometry.contentOffset.y - geometry.containerSize.height
                 return distanceFromBottom < 160
             } action: { _, newIsNearBottom in
+                if !newIsNearBottom && isNearBottom {
+                    userScrolledAway = true
+                }
                 isNearBottom = newIsNearBottom
                 if newIsNearBottom {
                     userScrolledAway = false
                 }
             }
-            .simultaneousGesture(
-                DragGesture()
-                    .onChanged { _ in
-                        if !isNearBottom {
-                            userScrolledAway = true
-                        }
-                    }
-            )
             .onChange(of: items.last?.id) { oldValue, _ in
                 if oldValue == nil {
                     proxy.scrollTo(bottomAnchorID, anchor: .bottom)
