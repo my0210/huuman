@@ -159,12 +159,12 @@ private struct PendingImageThumbnail: View {
 
 struct ComposerActionsSheet: View {
     let provider: RecentPhotosProvider
-    let pendingAssetIdentifiers: Set<String>
+    let existingPendingImages: [PendingImage]
     let quickActions: [ChatQuickAction]
     let onQuickAction: (ChatQuickAction) -> Void
-    let onPhotosSelected: ([PendingImage]) -> Void
+    let onDone: ([PendingImage]) -> Void
 
-    @State private var selectedIdentifiers: Set<String>
+    @State private var selectedIdentifiers: Set<String> = []
     @State private var showCamera = false
     @State private var isLoadingFullRes = false
     @State private var pickerItems: [PhotosPickerItem] = []
@@ -174,31 +174,12 @@ struct ComposerActionsSheet: View {
 
     private static let maxSelection = 10
 
-    init(
-        provider: RecentPhotosProvider,
-        pendingAssetIdentifiers: Set<String>,
-        quickActions: [ChatQuickAction],
-        onQuickAction: @escaping (ChatQuickAction) -> Void,
-        onPhotosSelected: @escaping ([PendingImage]) -> Void
-    ) {
-        self.provider = provider
-        self.pendingAssetIdentifiers = pendingAssetIdentifiers
-        self.quickActions = quickActions
-        self.onQuickAction = onQuickAction
-        self.onPhotosSelected = onPhotosSelected
-        _selectedIdentifiers = State(initialValue: pendingAssetIdentifiers)
-    }
-
     private var hasCameraHardware: Bool {
         UIImagePickerController.isSourceTypeAvailable(.camera)
     }
 
     private var showPhotoStrip: Bool {
         provider.authorizationStatus == .authorized || provider.authorizationStatus == .limited || !provider.photos.isEmpty
-    }
-
-    private var newSelectionCount: Int {
-        selectedIdentifiers.subtracting(pendingAssetIdentifiers).count
     }
 
     private static func makeThumbnail(from data: Data) -> UIImage {
@@ -258,16 +239,14 @@ struct ComposerActionsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    if newSelectionCount > 0 {
-                        if isLoadingFullRes {
-                            ProgressView()
-                                .controlSize(.small)
-                        } else {
-                            Button("Add (\(newSelectionCount))") {
-                                performAdd()
-                            }
-                            .fontWeight(.semibold)
+                    if isLoadingFullRes {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Button("Done") {
+                            performDone()
                         }
+                        .fontWeight(.semibold)
                     }
                 }
             }
@@ -275,17 +254,17 @@ struct ComposerActionsSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
-        .task {
-            if provider.photos.isEmpty {
-                await provider.requestAccessAndLoad()
-            }
+        .onAppear {
+            selectedIdentifiers = Set(existingPendingImages.compactMap(\.assetIdentifier))
         }
         .fullScreenCover(isPresented: $showCamera, onDismiss: {
             guard !capturedFromCamera.isEmpty else { return }
             let pending = capturedFromCamera
             capturedFromCamera = []
+            var updated = existingPendingImages
+            updated.append(contentsOf: pending)
             dismiss()
-            onPhotosSelected(pending)
+            onDone(updated)
         }) {
             CameraView { capturedData in
                 let thumb = Self.makeThumbnail(from: capturedData)
@@ -387,9 +366,7 @@ struct ComposerActionsSheet: View {
 
     private func recentPhotoTile(_ photo: RecentPhoto) -> some View {
         let isSelected = selectedIdentifiers.contains(photo.id)
-        let isPending = pendingAssetIdentifiers.contains(photo.id)
         return Button {
-            guard !isPending else { return }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             if isSelected {
                 selectedIdentifiers.remove(photo.id)
@@ -423,18 +400,36 @@ struct ComposerActionsSheet: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Add Photos Action
+    // MARK: - Done Action
 
-    private func performAdd() {
-        guard !isLoadingFullRes else { return }
-        let newIdentifiers = selectedIdentifiers.subtracting(pendingAssetIdentifiers)
-        guard !newIdentifiers.isEmpty else { return }
+    private func performDone() {
+        let existingByAssetId = Dictionary(
+            existingPendingImages.compactMap { img -> (String, PendingImage)? in
+                guard let id = img.assetIdentifier else { return nil }
+                return (id, img)
+            },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        let existingAssetIds = Set(existingByAssetId.keys)
+        let newIdentifiers = selectedIdentifiers.subtracting(existingAssetIds)
+
+        let kept = existingPendingImages.filter { img in
+            guard let assetId = img.assetIdentifier else { return true }
+            return selectedIdentifiers.contains(assetId)
+        }
+
+        guard !newIdentifiers.isEmpty else {
+            dismiss()
+            onDone(kept)
+            return
+        }
 
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         isLoadingFullRes = true
         Task {
             let results = await provider.loadFullResolution(for: newIdentifiers)
-            let pending = results.map { result in
+            let newPending = results.map { result in
                 PendingImage(
                     thumbnail: Self.makeThumbnail(from: result.data),
                     data: result.data,
@@ -442,24 +437,23 @@ struct ComposerActionsSheet: View {
                 )
             }
             isLoadingFullRes = false
-            guard !pending.isEmpty else { return }
             dismiss()
-            onPhotosSelected(pending)
+            onDone(kept + newPending)
         }
     }
 
     // MARK: - PhotosPicker Loading
 
     private func loadPickerItems(_ items: [PhotosPickerItem]) async {
-        var pending: [PendingImage] = []
+        var newImages: [PendingImage] = []
         for item in items {
             guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
             let compressed = compressImage(data, maxDimension: 1024, quality: 0.72) ?? data
-            pending.append(PendingImage(thumbnail: Self.makeThumbnail(from: compressed), data: compressed))
+            newImages.append(PendingImage(thumbnail: Self.makeThumbnail(from: compressed), data: compressed))
         }
-        guard !pending.isEmpty else { return }
+        guard !newImages.isEmpty else { return }
         dismiss()
-        onPhotosSelected(pending)
+        onDone(existingPendingImages + newImages)
     }
 
     private func compressImage(_ data: Data, maxDimension: CGFloat, quality: CGFloat) -> Data? {

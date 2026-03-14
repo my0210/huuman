@@ -75,18 +75,19 @@ struct ChatScreen: View {
             .sheet(isPresented: $showComposerSheet) {
                 ComposerActionsSheet(
                     provider: photoProvider,
-                    pendingAssetIdentifiers: Set(pendingImages.compactMap(\.assetIdentifier)),
+                    existingPendingImages: pendingImages,
                     quickActions: quickActions,
                     onQuickAction: { action in
                         viewModel.send(text: action.message)
                     },
-                    onPhotosSelected: { newImages in
-                        pendingImages.append(contentsOf: newImages)
+                    onDone: { updatedImages in
+                        pendingImages = updatedImages
                     }
                 )
             }
             .task {
                 await viewModel.loadChat()
+                await photoProvider.requestAccessAndLoad()
             }
         }
     }
