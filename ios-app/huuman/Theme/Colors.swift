@@ -24,13 +24,13 @@ extension Color {
     }
 
     // MARK: - Surfaces
-    static let surfaceBase: Color = Color(hex: "111114")
+    static let surfaceBase: Color = Color(hex: "000000")
     static let surfaceRaised: Color = Color(hex: "1C1C1E")
     static let surfaceOverlay: Color = Color(hex: "2C2C2E")
     static let surfaceElevated: Color = Color(hex: "3A3A3C")
 
     // MARK: - Chat
-    static let chatBackground: Color = Color(hex: "111114")
+    static let chatBackground: Color = Color(hex: "000000")
     static let chatAccent: Color = Color(hex: "3478F6")
     static let chatPrimaryText: Color = Color.white.opacity(0.96)
     static let chatSecondaryText: Color = Color.white.opacity(0.52)
@@ -38,7 +38,7 @@ extension Color {
     static let chatCardSurface: Color = Color.white.opacity(0.06)
     static let chatCardBorder: Color = Color.white.opacity(0.06)
     static let chatHairline: Color = Color.white.opacity(0.06)
-    static let userBubble: Color = chatAccent
+    static let userBubble: Color = Color(hex: "2F2F2F")
 
     // MARK: - Borders
     static let borderSubtle: Color = Color(hex: "1F1F23")

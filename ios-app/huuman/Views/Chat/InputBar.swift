@@ -9,220 +9,145 @@ struct ChatQuickAction: Identifiable {
     let icon: String
 }
 
+// MARK: - Composer Bar
+
 struct ChatComposerBar: View {
     let onSend: (String, [Data]?) -> Void
-    let onToggleQuickActions: () -> Void
-    let isQuickActionsVisible: Bool
+    let onPlusTap: () -> Void
     let isLoading: Bool
 
     @State private var text = ""
-    @State private var selectedItems: [PhotosPickerItem] = []
-    @State private var selectedImages: [Data] = []
     @FocusState private var isFocused: Bool
 
     private var canSend: Bool {
-        (!text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !selectedImages.isEmpty) && !isLoading
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
     }
 
     var body: some View {
-        VStack(spacing: 6) {
-            if !selectedImages.isEmpty {
-                attachmentStrip
+        HStack(alignment: .bottom, spacing: 6) {
+            Button(action: onPlusTap) {
+                Image(systemName: "plus")
             }
+            .buttonStyle(.glass)
+            .accessibilityLabel("Attachments and actions")
 
-            HStack(alignment: .bottom, spacing: 6) {
-                toggleButton
-                composerCapsule
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 4)
-        }
-        .padding(.top, 6)
-    }
-
-    private var attachmentStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(selectedImages.indices, id: \.self) { i in
-                    ComposerAttachmentThumbnail(imageData: selectedImages[i]) {
-                        withAnimation(.easeOut(duration: 0.18)) {
-                            _ = selectedImages.remove(at: i)
-                        }
+            HStack(alignment: .bottom, spacing: 0) {
+                TextField("Message huuman...", text: $text, axis: .vertical)
+                    .lineLimit(1...6)
+                    .font(.system(size: 17))
+                    .tint(Color.chatAccent)
+                    .focused($isFocused)
+                    .padding(.leading, 14)
+                    .padding(.vertical, 9)
+                    .onSubmit {
+                        if canSend { performSend() }
                     }
+
+                Button(action: performSend) {
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            canSend ? Color.chatAccent : Color.white.opacity(0.06),
+                            in: Circle()
+                        )
                 }
+                .buttonStyle(.plain)
+                .disabled(!canSend)
+                .accessibilityLabel("Send message")
+                .animation(.easeOut(duration: 0.15), value: canSend)
+                .padding(.trailing, 4)
+                .padding(.bottom, 4)
             }
-            .padding(.horizontal, 12)
+            .glassEffect(in: .capsule)
         }
-    }
-
-    private var toggleButton: some View {
-        Button(action: onToggleQuickActions) {
-            Image(systemName: isQuickActionsVisible ? "xmark" : "plus")
-                .font(.system(size: 15, weight: .semibold))
-                .frame(width: 34, height: 34)
-                .glassEffect(in: .circle)
-        }
-        .buttonStyle(.plain)
-        .frame(minWidth: AppLayout.buttonMinHeight, minHeight: AppLayout.buttonMinHeight)
-        .accessibilityLabel(isQuickActionsVisible ? "Hide quick actions" : "Show quick actions")
-    }
-
-    private var composerCapsule: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            TextField("Message huuman...", text: $text, axis: .vertical)
-                .lineLimit(1...6)
-                .font(.system(size: 17))
-                .tint(Color.chatAccent)
-                .focused($isFocused)
-                .padding(.leading, 16)
-                .padding(.vertical, 10)
-                .onSubmit {
-                    if canSend { performSend() }
-                }
-
-            PhotosPicker(
-                selection: $selectedItems,
-                maxSelectionCount: 3,
-                matching: .images
-            ) {
-                Image(systemName: "camera")
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(width: 36, height: 36)
-            }
-            .buttonStyle(.plain)
-            .disabled(isLoading)
-            .accessibilityLabel("Attach photo")
-            .onChange(of: selectedItems) { _, newItems in
-                Task { await loadImages(from: newItems) }
-            }
-
-            Button(action: performSend) {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(canSend ? Color.white : Color.chatTertiaryText)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        canSend ? Color.chatAccent : Color.white.opacity(0.06),
-                        in: Circle()
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(!canSend)
-            .accessibilityLabel("Send message")
-            .animation(.easeOut(duration: 0.15), value: canSend)
-            .padding(.trailing, 5)
-            .padding(.bottom, 4)
-        }
-        .glassEffect(in: .capsule)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
     }
 
     private func performSend() {
         guard canSend else { return }
-
         isFocused = false
-
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let images = selectedImages.isEmpty ? nil : selectedImages
-
         text = ""
-        selectedImages = []
-        selectedItems = []
-
-        onSend(trimmedText, images)
+        onSend(trimmedText, nil)
     }
+}
 
-    private func loadImages(from items: [PhotosPickerItem]) async {
-        var loadedImages: [Data] = []
+// MARK: - Composer Actions Sheet
 
-        for item in items {
-            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+struct ComposerActionsSheet: View {
+    let quickActions: [ChatQuickAction]
+    let onQuickAction: (ChatQuickAction) -> Void
+    let onPhotosSelected: ([Data]) -> Void
 
-            if let compressed = compressImage(data, maxDimension: 1024, quality: 0.72) {
-                loadedImages.append(compressed)
-            } else {
-                loadedImages.append(data)
+    @State private var selectedItems: [PhotosPickerItem] = []
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    PhotosPicker(
+                        selection: $selectedItems,
+                        maxSelectionCount: 3,
+                        matching: .images
+                    ) {
+                        Label("Photos", systemImage: "photo.on.rectangle")
+                    }
+                    .onChange(of: selectedItems) { _, newItems in
+                        Task { await loadAndReturn(items: newItems) }
+                    }
+                }
+
+                Section("Quick actions") {
+                    ForEach(quickActions) { action in
+                        Button {
+                            dismiss()
+                            onQuickAction(action)
+                        } label: {
+                            Label(action.title, systemImage: action.icon)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Attachments")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
             }
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
+    }
 
-        selectedImages = loadedImages
+    private func loadAndReturn(items: [PhotosPickerItem]) async {
+        var loaded: [Data] = []
+        for item in items {
+            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+            if let compressed = compressImage(data, maxDimension: 1024, quality: 0.72) {
+                loaded.append(compressed)
+            } else {
+                loaded.append(data)
+            }
+        }
+        guard !loaded.isEmpty else { return }
+        dismiss()
+        onPhotosSelected(loaded)
     }
 
     private func compressImage(_ data: Data, maxDimension: CGFloat, quality: CGFloat) -> Data? {
         guard let image = UIImage(data: data) else { return nil }
-
         let sourceSize = image.size
         let scale = min(maxDimension / max(sourceSize.width, sourceSize.height), 1)
         let targetSize = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
-
         let renderer = UIGraphicsImageRenderer(size: targetSize)
-        let resizedImage = renderer.image { _ in
+        let resized = renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: targetSize))
         }
-
-        return resizedImage.jpegData(compressionQuality: quality)
-    }
-}
-
-struct QuickActionRow: View {
-    let actions: [ChatQuickAction]
-    let onSelect: (ChatQuickAction) -> Void
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(actions) { action in
-                    Button {
-                        onSelect(action)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: action.icon)
-                                .font(.system(size: 13, weight: .medium))
-
-                            Text(action.title)
-                                .font(.system(size: 13, weight: .medium))
-                                .lineLimit(1)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .glassEffect()
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 12)
-        }
-    }
-}
-
-private struct ComposerAttachmentThumbnail: View {
-    let imageData: Data
-    let onRemove: () -> Void
-
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Group {
-                if let image = UIImage(data: imageData) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                } else {
-                    Color.white.opacity(0.08)
-                }
-            }
-            .frame(width: 60, height: 60)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Color.chatPrimaryText)
-                    .frame(width: 18, height: 18)
-                    .background(Color.black.opacity(0.7), in: Circle())
-            }
-            .buttonStyle(.plain)
-            .frame(minWidth: 28, minHeight: 28)
-            .offset(x: 5, y: -5)
-            .accessibilityLabel("Remove photo")
-        }
+        return resized.jpegData(compressionQuality: quality)
     }
 }

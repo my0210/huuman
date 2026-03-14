@@ -10,7 +10,7 @@ struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
     @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
-    @State private var showQuickActions = false
+    @State private var showComposerSheet = false
 
     private var threadItems: [ThreadItem] {
         ChatThreadBuilder.items(from: viewModel.messages)
@@ -35,28 +35,13 @@ struct ChatScreen: View {
                 onLoadOlderMessages: { await viewModel.loadOlderMessages() }
             )
             .safeAreaBar(edge: .bottom) {
-                VStack(spacing: 4) {
-                    if showQuickActions {
-                        QuickActionRow(actions: quickActions) { action in
-                            showQuickActions = false
-                            viewModel.send(text: action.message)
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    ChatComposerBar(
-                        onSend: { text, images in
-                            viewModel.send(text: text, images: images)
-                        },
-                        onToggleQuickActions: {
-                            withAnimation(.easeOut(duration: 0.18)) {
-                                showQuickActions.toggle()
-                            }
-                        },
-                        isQuickActionsVisible: showQuickActions,
-                        isLoading: viewModel.isStreaming
-                    )
-                }
+                ChatComposerBar(
+                    onSend: { text, images in
+                        viewModel.send(text: text, images: images)
+                    },
+                    onPlusTap: { showComposerSheet = true },
+                    isLoading: viewModel.isStreaming
+                )
             }
             .background(Color.chatBackground)
             .navigationTitle("huuman")
@@ -82,6 +67,17 @@ struct ChatScreen: View {
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
                     .environment(auth)
+            }
+            .sheet(isPresented: $showComposerSheet) {
+                ComposerActionsSheet(
+                    quickActions: quickActions,
+                    onQuickAction: { action in
+                        viewModel.send(text: action.message)
+                    },
+                    onPhotosSelected: { images in
+                        viewModel.send(text: "", images: images)
+                    }
+                )
             }
             .task {
                 await viewModel.loadChat()
@@ -135,7 +131,7 @@ struct ChatThreadView: View {
                 }
                 .padding(.horizontal, ChatTokens.horizontalPadding)
                 .padding(.top, 4)
-                .padding(.bottom, 4)
+                .padding(.bottom, 8)
             }
             .defaultScrollAnchor(.bottom)
             .scrollDismissesKeyboard(.interactively)
@@ -537,7 +533,7 @@ struct ThinkingIndicator: View {
 }
 
 private enum ChatTokens {
-    static let horizontalPadding: CGFloat = 14
+    static let horizontalPadding: CGFloat = 10
     static let turnSpacing: CGFloat = 10
     static let userClusterSpacing: CGFloat = 2
     static let assistantContinuationSpacing: CGFloat = 8
@@ -608,7 +604,6 @@ private let fullConversationAllCards: [ChatMessage] = MockData.fullConversation 
 
 private struct ChatShellPreview: View {
     let messages: [ChatMessage]
-    @State private var showQuickActions = false
 
     var body: some View {
         NavigationStack {
@@ -620,21 +615,11 @@ private struct ChatShellPreview: View {
                 onLoadOlderMessages: { await Task.yield() }
             )
             .safeAreaBar(edge: .bottom) {
-                VStack(spacing: 4) {
-                    if showQuickActions {
-                        QuickActionRow(actions: [
-                            .init(id: "today", title: "Today's plan", message: "Show me today's plan", icon: "calendar"),
-                            .init(id: "week", title: "This week", message: "Show me my week", icon: "calendar.badge.clock")
-                        ]) { _ in }
-                    }
-
-                    ChatComposerBar(
-                        onSend: { _, _ in },
-                        onToggleQuickActions: { showQuickActions.toggle() },
-                        isQuickActionsVisible: showQuickActions,
-                        isLoading: false
-                    )
-                }
+                ChatComposerBar(
+                    onSend: { _, _ in },
+                    onPlusTap: {},
+                    isLoading: false
+                )
             }
             .background(Color.chatBackground)
             .navigationTitle("huuman")
