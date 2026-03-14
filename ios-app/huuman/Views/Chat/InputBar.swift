@@ -9,6 +9,16 @@ struct ChatQuickAction: Identifiable {
     let icon: String
 }
 
+// MARK: - Press Feedback
+
+private struct PressableButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.8 : 1.0)
+            .animation(.spring(duration: 0.2, bounce: 0.4), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Composer Bar
 
 struct ChatComposerBar: View {
@@ -53,7 +63,7 @@ struct ChatComposerBar: View {
                             in: Circle()
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .disabled(!canSend)
                 .accessibilityLabel("Send message")
                 .animation(.easeOut(duration: 0.15), value: canSend)
