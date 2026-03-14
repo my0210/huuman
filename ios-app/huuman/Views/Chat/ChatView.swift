@@ -344,23 +344,34 @@ private struct UserImageStrip: View {
     private let imageHeight: CGFloat = 180
     private let multiImageWidth: CGFloat = 140
 
+    private let imageSpacing: CGFloat = 6
+
+    private var contentWidth: CGFloat {
+        CGFloat(images.count) * multiImageWidth + CGFloat(images.count - 1) * imageSpacing
+    }
+
     var body: some View {
         if images.count == 1 {
             singleImageView(images[0])
                 .frame(maxWidth: 260, maxHeight: 260)
-        } else if images.count <= 3 {
-            multiImageRow
         } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                multiImageRow
+            GeometryReader { geo in
+                if contentWidth > geo.size.width {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        multiImageRow
+                    }
+                    .defaultScrollAnchor(.trailing)
+                } else {
+                    multiImageRow
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
-            .defaultScrollAnchor(.trailing)
             .frame(height: imageHeight)
         }
     }
 
     private var multiImageRow: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: imageSpacing) {
             ForEach(images) { img in
                 imageView(img)
                     .frame(width: multiImageWidth, height: imageHeight)
