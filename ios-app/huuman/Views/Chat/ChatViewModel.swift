@@ -298,7 +298,6 @@ final class ChatViewModel {
                         withAnimation(.easeOut(duration: 0.25)) {
                             messages.append(ChatMessage(id: id, role: .assistant, parts: []))
                         }
-                        isThinking = false
 
                     case .textStart(let id):
                         accumulatedText = ""
