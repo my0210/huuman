@@ -50,7 +50,7 @@ struct ChatComposerBar: View {
                     .tint(Color.chatAccent)
                     .focused($isFocused)
                     .padding(.leading)
-                    .padding(.vertical, 12)
+                    .padding(.vertical)
                     .onSubmit {
                         if canSend { performSend() }
                     }
