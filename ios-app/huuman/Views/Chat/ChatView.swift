@@ -328,25 +328,23 @@ struct UserMessageBubble: View {
 private struct UserImageStrip: View {
     let images: [DisplayImage]
 
-    private let imageHeight: CGFloat = 200
+    private let imageHeight: CGFloat = 180
+    private let multiImageWidth: CGFloat = 140
 
     var body: some View {
         if images.count == 1 {
             singleImageView(images[0])
-                .frame(maxWidth: 260, maxHeight: 300)
+                .frame(maxWidth: 260, maxHeight: 260)
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 8) {
+                HStack(spacing: 6) {
                     ForEach(images) { img in
                         imageView(img)
-                            .containerRelativeFrame(.horizontal, count: 5, span: 2, spacing: 8)
-                            .frame(height: imageHeight)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .frame(width: multiImageWidth, height: imageHeight)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                 }
-                .scrollTargetLayout()
             }
-            .scrollTargetBehavior(.viewAligned)
             .frame(height: imageHeight)
         }
     }
@@ -400,9 +398,9 @@ private struct UserImageStrip: View {
     }
 
     private func imagePlaceholder(failed: Bool) -> some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(Color.white.opacity(0.06))
-            .frame(width: 120, height: imageHeight)
+            .frame(width: multiImageWidth, height: imageHeight)
             .overlay {
                 if failed {
                     Image(systemName: "photo")
