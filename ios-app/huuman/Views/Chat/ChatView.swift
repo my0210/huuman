@@ -1,26 +1,14 @@
 import SwiftUI
 
 struct ChatView: View {
-    @State private var selectedPage = 0
-    @State private var chatViewModel = ChatViewModel()
-
     var body: some View {
-        TabView(selection: $selectedPage) {
-            ChatScreen(selectedPage: $selectedPage, viewModel: chatViewModel)
-                .tag(0)
-            NavigationStack {
-                DataView()
-            }
-            .tag(1)
-        }
-        .tabViewStyle(.page(indexDisplayMode: .never))
+        ChatScreen()
     }
 }
 
 struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
-    @Binding var selectedPage: Int
-    @Bindable var viewModel: ChatViewModel
+    @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
     @State private var showComposerSheet = false
     @State private var pendingImages: [PendingImage] = []
@@ -72,9 +60,7 @@ struct ChatScreen: View {
                     .accessibilityLabel("Profile")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        withAnimation { selectedPage = 1 }
-                    } label: {
+                    NavigationLink(destination: DataView()) {
                         Image(systemName: "chart.bar.xaxis")
                     }
                     .accessibilityLabel("About you")
@@ -100,7 +86,6 @@ struct ChatScreen: View {
                 )
             }
             .task {
-                guard viewModel.messages.isEmpty else { return }
                 await viewModel.loadChat()
                 photoProvider.loadIfAuthorized()
             }
