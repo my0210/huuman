@@ -672,7 +672,7 @@ struct InitialAvatar: View {
 }
 
 struct ThinkingIndicator: View {
-    @State private var animate = false
+    @State private var animating = [false, false, false]
 
     var body: some View {
         HStack(spacing: 6) {
@@ -680,13 +680,15 @@ struct ThinkingIndicator: View {
                 Circle()
                     .fill(Color.chatSecondaryText)
                     .frame(width: 7, height: 7)
-                    .offset(y: animate ? -5 : 2)
-                    .animation(
-                        .easeInOut(duration: 0.45)
-                            .repeatForever(autoreverses: true)
-                            .delay(Double(index) * 0.15),
-                        value: animate
-                    )
+                    .offset(y: animating[index] ? -5 : 2)
+                    .onAppear {
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(index * 150))
+                            withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true)) {
+                                animating[index] = true
+                            }
+                        }
+                    }
             }
         }
         .padding(.horizontal, 14)
@@ -696,7 +698,6 @@ struct ThinkingIndicator: View {
             RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
                 .stroke(Color.chatCardBorder, lineWidth: 1)
         )
-        .onAppear { animate = true }
     }
 }
 
