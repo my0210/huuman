@@ -675,22 +675,22 @@ struct ThinkingIndicator: View {
     @State private var animate = false
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             ForEach(0..<3, id: \.self) { index in
                 Circle()
                     .fill(Color.chatSecondaryText)
-                    .frame(width: 6, height: 6)
-                    .opacity(animate ? 1 : 0.3)
+                    .frame(width: 7, height: 7)
+                    .offset(y: animate ? -5 : 2)
                     .animation(
-                        .easeInOut(duration: 0.65)
-                            .repeatForever()
-                            .delay(Double(index) * 0.14),
+                        .easeInOut(duration: 0.45)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.15),
                         value: animate
                     )
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)

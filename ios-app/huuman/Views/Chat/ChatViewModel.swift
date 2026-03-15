@@ -243,6 +243,12 @@ final class ChatViewModel {
             messages.append(userMessage)
         }
         scrollTrigger += 1
+        if attachedImages != nil {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(150))
+                scrollTrigger += 1
+            }
+        }
 
         isStreaming = true
         isThinking = true
