@@ -685,7 +685,7 @@ struct ThinkingIndicator: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 16)
         .background(Color.chatCardSurface, in: RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: AppLayout.cardRadius, style: .continuous)
@@ -695,7 +695,7 @@ struct ThinkingIndicator: View {
 
     private func dotOffset(time: Double, index: Int) -> CGFloat {
         let phase = sin(time * .pi * 2.0 / 0.9 - Double(index) * 0.5)
-        return phase * 3.5
+        return phase * 1.5
     }
 }
 
