@@ -632,10 +632,10 @@ export function createTools(userId: string, supabase: AppSupabaseClient, convers
 
   const save_context = tool({
     description:
-      "Save or update information about the user's situation -- injuries, physical limitations, equipment, training environment, travel, or schedule changes. Each fact is saved separately with a time scope. Also use to deactivate outdated facts.",
+      "Save or update information about the user's situation -- injuries, physical limitations, equipment, training environment, travel, schedule changes, or behavioral patterns you've observed. Each fact is saved separately with a time scope. Also use to deactivate outdated facts.",
     inputSchema: z.object({
       add: z.array(z.object({
-        category: z.enum(['physical', 'environment', 'equipment', 'schedule']),
+        category: z.enum(['physical', 'environment', 'equipment', 'schedule', 'behavioral']),
         content: z.string().describe('Clear, specific description of the fact'),
         scope: z.enum(['permanent', 'temporary']),
         expiresAt: z.string().optional().describe('ISO date when temporary items expire (YYYY-MM-DD)'),

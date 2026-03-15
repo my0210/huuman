@@ -7,6 +7,7 @@ const CATEGORY_LABELS: Record<ContextCategory, string> = {
   environment: 'Environment',
   equipment: 'Equipment',
   schedule: 'Schedule',
+  behavioral: 'Behavioral',
 };
 
 export function getSystemPrompt(profile?: UserProfile | null, language?: string): string {
@@ -64,7 +65,7 @@ You have tools for reading state, taking action, and verifying results. Tools ar
 - adapt_plan (skip/reschedule/modify), delete_session -- change individual sessions
 - generate_plan -- create a new weekly plan. Set draft=true for user review.
 - confirm_plan -- activate a draft after user approval
-- save_context -- store facts about the user (injuries, equipment, schedule, environment)
+- save_context -- store facts about the user (injuries, equipment, schedule, environment, behavioral patterns)
 - save_feedback -- record bugs, feature requests, or experience feedback
 - start_timer -- launch breathwork/meditation timer
 - save_progress_photo -- save a body composition / progress selfie the user sent
@@ -106,6 +107,7 @@ Pay attention to context clues. If the user says "I ran but my knee hurt after,"
 - Use permanent scope for chronic conditions and owned equipment.
 - Use temporary scope with an expiry date for acute injuries, travel, and schedule overrides.
 - After saving context that affects the current plan, follow up with adapt_plan on affected sessions.
+- If you notice a behavioral pattern -- something that consistently works for this user, a tendency to skip under certain conditions, a preference that affects coaching -- save it as a behavioral context note. Examples: "responds better to morning sessions," "tends to skip when travel disrupts routine," "needs explicit rest day permission."
 
 ### Feedback and errors
 
@@ -333,14 +335,51 @@ export function getIntroPlanPrompt(
   profile: UserProfile,
   weekStart: string,
   sessionTitles: string[],
+  extra?: {
+    trackingBriefs?: { nutrition: { calorieTarget?: number; proteinTargetG?: number }; sleep: { targetHours?: number } };
+    planningContext?: string;
+    lastWeekSummary?: string;
+  },
 ): string {
-  return `Write a 1-2 sentence intro message for a weekly fitness plan starting ${weekStart}.
+  const lines: string[] = [];
 
-User: age ${profile.age ?? 'unknown'}, ${profile.weightKg ? profile.weightKg + ' kg' : 'weight unknown'}.
+  lines.push(`Write a concise coaching rationale for this week's plan (starting ${weekStart}). Explain WHY you made the decisions you did. 3-5 sentences.`);
+  lines.push('');
+  lines.push('## USER');
+  lines.push(`Age: ${profile.age ?? 'unknown'}, Weight: ${profile.weightKg ? profile.weightKg + ' kg' : 'unknown'}.`);
 
-This week's sessions include: ${sessionTitles.slice(0, 8).join(', ')}.
+  const contextBlock = formatContextBlock(profile);
+  if (contextBlock) lines.push(contextBlock);
 
-Sound like a coach with calm authority briefing their client on the week ahead. Reference one concrete detail about their situation (schedule, progression from last week, a specific target). Every word intentional -- not hype. No "excited to", no "let's crush it", no "I've designed". Plain text, no markdown.`;
+  lines.push('');
+  lines.push(`## THIS WEEK'S SESSIONS`);
+  lines.push(sessionTitles.slice(0, 8).join(', '));
+
+  if (extra?.trackingBriefs) {
+    lines.push('');
+    lines.push('## TARGETS SET');
+    const { nutrition, sleep } = extra.trackingBriefs;
+    if (nutrition.calorieTarget) lines.push(`Nutrition: ${nutrition.calorieTarget} cal/day, ${nutrition.proteinTargetG ?? '?'}g protein`);
+    if (sleep.targetHours) lines.push(`Sleep: ${sleep.targetHours}h target`);
+  }
+
+  if (extra?.lastWeekSummary) {
+    lines.push('');
+    lines.push('## LAST WEEK');
+    lines.push(extra.lastWeekSummary);
+  }
+
+  if (extra?.planningContext) {
+    lines.push('');
+    lines.push('## PLANNING CONTEXT');
+    lines.push(extra.planningContext);
+  }
+
+  lines.push('');
+  lines.push('## INSTRUCTIONS');
+  lines.push('Sound like a coach with calm authority briefing their client. Explain your reasoning: why these sessions, why these targets, what you noticed from last week. Reference specific context (injuries, schedule, equipment, behavioral patterns). Every word intentional -- not hype. No "excited to", no "let\'s crush it", no "I\'ve designed". Plain text, no markdown.');
+
+  return lines.join('\n');
 }
 
 export function getTrackingBriefsPrompt(profile: UserProfile): string {

@@ -49,7 +49,7 @@ export async function GET() {
 }
 
 const classificationSchema = z.object({
-  category: z.enum(['physical', 'environment', 'equipment', 'schedule']),
+  category: z.enum(['physical', 'environment', 'equipment', 'schedule', 'behavioral']),
   scope: z.enum(['permanent', 'temporary']),
   expiresAt: z.string().nullable().describe('ISO date (YYYY-MM-DD) when temporary items expire, null for permanent'),
   content: z.string().describe('Cleaned-up version of the user input -- concise, coach-readable'),
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 Input: "${rawContent}"
 
 Rules:
-- category: physical (injuries, body limitations, medical), environment (where they train, travel), equipment (gear they have), schedule (availability, time constraints)
+- category: physical (injuries, body limitations, medical), environment (where they train, travel), equipment (gear they have), schedule (availability, time constraints), behavioral (patterns, preferences, what works for this person, observed tendencies)
 - scope: permanent for chronic/ongoing things, temporary for time-bounded situations
 - expiresAt: for temporary items, estimate a reasonable expiry date. For "this week" use next Monday. For "2 weeks" add 14 days. Null for permanent.
 - content: rewrite concisely for a coach to read. Keep it short and specific. Don't add information the user didn't provide.`,

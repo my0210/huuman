@@ -113,8 +113,8 @@ export interface BlockedTime {
 // User Context (categorized, time-scoped facts about the user)
 // =============================================================================
 
-export type ContextCategory = 'physical' | 'environment' | 'equipment' | 'schedule';
-export const CONTEXT_CATEGORIES: ContextCategory[] = ['physical', 'environment', 'equipment', 'schedule'];
+export type ContextCategory = 'physical' | 'environment' | 'equipment' | 'schedule' | 'behavioral';
+export const CONTEXT_CATEGORIES: ContextCategory[] = ['physical', 'environment', 'equipment', 'schedule', 'behavioral'];
 
 export type ContextScope = 'permanent' | 'temporary';
 

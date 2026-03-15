@@ -75,13 +75,20 @@ async function generateTrackingBriefs(
   return result.object as TrackingBriefs;
 }
 
+interface IntroMessageContext {
+  trackingBriefs: TrackingBriefs;
+  planningContext?: string;
+  lastWeekSummary?: string;
+}
+
 async function generateIntroMessage(
   profile: UserProfile,
   weekStart: string,
   sessions: SessionOutput[],
+  extra?: IntroMessageContext,
 ): Promise<string> {
   const titles = sessions.map(s => s.title);
-  const prompt = getIntroPlanPrompt(profile, weekStart, titles);
+  const prompt = getIntroPlanPrompt(profile, weekStart, titles, extra);
 
   const result = await generateObject({
     model,
@@ -138,7 +145,42 @@ export async function generateWeeklyPlan(
     allSessions = domainResults.flat();
     trackingBriefs = briefs;
 
-    introMessage = await generateIntroMessage(profile, weekStart, allSessions);
+    let lastWeekSummary: string | undefined;
+    try {
+      const prevWeekStart = (() => {
+        const d = new Date(weekStart + 'T00:00:00');
+        d.setDate(d.getDate() - 7);
+        return d.toISOString().slice(0, 10);
+      })();
+      const prevWeekEnd = (() => {
+        const d = new Date(prevWeekStart + 'T00:00:00');
+        d.setDate(d.getDate() + 6);
+        return d.toISOString().slice(0, 10);
+      })();
+      const { data: prevSessions } = await supabase
+        .from('planned_sessions')
+        .select('domain, status')
+        .eq('user_id', userId)
+        .gte('scheduled_date', prevWeekStart)
+        .lte('scheduled_date', prevWeekEnd)
+        .in('domain', SESSION_DOMAINS);
+      if (prevSessions && prevSessions.length > 0) {
+        const completed = prevSessions.filter(s => s.status === 'completed').length;
+        const total = prevSessions.length;
+        const byDomain = SESSION_DOMAINS.map(d => {
+          const ds = prevSessions.filter(s => s.domain === d);
+          const dc = ds.filter(s => s.status === 'completed').length;
+          return ds.length > 0 ? `${d}: ${dc}/${ds.length}` : null;
+        }).filter(Boolean);
+        lastWeekSummary = `Last week: ${completed}/${total} sessions completed (${byDomain.join(', ')})`;
+      }
+    } catch { /* non-critical */ }
+
+    introMessage = await generateIntroMessage(profile, weekStart, allSessions, {
+      trackingBriefs: briefs,
+      planningContext: opts.planningContext,
+      lastWeekSummary,
+    });
   } catch (err) {
     console.error('[PlanGen] Parallel generation failed:', err);
     return { success: false, error: err instanceof Error ? err.message : 'AI generation failed' };
