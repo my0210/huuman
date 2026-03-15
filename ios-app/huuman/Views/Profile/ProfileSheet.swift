@@ -41,24 +41,6 @@ struct ProfileSheetView: View {
                 }
 
                 Section {
-                    NavigationLink {
-                        DataView()
-                    } label: {
-                        Label {
-                            VStack(alignment: .leading) {
-                                Text("Your data")
-                                Text("See what the coach knows about you")
-                                    .font(.caption)
-                                    .foregroundStyle(Color.textMuted)
-                            }
-                        } icon: {
-                            Image(systemName: "chart.bar")
-                        }
-                    }
-                }
-                .listRowBackground(Color.surfaceRaised)
-
-                Section {
                     Button {
                         confirmAction = .redoOnboarding
                     } label: {
