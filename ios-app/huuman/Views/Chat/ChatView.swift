@@ -677,10 +677,12 @@ struct ThinkingIndicator: View {
             let time = context.date.timeIntervalSinceReferenceDate
             HStack(spacing: 6) {
                 ForEach(0..<3, id: \.self) { index in
+                    let phase = dotPhase(time: time, index: index)
                     Circle()
                         .fill(Color.chatSecondaryText)
                         .frame(width: 7, height: 7)
-                        .offset(y: dotOffset(time: time, index: index))
+                        .opacity(0.4 + 0.6 * ((phase + 1) / 2))
+                        .offset(y: phase * 1.5)
                 }
             }
         }
@@ -693,9 +695,8 @@ struct ThinkingIndicator: View {
         )
     }
 
-    private func dotOffset(time: Double, index: Int) -> CGFloat {
-        let phase = sin(time * .pi * 2.0 / 0.9 - Double(index) * 0.5)
-        return phase * 1.5
+    private func dotPhase(time: Double, index: Int) -> Double {
+        sin(time * .pi * 2.0 / 0.9 - Double(index) * 0.5)
     }
 }
 
