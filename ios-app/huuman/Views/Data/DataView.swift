@@ -65,7 +65,9 @@ final class AboutYouViewModel {
 }
 
 struct DataView: View {
+    @Environment(AuthManager.self) private var auth
     @State private var vm = AboutYouViewModel()
+    @State private var showSettings = false
 
     var body: some View {
         Group {
@@ -111,6 +113,21 @@ struct DataView: View {
         .background(Color.surfaceBase)
         .navigationTitle("About You")
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { showSettings = true } label: {
+                    Image(systemName: "gearshape")
+                        .foregroundStyle(Color.textSecondary)
+                }
+                .accessibilityLabel("Settings")
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            ProfileSheetView()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .environment(auth)
+        }
         .task { await vm.load() }
     }
 }

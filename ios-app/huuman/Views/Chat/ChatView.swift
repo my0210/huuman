@@ -9,7 +9,6 @@ struct ChatView: View {
 struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
     @State private var viewModel = ChatViewModel()
-    @State private var showProfile = false
     @State private var showComposerSheet = false
     @State private var pendingImages: [PendingImage] = []
     @State private var photoProvider = RecentPhotosProvider()
@@ -51,26 +50,12 @@ struct ChatScreen: View {
             .navigationTitle("huuman")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showProfile = true
-                    } label: {
-                        Image(systemName: "person.circle")
-                    }
-                    .accessibilityLabel("Profile")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(destination: DataView()) {
                         Image(systemName: "chart.bar.xaxis")
                     }
                     .accessibilityLabel("About you")
                 }
-            }
-            .sheet(isPresented: $showProfile) {
-                ProfileSheetView()
-                    .presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-                    .environment(auth)
             }
             .sheet(isPresented: $showComposerSheet) {
                 ComposerActionsSheet(
