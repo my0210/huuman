@@ -66,7 +66,6 @@ final class AboutYouViewModel {
 
 struct DataView: View {
     @State private var vm = AboutYouViewModel()
-    @State private var showProfile = false
 
     var body: some View {
         Group {
@@ -112,17 +111,6 @@ struct DataView: View {
         .background(Color.surfaceBase)
         .navigationTitle("About You")
         .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { showProfile = true } label: {
-                    InitialAvatar(name: vm.data?.myNotes.first(where: { $0.source == "onboarding" })?.content ?? "?", size: 28)
-                }
-                .accessibilityLabel("Profile")
-            }
-        }
-        .sheet(isPresented: $showProfile) {
-            ProfileSheetView()
-        }
         .task { await vm.load() }
     }
 }
