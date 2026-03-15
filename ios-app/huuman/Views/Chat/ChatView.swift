@@ -1,16 +1,27 @@
 import SwiftUI
 
 struct ChatView: View {
+    @State private var selectedPage = 0
+
     var body: some View {
-        ChatScreen()
+        TabView(selection: $selectedPage) {
+            ChatScreen(selectedPage: $selectedPage)
+                .tag(0)
+            NavigationStack {
+                DataView()
+            }
+            .tag(1)
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .ignoresSafeArea(.keyboard)
     }
 }
 
 struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
+    @Binding var selectedPage: Int
     @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
-    @State private var showAboutYou = false
     @State private var showComposerSheet = false
     @State private var pendingImages: [PendingImage] = []
     @State private var photoProvider = RecentPhotosProvider()
@@ -61,32 +72,13 @@ struct ChatScreen: View {
                     .accessibilityLabel("Profile")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAboutYou = true } label: {
+                    Button {
+                        withAnimation { selectedPage = 1 }
+                    } label: {
                         Image(systemName: "chart.bar.xaxis")
                     }
                     .accessibilityLabel("About you")
                 }
-            }
-            .navigationDestination(isPresented: $showAboutYou) {
-                DataView()
-            }
-            .overlay {
-                GeometryReader { geo in
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .frame(width: 30)
-                        .frame(maxHeight: .infinity)
-                        .position(x: geo.size.width - 15, y: geo.size.height / 2)
-                        .gesture(
-                            DragGesture(minimumDistance: 20)
-                                .onEnded { value in
-                                    if value.translation.width < -60 && abs(value.translation.height) < abs(value.translation.width) {
-                                        showAboutYou = true
-                                    }
-                                }
-                        )
-                }
-                .allowsHitTesting(true)
             }
             .sheet(isPresented: $showProfile) {
                 ProfileSheetView()
