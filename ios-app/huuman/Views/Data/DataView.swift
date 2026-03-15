@@ -40,10 +40,13 @@ final class AboutYouViewModel {
     }
 
     func deleteContext(id: String) async {
+        let backup = data?.myNotes
+        data?.myNotes.removeAll { $0.id == id }
         do {
             _ = try await APIClient.shared.delete("/api/context", body: ["id": id])
-            data?.myNotes.removeAll { $0.id == id }
-        } catch { }
+        } catch {
+            data?.myNotes = backup ?? []
+        }
     }
 
     func addWeight() async {
