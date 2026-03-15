@@ -2,10 +2,11 @@ import SwiftUI
 
 struct ChatView: View {
     @State private var selectedPage = 0
+    @State private var chatViewModel = ChatViewModel()
 
     var body: some View {
         TabView(selection: $selectedPage) {
-            ChatScreen(selectedPage: $selectedPage)
+            ChatScreen(selectedPage: $selectedPage, viewModel: chatViewModel)
                 .tag(0)
             NavigationStack {
                 DataView()
@@ -13,14 +14,13 @@ struct ChatView: View {
             .tag(1)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .ignoresSafeArea(.keyboard)
     }
 }
 
 struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
     @Binding var selectedPage: Int
-    @State private var viewModel = ChatViewModel()
+    @Bindable var viewModel: ChatViewModel
     @State private var showProfile = false
     @State private var showComposerSheet = false
     @State private var pendingImages: [PendingImage] = []
@@ -100,6 +100,7 @@ struct ChatScreen: View {
                 )
             }
             .task {
+                guard viewModel.messages.isEmpty else { return }
                 await viewModel.loadChat()
                 photoProvider.loadIfAuthorized()
             }
