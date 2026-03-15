@@ -76,11 +76,12 @@ struct ProfileSheetView: View {
                 .listRowBackground(Color.surfaceRaised)
 
                 Section {
-                    Button(role: .destructive) {
+                    Button {
                         Task { await auth.signOut() }
                         dismiss()
                     } label: {
                         Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                            .foregroundStyle(Color.semanticError)
                     }
                 }
                 .listRowBackground(Color.surfaceRaised)
