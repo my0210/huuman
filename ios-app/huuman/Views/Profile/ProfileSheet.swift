@@ -87,9 +87,10 @@ struct ProfileSheetView: View {
                 .listRowBackground(Color.surfaceRaised)
             }
             .listStyle(.insetGrouped)
+            .listSectionSpacing(.compact)
             .scrollContentBackground(.hidden)
             .background(Color.surfaceBase)
-            .navigationTitle("Profile")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
