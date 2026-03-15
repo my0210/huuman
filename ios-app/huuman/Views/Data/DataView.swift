@@ -134,20 +134,12 @@ private struct YourPlanSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("YOUR PLAN")
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.textMuted)
-                    .tracking(0.5)
-                Spacer()
-                if plan.hasPlan {
-                    Text("This week")
-                        .font(.caption2)
-                        .foregroundStyle(Color.textMuted)
-                }
-            }
-            .padding(.bottom, 10)
+            Text("YOUR PLAN")
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.textMuted)
+                .tracking(0.5)
+                .padding(.bottom, 10)
 
             VStack(alignment: .leading, spacing: 14) {
                 if let rationale = plan.coachRationale {
@@ -338,43 +330,32 @@ private struct YourNumbersSection: View {
     let addingWeight: Bool
     let onAddWeight: () -> Void
 
-    private var hasAnyData: Bool {
-        numbers.weight.current != nil ||
-        !numbers.sessions.isEmpty ||
-        numbers.nutrition.daysLogged > 0 ||
-        numbers.progressPhotoCount > 0
-    }
-
     var body: some View {
-        if hasAnyData {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("YOUR NUMBERS")
-                    .font(.caption2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.textMuted)
-                    .tracking(0.5)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("YOUR NUMBERS")
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.textMuted)
+                .tracking(0.5)
 
-                if numbers.weight.current != nil {
-                    WeightDataCard(
-                        weight: numbers.weight,
-                        weightInput: $weightInput,
-                        showForm: $showWeightForm,
-                        addingWeight: addingWeight,
-                        onAdd: onAddWeight
-                    )
-                }
+            WeightDataCard(
+                weight: numbers.weight,
+                weightInput: $weightInput,
+                showForm: $showWeightForm,
+                addingWeight: addingWeight,
+                onAdd: onAddWeight
+            )
 
-                if !numbers.sessions.isEmpty {
-                    SessionsCard(sessions: numbers.sessions)
-                }
+            if !numbers.sessions.isEmpty {
+                SessionsCard(sessions: numbers.sessions)
+            }
 
-                if numbers.nutrition.daysLogged > 0 {
-                    NutritionCard(nutrition: numbers.nutrition)
-                }
+            if numbers.nutrition.daysLogged > 0 {
+                NutritionCard(nutrition: numbers.nutrition)
+            }
 
-                if numbers.progressPhotoCount > 0 {
-                    ProgressPhotosCard(count: numbers.progressPhotoCount, thumbnailUrl: numbers.latestProgressPhotoUrl)
-                }
+            if numbers.progressPhotoCount > 0 {
+                ProgressPhotosCard(count: numbers.progressPhotoCount, thumbnailUrl: numbers.latestProgressPhotoUrl)
             }
         }
     }
