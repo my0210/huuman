@@ -10,6 +10,7 @@ struct ChatScreen: View {
     @Environment(AuthManager.self) private var auth
     @State private var viewModel = ChatViewModel()
     @State private var showProfile = false
+    @State private var showAboutYou = false
     @State private var showComposerSheet = false
     @State private var pendingImages: [PendingImage] = []
     @State private var photoProvider = RecentPhotosProvider()
@@ -60,11 +61,32 @@ struct ChatScreen: View {
                     .accessibilityLabel("Profile")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(destination: DataView()) {
+                    Button { showAboutYou = true } label: {
                         Image(systemName: "chart.bar.xaxis")
                     }
-                    .accessibilityLabel("Your data")
+                    .accessibilityLabel("About you")
                 }
+            }
+            .navigationDestination(isPresented: $showAboutYou) {
+                DataView()
+            }
+            .overlay {
+                GeometryReader { geo in
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .frame(width: 30)
+                        .frame(maxHeight: .infinity)
+                        .position(x: geo.size.width - 15, y: geo.size.height / 2)
+                        .gesture(
+                            DragGesture(minimumDistance: 20)
+                                .onEnded { value in
+                                    if value.translation.width < -60 && abs(value.translation.height) < abs(value.translation.width) {
+                                        showAboutYou = true
+                                    }
+                                }
+                        )
+                }
+                .allowsHitTesting(true)
             }
             .sheet(isPresented: $showProfile) {
                 ProfileSheetView()
