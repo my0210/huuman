@@ -91,9 +91,12 @@ struct ProfileSheetView: View {
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .foregroundStyle(Color.textSecondary)
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(Color.textSecondary)
+                    }
                 }
             }
             .alert(item: $confirmAction) { action in
