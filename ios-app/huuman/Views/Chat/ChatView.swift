@@ -52,7 +52,7 @@ struct ChatScreen: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink(destination: DataView()) {
-                        Image(systemName: "chart.bar.xaxis")
+                        Image(systemName: "person.circle")
                     }
                     .accessibilityLabel("About you")
                 }
